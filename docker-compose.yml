@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  api:
+    container_name: zhongyue-nodejs-api-dev
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=development
+    command: pnpm run start:dev
+    env_file:
+      - .env
+    networks:
+      - zhongyue-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+networks:
+  zhongyue-network:
+    driver: bridge

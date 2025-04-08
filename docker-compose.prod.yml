@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  api:
+    container_name: zhongyue-nodejs-api-prod
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    restart: always
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=production
+      # 移除了重复的数据库配置
+    env_file:
+      - .env
+    networks:
+      - zhongyue-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+networks:
+  zhongyue-network:
+    driver: bridge

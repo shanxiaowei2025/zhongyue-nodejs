@@ -1,0 +1,22 @@
+FROM node:20-alpine
+
+WORKDIR /usr/src/app
+
+# 设置npm和pnpm使用华为云镜像
+RUN npm config set registry https://mirrors.huaweicloud.com/repository/npm/ && \
+    npm install -g pnpm && \
+    pnpm config set registry https://mirrors.huaweicloud.com/repository/npm/
+
+COPY package*.json pnpm-lock.yaml ./
+
+RUN pnpm install
+
+
+# 不复制代码，将通过volume挂载
+# COPY . .
+
+# 添加健康检查
+HEALTHCHECK --interval=10s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost:3000/api/health || exit 1
+
+CMD ["pnpm", "run", "start:dev"]
