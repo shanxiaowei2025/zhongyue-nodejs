@@ -1,7 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, BeforeInsert } from 'typeorm';
 import { Exclude } from 'class-transformer';
 import * as bcrypt from 'bcryptjs';
-import { ApiProperty, ApiHideProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiHideProperty } from '../../../common/swagger';
 
 @Entity({ name: 'sys_user' })
 export class User {

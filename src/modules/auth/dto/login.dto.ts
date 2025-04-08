@@ -1,5 +1,5 @@
 import { IsNotEmpty, IsString } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty } from '../../../common/swagger';
 
 export class LoginDto {
   @ApiProperty({ description: '用户名', example: '管理员' })
