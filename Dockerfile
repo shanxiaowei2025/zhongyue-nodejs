@@ -9,7 +9,7 @@ RUN npm config set registry https://registry.npmmirror.com && \
 
 COPY package*.json pnpm-lock.yaml ./
 
-RUN npm install
+RUN pnpm install
 
 COPY . .
 
@@ -22,11 +22,16 @@ ENV NODE_ENV=${NODE_ENV}
 
 WORKDIR /usr/src/app
 
+# 设置国内镜像
+RUN npm config set registry https://registry.npmmirror.com && \
+    npm install -g pnpm && \
+    pnpm config set registry https://registry.npmmirror.com
+
 COPY package*.json pnpm-lock.yaml ./
 
-RUN npm install -g pnpm && \
-    pnpm install --prod && \
-    npm cache clean --force
+# 确保使用--prod标志
+RUN pnpm install --prod && \
+    pnpm store prune
 
 # 创建非root用户提高安全性
 RUN addgroup -S nodeapp && \
