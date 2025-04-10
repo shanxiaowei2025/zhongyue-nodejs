@@ -1,3 +1,7 @@
+// 定义枚举类型
+// 例如：
+// - 企业状态：active/inactive/pending
+// - 业务状态：normal/suspended/terminated
 export enum EnterpriseStatus {
   ACTIVE = 'active',
   INACTIVE = 'inactive',

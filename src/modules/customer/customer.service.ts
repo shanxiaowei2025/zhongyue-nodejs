@@ -50,17 +50,17 @@ export class CustomerService {
 
     // 如果有关键词，搜索社会信用代码
     if (socialCreditCode) {
-      where.socialCreditCode = socialCreditCode;
+      where.socialCreditCode = Like(`%${socialCreditCode}%`);
     }
 
     // 如果有关键词，搜索业务员
     if (salesRepresentative) {
-      where.salesRepresentative = salesRepresentative;
+      where.salesRepresentative = Like(`%${salesRepresentative}%`);
     }
 
     // 如果有关键词，搜索税务分局
     if (taxBureau) {
-      where.taxBureau = taxBureau;
+      where.taxBureau = Like(`%${taxBureau}%`);
     }
 
     // 如果有关键词，搜索税务登记类型
