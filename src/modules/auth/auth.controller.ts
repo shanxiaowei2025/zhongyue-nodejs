@@ -1,3 +1,4 @@
+// 认证控制器
 import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Get, Request } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -9,6 +10,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '../../common/
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  // 用户登录
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '用户登录', description: '使用用户名和密码登录系统' })
@@ -18,6 +20,7 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
+  // 获取当前用户信息
   @Get('profile')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

@@ -1,3 +1,4 @@
+// 登录时的数据结构
 import { IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty } from '../../../common/swagger';
 

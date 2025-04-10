@@ -1,3 +1,4 @@
+// JWT认证守卫
 import { Injectable, ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
