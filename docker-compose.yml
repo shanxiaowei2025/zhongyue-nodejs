@@ -28,4 +28,4 @@ services:
 networks:
   web_network:
     driver: bridge
-    external: true
+    external: false
