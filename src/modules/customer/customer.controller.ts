@@ -4,12 +4,27 @@
 // 2. 处理请求参数
 // 3. 调用相应的服务方法
 // 4. 返回响应给客户端
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards} from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { CustomerService } from './customer.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { QueryCustomerDto } from './dto/query-customer.dto';
-import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('客户管理')
@@ -43,7 +58,10 @@ export class CustomerController {
   @Patch(':id')
   @ApiOperation({ summary: '更新客户信息' })
   @ApiResponse({ status: 200, description: '客户信息更新成功' })
-  update(@Param('id') id: string, @Body() updateCustomerDto: UpdateCustomerDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateCustomerDto: UpdateCustomerDto,
+  ) {
     return this.customerService.update(+id, updateCustomerDto);
   }
 
@@ -53,4 +71,4 @@ export class CustomerController {
   remove(@Param('id') id: string) {
     return this.customerService.remove(+id);
   }
-} 
+}
