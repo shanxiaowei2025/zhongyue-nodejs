@@ -1,7 +1,8 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as Minio from 'minio';
-import { request } from 'https';
+import * as https from 'https';
+import * as http from 'http';
 
 @Injectable()
 export class StorageService implements OnModuleInit {
@@ -39,9 +40,11 @@ export class StorageService implements OnModuleInit {
 
     // 处理HTTPS选项，但不设置transport
     if (minioConfig.useSSL) {
-      this.logger.log('使用HTTPS连接，但不设置自定义transport');
+      this.logger.log('使用HTTPS连接，禁用SSL证书验证');
       // 仅通过环境变量禁用证书验证
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    } else {
+      this.logger.log('使用HTTP连接');
     }
 
     // 创建MinIO客户端
@@ -53,34 +56,56 @@ export class StorageService implements OnModuleInit {
   }
 
   private async testConnection() {
-    // 使用低级HTTPS请求测试连接
+    // 使用低级HTTP/HTTPS请求测试连接
     const minioConfig = this.configService.get('minio');
     if (!minioConfig) return;
 
-    this.logger.log(`正在测试连接到 ${minioConfig.endPoint}`);
+    this.logger.log(
+      `正在测试连接到 ${minioConfig.endPoint}:${minioConfig.port}`,
+    );
 
-    const options = {
-      hostname: minioConfig.endPoint,
-      port: minioConfig.port,
-      path: '/',
-      method: 'HEAD',
-      rejectUnauthorized: false,
-      timeout: 5000,
-    };
+    try {
+      // 根据useSSL选择对应的模块
+      const requestModule = minioConfig.useSSL ? https : http;
+      this.logger.log(
+        `使用${minioConfig.useSSL ? 'HTTPS' : 'HTTP'}协议测试连接`,
+      );
 
-    const req = request(options, (res) => {
-      this.logger.log(`连接测试响应: ${res.statusCode}`);
-      // 任何响应都表明连接是有效的
-      if (res.statusCode) {
-        this.logger.log('HTTPS连接测试成功');
-      }
-    });
+      const options = {
+        hostname: minioConfig.endPoint,
+        port: minioConfig.port,
+        path: '/',
+        method: 'HEAD',
+        rejectUnauthorized: false,
+        timeout: 5000,
+      };
 
-    req.on('error', (e) => {
-      this.logger.error(`连接测试失败: ${e.message}`);
-    });
+      // 创建请求
+      const req = requestModule.request(options, (res) => {
+        this.logger.log(`连接测试响应: ${res.statusCode}`);
+        if (res.statusCode) {
+          this.logger.log(
+            `${minioConfig.useSSL ? 'HTTPS' : 'HTTP'}连接测试成功`,
+          );
+        }
+      });
 
-    req.end();
+      // 错误处理
+      req.on('error', (e) => {
+        this.logger.error(`连接测试失败: ${e.message}`);
+      });
+
+      // 设置超时
+      req.on('timeout', () => {
+        this.logger.error('连接测试超时');
+        req.destroy();
+      });
+
+      // 结束请求
+      req.end();
+    } catch (error) {
+      this.logger.error(`创建连接测试请求失败: ${error.message}`);
+    }
   }
 
   async onModuleInit() {
@@ -266,6 +291,38 @@ export class StorageService implements OnModuleInit {
       // 返回空数组而不是抛出错误，避免整个API失败
       this.logger.warn('返回空文件列表');
       return [];
+    }
+  }
+
+  async getBucketStatus(): Promise<{ exists: boolean; files: number }> {
+    try {
+      await this.checkConnection();
+    } catch (error) {
+      this.logger.warn(`连接检查失败，但将尝试继续: ${error.message}`);
+    }
+
+    try {
+      const bucketExists = await this.minioClient.bucketExists(this.bucketName);
+      this.logger.log(
+        `存储桶 ${this.bucketName} ${bucketExists ? '存在' : '不存在'}`,
+      );
+
+      let fileCount = 0;
+      if (bucketExists) {
+        const files = await this.listFiles();
+        fileCount = files.length;
+      }
+
+      return {
+        exists: bucketExists,
+        files: fileCount,
+      };
+    } catch (error) {
+      this.logger.error(`获取存储桶状态失败: ${error.message}`, error.stack);
+      return {
+        exists: false,
+        files: 0,
+      };
     }
   }
 }

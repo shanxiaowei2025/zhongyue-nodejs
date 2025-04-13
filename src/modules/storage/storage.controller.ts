@@ -32,6 +32,28 @@ export class StorageController {
 
   constructor(private readonly storageService: StorageService) {}
 
+  @Get('status')
+  @ApiOperation({
+    summary: '获取存储服务状态',
+    description: '获取MinIO存储服务连接状态和存储桶信息',
+  })
+  @ApiResponse({ status: 200, description: '获取存储服务状态成功' })
+  @ApiResponse({ status: 500, description: '服务器内部错误' })
+  async getStorageStatus() {
+    try {
+      this.logger.log('接收到获取存储服务状态请求');
+      const status = await this.storageService.getBucketStatus();
+
+      this.logger.log(`存储服务状态获取成功: ${JSON.stringify(status)}`);
+      return status;
+    } catch (error) {
+      this.logger.error(`获取存储服务状态失败: ${error.message}`, error.stack);
+      throw new InternalServerErrorException(
+        `获取存储服务状态失败: ${error.message}`,
+      );
+    }
+  }
+
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
   @ApiOperation({ summary: '上传文件', description: '上传文件到MinIO存储' })
