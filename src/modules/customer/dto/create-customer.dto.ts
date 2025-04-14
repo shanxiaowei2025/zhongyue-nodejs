@@ -314,4 +314,9 @@ export class CreateCustomerDto {
   @IsString()
   @IsOptional()
   submitter?: string;
+
+  @ApiPropertyOptional({ description: '备注信息' })
+  @IsString()
+  @IsOptional()
+  remarks?: string;
 }

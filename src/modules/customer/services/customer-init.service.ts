@@ -92,7 +92,8 @@ export class CustomerInitService implements OnModuleInit {
         sealStorageNumber: 'ZB20210101', // 章存放编号
         enterpriseStatus: EnterpriseStatus.ACTIVE, // 企业当前的经营状态
         businessStatus: BusinessStatus.NORMAL, // 当前业务的状态
-        submitter: '系统管理员' // 创建或最后修改该记录的用户
+        submitter: '系统管理员', // 创建或最后修改该记录的用户
+        remarks: '示例客户信息' // 备注信息
       };
 
       const existingCustomer = await this.customerService.findAll({
