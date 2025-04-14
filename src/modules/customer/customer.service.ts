@@ -29,10 +29,12 @@ export class CustomerService {
   async findAll(query: QueryCustomerDto) {
     const { 
       keyword, 
-      socialCreditCode, 
-      salesRepresentative, 
+      taxNumber,
+      consultantAccountant,
+      bookkeepingAccountant,
       taxBureau,
-      taxRegistrationType,
+      enterpriseType,
+      industryCategory,
       enterpriseStatus,
       businessStatus,
       startDate,
@@ -48,37 +50,47 @@ export class CustomerService {
       where.companyName = Like(`%${keyword}%`);
     }
 
-    // 如果有关键词，搜索社会信用代码
-    if (socialCreditCode) {
-      where.socialCreditCode = Like(`%${socialCreditCode}%`);
+    // 搜索税号
+    if (taxNumber) {
+      where.taxNumber = Like(`%${taxNumber}%`);
     }
 
-    // 如果有关键词，搜索业务员
-    if (salesRepresentative) {
-      where.salesRepresentative = Like(`%${salesRepresentative}%`);
+    // 搜索顾问会计
+    if (consultantAccountant) {
+      where.consultantAccountant = Like(`%${consultantAccountant}%`);
     }
 
-    // 如果有关键词，搜索税务分局
+    // 搜索记账会计
+    if (bookkeepingAccountant) {
+      where.bookkeepingAccountant = Like(`%${bookkeepingAccountant}%`);
+    }
+
+    // 搜索税务分局
     if (taxBureau) {
       where.taxBureau = Like(`%${taxBureau}%`);
     }
 
-    // 如果有关键词，搜索税务登记类型
-    if (taxRegistrationType) {
-      where.taxRegistrationType = taxRegistrationType;
+    // 搜索企业类型
+    if (enterpriseType) {
+      where.enterpriseType = Like(`%${enterpriseType}%`);
     }
 
-    // 如果有关键词，搜索企业状态
+    // 搜索行业大类
+    if (industryCategory) {
+      where.industryCategory = Like(`%${industryCategory}%`);
+    }
+
+    // 搜索企业状态
     if (enterpriseStatus) {
       where.enterpriseStatus = enterpriseStatus;
     }
 
-    // 如果有关键词，搜索业务状态
+    // 搜索业务状态
     if (businessStatus) {
       where.businessStatus = businessStatus;
     }
 
-    // 如果有关键词，搜索创建时间范围
+    // 搜索创建时间范围
     if (startDate && endDate) {
       where.createTime = Between(startDate, endDate);
     }
@@ -124,4 +136,4 @@ export class CustomerService {
     const customer = await this.findOne(id);
     return await this.customerRepository.remove(customer);
   }
-} 
+}

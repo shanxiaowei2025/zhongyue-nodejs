@@ -9,25 +9,35 @@ export class QueryCustomerDto {
   @IsString()
   keyword?: string;
 
-  @ApiPropertyOptional({ description: '统一社会信用代码' })
+  @ApiPropertyOptional({ description: '税号' })
   @IsOptional()
   @IsString()
-  socialCreditCode?: string;
+  taxNumber?: string;
 
-  @ApiPropertyOptional({ description: '业务员姓名' })
+  @ApiPropertyOptional({ description: '顾问会计' })
   @IsOptional()
   @IsString()
-  salesRepresentative?: string;
+  consultantAccountant?: string;
+
+  @ApiPropertyOptional({ description: '记账会计' })
+  @IsOptional()
+  @IsString()
+  bookkeepingAccountant?: string;
 
   @ApiPropertyOptional({ description: '企业所属的税务分局' })
   @IsOptional()
   @IsString()
   taxBureau?: string;
 
-  @ApiPropertyOptional({ description: '企业的税务登记类型' })
+  @ApiPropertyOptional({ description: '企业类型' })
   @IsOptional()
-  @IsEnum(TaxRegistrationType)
-  taxRegistrationType?: TaxRegistrationType;
+  @IsString()
+  enterpriseType?: string;
+
+  @ApiPropertyOptional({ description: '行业大类' })
+  @IsOptional()
+  @IsString()
+  industryCategory?: string;
 
   @ApiPropertyOptional({ description: '企业当前的经营状态' })
   @IsOptional()
@@ -58,4 +68,4 @@ export class QueryCustomerDto {
   @IsOptional()
   @IsNumber()
   pageSize?: number = 10;
-} 
+}
