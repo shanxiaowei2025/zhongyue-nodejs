@@ -24,7 +24,7 @@ export class Customer {
   @Column({ nullable: true, comment: '企业类型' })
   enterpriseType: string;
 
-  @Column({ nullable: true, length: 18, comment: '税号' })
+  @Column({ nullable: true, length: 60, comment: '税号' })
   taxNumber: string;
 
   @Column({ nullable: true, comment: '注册地址' })
@@ -39,7 +39,7 @@ export class Customer {
   @Column({ nullable: true, comment: '实际负责人姓名' })
   actualResponsibleName: string;
 
-  @Column({ nullable: true, length: 20, comment: '实际负责人电话' })
+  @Column({ nullable: true, length: 60, comment: '实际负责人电话' })
   actualResponsiblePhone: string;
 
   @Column({ nullable: true, type: 'text', comment: '同宗企业' })
@@ -75,19 +75,19 @@ export class Customer {
   @Column({ nullable: true, type: 'decimal', precision: 15, scale: 2, comment: '已实缴金额' })
   paidInCapital: number;
 
-  @Column({ type: 'json', comment: '法定代表人身份证的扫描件或照片地址' })
+  @Column({ nullable: true, type: 'json', comment: '法定代表人身份证的扫描件或照片地址' })
   legalPersonIdImages: Record<string, any>;
 
-  @Column({ type: 'json', comment: '其他相关人员身份证的扫描件或照片地址' })
+  @Column({ nullable: true, type: 'json', comment: '其他相关人员身份证的扫描件或照片地址' })
   otherIdImages: Record<string, any>;
 
-  @Column({ type: 'json', comment: '企业营业执照的扫描件或照片地址' })
+  @Column({ nullable: true, type: 'json', comment: '企业营业执照的扫描件或照片地址' })
   businessLicenseImages: Record<string, any>;
 
-  @Column({ type: 'json', comment: '企业开户许可证的扫描件或照片地址' })
+  @Column({ nullable: true, type: 'json', comment: '企业开户许可证的扫描件或照片地址' })
   bankAccountLicenseImages: Record<string, any>;
 
-  @Column({ type: 'json', comment: '其他补充的扫描件或照片地址' })
+  @Column({ nullable: true,type: 'json', comment: '其他补充的扫描件或照片地址' })
   supplementaryImages: Record<string, any>;
 
   @Column({ nullable: true, comment: '行政许可类型' })
@@ -114,10 +114,10 @@ export class Customer {
   @Column({ nullable: true, comment: '法人姓名' })
   legalRepresentativeName: string;
 
-  @Column({ nullable: true, length: 20, comment: '法人电话' })
+  @Column({ nullable: true, length: 60, comment: '法人电话' })
   legalRepresentativePhone: string;
 
-  @Column({ nullable: true, length: 18, comment: '法人身份证号' })
+  @Column({ nullable: true, length: 100, comment: '法人身份证号' })
   legalRepresentativeId: string;
 
   @Column({ nullable: true, comment: '法人税务密码' })
@@ -126,10 +126,10 @@ export class Customer {
   @Column({ nullable: true, comment: '办税员' })
   taxOfficerName: string;
 
-  @Column({ nullable: true, length: 20, comment: '办税员电话' })
+  @Column({ nullable: true, length: 60, comment: '办税员电话' })
   taxOfficerPhone: string;
 
-  @Column({ nullable: true, length: 18, comment: '办税员身份证号' })
+  @Column({ nullable: true, length: 100, comment: '办税员身份证号' })
   taxOfficerId: string;
 
   @Column({ nullable: true, comment: '办税员税务密码' })
@@ -144,10 +144,10 @@ export class Customer {
   @Column({ nullable: true, comment: '开票员姓名' })
   invoiceOfficerName: string;
 
-  @Column({ nullable: true, length: 20, comment: '开票员电话' })
+  @Column({ nullable: true, length: 60, comment: '开票员电话' })
   invoiceOfficerPhone: string;
 
-  @Column({ nullable: true, length: 18, comment: '开票员身份证号' })
+  @Column({ nullable: true, length: 100, comment: '开票员身份证号' })
   invoiceOfficerId: string;
 
   @Column({ nullable: true, comment: '开票员税务密码' })
@@ -156,10 +156,10 @@ export class Customer {
   @Column({ nullable: true, comment: '财务负责人' })
   financialContactName: string;
 
-  @Column({ nullable: true, length: 20, comment: '财务负责人电话' })
+  @Column({ nullable: true, length: 60, comment: '财务负责人电话' })
   financialContactPhone: string;
 
-  @Column({ nullable: true, length: 18, comment: '财务负责人身份证号' })
+  @Column({ nullable: true, length: 100, comment: '财务负责人身份证号' })
   financialContactId: string;
 
   @Column({ nullable: true, comment: '财务负责人税务密码' })
@@ -174,7 +174,7 @@ export class Customer {
   @Column({ nullable: true, type: 'text', comment: '参保人员' })
   insuredPersonnel: string;
 
-  @Column({ nullable: true, length: 30, comment: '三方协议扣款账户' })
+  @Column({ nullable: true, length: 100, comment: '三方协议扣款账户' })
   tripartiteAgreementAccount: string;
 
   @Column({ nullable: true, comment: '个税密码' })
@@ -190,6 +190,7 @@ export class Customer {
   sealStorageNumber: string;
 
   @Column({ 
+    nullable: true,
     type: 'enum', 
     enum: EnterpriseStatus,
     default: EnterpriseStatus.ACTIVE,
@@ -198,6 +199,7 @@ export class Customer {
   enterpriseStatus: EnterpriseStatus;
 
   @Column({ 
+    nullable: true,
     type: 'enum', 
     enum: BusinessStatus,
     default: BusinessStatus.NORMAL,
@@ -205,10 +207,10 @@ export class Customer {
   })
   businessStatus: BusinessStatus;
 
-  @CreateDateColumn({ comment: '记录的创建时间' })
+  @CreateDateColumn({ nullable: true, comment: '记录的创建时间' })
   createTime: Date;
 
-  @UpdateDateColumn({ comment: '记录的最后更新时间' })
+  @UpdateDateColumn({ nullable: true, comment: '记录的最后更新时间' })
   updateTime: Date;
 
   @Column({ nullable: true, comment: '创建或最后修改该记录的用户' })
