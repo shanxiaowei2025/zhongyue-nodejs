@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config'; // 这是读取配置的工具
 import { TransformInterceptor } from './common/interceptors/transform.interceptor'; // 这是处理返回数据的工具
 import { HttpExceptionFilter } from './common/filters/http-exception.filter'; // 这是处理错误的工具
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'; // 这是生成API文档的工具
+import { BulkDeleteDto } from './modules/department/dto/department.dto';
 
 // 启动应用
 async function bootstrap() {
@@ -77,7 +78,10 @@ async function bootstrap() {
       .setVersion('1.0')
       .addBearerAuth() // 添加token认证
       .build();
-    const document = SwaggerModule.createDocument(app, config);
+    const document = SwaggerModule.createDocument(app, config, {
+      deepScanRoutes: true, // 确保深度扫描所有路由
+      extraModels: [BulkDeleteDto] // 确保包含额外模型
+    });
 
     // 设置文档访问路径为 /api/docs
     SwaggerModule.setup('api/docs', app, document, {

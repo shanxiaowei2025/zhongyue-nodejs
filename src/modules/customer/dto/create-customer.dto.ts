@@ -9,6 +9,11 @@ export class CreateCustomerDto {
   @IsOptional()
   companyName?: string;
 
+  @ApiPropertyOptional({ description: '归属地' })
+  @IsString()
+  @IsOptional()
+  location?: string;
+
   @ApiPropertyOptional({ description: '顾问会计' })
   @IsString()
   @IsOptional()

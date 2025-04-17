@@ -9,12 +9,18 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CustomerService } from './customer.service';
 import { CustomerController } from './customer.controller';
 import { Customer } from './entities/customer.entity';
-import { CustomerInitService } from './services/customer-init.service';
+import { User } from '../users/entities/user.entity';
+import { Role } from '../roles/entities/role.entity';
+import { Permission } from '../permissions/entities/permission.entity';
+import { Department } from '../department/entities/department.entity';
+import { CustomerPermissionService } from './services/customer-permission.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Customer])], // 导入客户数据表
-  controllers: [CustomerController],               // 处理HTTP请求的控制器
-  providers: [CustomerService, CustomerInitService], // 提供业务逻辑的服务
-  exports: [CustomerService],                       // 允许其他模块使用客户服务
+  imports: [
+    TypeOrmModule.forFeature([Customer, User, Role, Permission, Department]),
+  ],
+  controllers: [CustomerController],
+  providers: [CustomerService, CustomerPermissionService],
+  exports: [CustomerService],
 })
 export class CustomerModule {} 

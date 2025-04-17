@@ -9,6 +9,8 @@ import { EnterpriseStatus, TaxRegistrationType, BusinessStatus } from '../enums/
 @Injectable()
 export class CustomerInitService implements OnModuleInit {
   private readonly logger = new Logger(CustomerInitService.name);
+  // 定义系统管理员ID为1，通常第一个用户是超级管理员
+  private readonly ADMIN_USER_ID = 1;
 
   constructor(private customerService: CustomerService) {}
 
@@ -20,6 +22,7 @@ export class CustomerInitService implements OnModuleInit {
     try {
       const sampleCustomer: CreateCustomerDto = {
         companyName: '示例企业有限公司',
+        location: '上海市浦东新区',
         consultantAccountant: '王五', // 原来的chiefAccountant改为顾问会计
         bookkeepingAccountant: '赵六', // 原来的responsibleAccountant改为记账会计
         enterpriseType: '有限责任公司',
@@ -99,10 +102,10 @@ export class CustomerInitService implements OnModuleInit {
       const existingCustomer = await this.customerService.findAll({
         keyword: sampleCustomer.companyName,
         taxNumber: sampleCustomer.taxNumber
-      });
+      }, this.ADMIN_USER_ID);
 
       if (existingCustomer.total === 0) {
-        await this.customerService.create(sampleCustomer);
+        await this.customerService.create(sampleCustomer, this.ADMIN_USER_ID);
         this.logger.log('示例客户信息已初始化');
       }
     } catch (error) {

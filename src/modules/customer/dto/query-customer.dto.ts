@@ -73,4 +73,9 @@ export class QueryCustomerDto {
   @IsOptional()
   @IsString()
   remarks?: string;
+
+  @ApiPropertyOptional({ description: '归属地' })
+  @IsOptional()
+  @IsString()
+  location?: string;
 }

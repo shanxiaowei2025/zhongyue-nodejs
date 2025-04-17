@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '../../common/swagger';
+import { Public } from './decorators/public.decorator';
 
 @ApiTags('认证')
 @Controller('auth')
@@ -11,6 +12,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   // 用户登录
+  @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '用户登录', description: '使用用户名和密码登录系统' })

@@ -19,18 +19,20 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
+    // 验证用户是否存在
     const user = await this.usersService.findById(payload.sub);
     if (!user || !user.isActive) {
       throw new UnauthorizedException('用户不存在或已被禁用');
     }
     
-    // 确保roles是数组
-    const roles = Array.isArray(user.roles) ? user.roles : (user.roles ? [user.roles] : ['user']);
+    // 使用JWT token中的角色信息，而不是从数据库中获取
+    // 这样可以确保角色信息不会被篡改
+    const roles = payload.roles || ['user'];
     
     return {
       id: user.id,
       username: user.username,
-      roles: roles,
+      roles: roles,  // 使用token中的角色，而不是数据库中的
       phone: user.phone,
       email: user.email,
     };

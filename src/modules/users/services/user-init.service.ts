@@ -8,26 +8,29 @@ export class UserInitService implements OnModuleInit {
   constructor(private usersService: UsersService) {}
 
   async onModuleInit() {
-    await this.initAdminUser();
+    setTimeout(async () => {
+      await this.initAdminUser();
+    }, 5000);
   }
 
   private async initAdminUser() {
     try {
-      const adminUsername = '管理员';
+      const adminUsername = '超级管理员';
       const existingAdmin = await this.usersService.findByUsername(adminUsername);
       
       if (!existingAdmin) {
-        await this.usersService.createUser({
+        await this.usersService.create({
           username: adminUsername,
           password: 'ls231007',  // 初始密码
-          roles: ['admin', 'user'],  // 使用数组格式
+          roles: [ "super_admin"],  // 使用数组格式
           isActive: true,
-          email: 'admin@example.com'
+          email: 'super_admin@example.com',
+          dept_id: 2
         });
-        this.logger.log('管理员账户已初始化');
+        this.logger.log('超级管理员账户已初始化');
       }
     } catch (error) {
-      this.logger.error('初始化管理员账户失败', error);
+      this.logger.error('初始化超级管理员账户失败', error);
     }
   }
 }

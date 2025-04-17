@@ -6,8 +6,10 @@ import { PassportModule } from '@nestjs/passport';  // 用于处理认证的工�
 import { ConfigModule, ConfigService } from '@nestjs/config';  // 用于读取配置
 import { AuthService } from './auth.service';  // 认证相关的业务逻辑
 import { JwtStrategy } from './strategies/jwt.strategy';  // JWT认证策略
-import { UsersModule } from '../users/users.module';  // 用户模块
 import { AuthController } from './auth.controller';  // 处理认证相关的请求
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
@@ -23,9 +25,9 @@ import { AuthController } from './auth.controller';  // 处理认证相关的请
       inject: [ConfigService],  // 注入配置服务
       useFactory: (configService: ConfigService) => ({
         // 从配置文件读取JWT密钥
-        secret: configService.get('jwt.secret'),
+        secret: configService.get('JWT_SECRET'),
         // 设置token过期时间
-        signOptions: { expiresIn: configService.get('jwt.expiresIn') },
+        signOptions: { expiresIn: configService.get('JWT_EXPIRES_IN', '24h') },
       }),
     }),
   ],
@@ -34,12 +36,14 @@ import { AuthController } from './auth.controller';  // 处理认证相关的请
   providers: [
     AuthService,    // 处理登录、注册等业务
     JwtStrategy,    // 处理JWT验证的策略
+    JwtAuthGuard,
+    RolesGuard,
   ],
 
   // 5. 声明控制器（处理HTTP请求）
   controllers: [AuthController],
 
   // 6. 导出服务（允许其他模块使用认证服务）
-  exports: [AuthService],
+  exports: [AuthService, JwtAuthGuard, RolesGuard],
 })
 export class AuthModule {}

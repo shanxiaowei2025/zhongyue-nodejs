@@ -15,6 +15,10 @@ export class Customer {
   @Column({ nullable: true, comment: '企业名称' })
   companyName: string;
 
+  // 归属地
+  @Column({ nullable: true, comment: '归属地' })
+  location: string;
+
   @Column({ nullable: true, comment: '顾问会计' })
   consultantAccountant: string;
 

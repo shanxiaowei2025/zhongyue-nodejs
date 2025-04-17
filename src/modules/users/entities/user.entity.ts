@@ -1,8 +1,9 @@
 // 用户实体类，定义用户表的结构
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, BeforeInsert } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, BeforeInsert, ManyToOne, JoinColumn } from 'typeorm';
 import { Exclude } from 'class-transformer';
 import * as bcrypt from 'bcryptjs';
 import { ApiProperty, ApiHideProperty } from '../../../common/swagger';
+import { Department } from 'src/modules/department/entities/department.entity';
 
 @Entity({ name: 'sys_user' }) // 数据库表名为 sys_user
 export class User {
@@ -41,18 +42,23 @@ export class User {
     description: '角色列表', 
     example: ['admin', 'user'],
     type: 'array',
-    items: {
-      type: 'string'
-    }
+    items: { type: 'string' }
   })
-  // 角色列表，JSON数组格式
   @Column({ 
     type: 'json', 
-    nullable: true, 
-    comment: '角色列表，JSON数组格式' 
+    nullable: true,
+    comment: '用户角色列表，JSON格式'
   })
   roles: string[];
 
+  @ApiProperty({ description: '部门ID', required: true, example: 1 })
+  @Column({ comment: '用户所属部门ID' })
+  dept_id: number;
+
+  @ManyToOne(() => Department, { nullable: true })
+  @JoinColumn({ name: 'dept_id' })
+  department: Department;
+  
   @ApiProperty({ description: '创建时间' })
   // 创建时间，自动生成
   @CreateDateColumn({ comment: '创建时间' })
@@ -72,7 +78,8 @@ export class User {
   // 在插入数据之前，设置默认角色
   @BeforeInsert()
   setDefaultRoles() {
-    if (!this.roles || this.roles.length === 0) {
+    // 确保roles是有效的数组
+    if (!this.roles || !Array.isArray(this.roles) || this.roles.length === 0) {
       this.roles = ['user'];
     }
   }
@@ -80,5 +87,10 @@ export class User {
   // 验证密码
   async validatePassword(password: string): Promise<boolean> {
     return bcrypt.compare(password, this.password);
+  }
+
+  // 检查用户是否拥有指定角色
+  hasRole(roleName: string): boolean {
+    return this.roles && this.roles.includes(roleName);
   }
 }
