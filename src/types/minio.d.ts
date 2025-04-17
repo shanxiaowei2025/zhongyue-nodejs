@@ -23,5 +23,6 @@ declare module 'minio' {
     ): Promise<string>;
     removeObject(bucketName: string, objectName: string): Promise<void>;
     listObjects(bucketName: string, prefix?: string, recursive?: boolean): any;
+    setBucketPolicy(bucketName: string, policy: string): Promise<void>;
   }
 }

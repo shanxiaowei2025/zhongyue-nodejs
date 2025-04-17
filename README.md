@@ -89,7 +89,16 @@ docker-compose -f docker-compose.prod.yml up -d
 - **上传文件**: POST /storage/upload
 - **获取文件列表**: GET /storage/files
 - **获取文件URL**: GET /storage/files/:fileName
+  - 返回永久有效的文件访问URL，无过期时间
+  - 系统自动配置了MinIO存储桶的公共读取策略，确保文件可通过URL长期访问
 - **删除文件**: DELETE /storage/files/:fileName
+
+### MinIO存储配置
+
+MinIO服务配置了以下特性：
+1. 存储桶具有公共读取权限，所有上传的文件可通过URL直接访问
+2. 文件URL永久有效，无过期时间
+3. 支持路径样式和子域名样式的URL格式
 
 ## 贡献指南
 

@@ -153,6 +153,28 @@ export class StorageService implements OnModuleInit {
       } else {
         this.logger.log(`存储桶 ${this.bucketName} 已存在`);
       }
+
+      // 设置存储桶策略为公共读取
+      const publicPolicy = {
+        Version: '2012-10-17',
+        Statement: [
+          {
+            Effect: 'Allow',
+            Principal: {
+              AWS: ['*'],
+            },
+            Action: ['s3:GetObject'],
+            Resource: [`arn:aws:s3:::${this.bucketName}/*`],
+          },
+        ],
+      };
+
+      this.logger.log(`正在设置存储桶 ${this.bucketName} 的公共访问策略...`);
+      await this.minioClient.setBucketPolicy(
+        this.bucketName,
+        JSON.stringify(publicPolicy),
+      );
+      this.logger.log(`存储桶 ${this.bucketName} 公共访问策略设置成功`);
     } catch (error) {
       this.logger.error(`初始化存储桶失败: ${error.message}`, error.stack);
       throw error;
@@ -208,12 +230,27 @@ export class StorageService implements OnModuleInit {
     await this.checkConnection();
 
     try {
-      const url = await this.minioClient.presignedGetObject(
-        this.bucketName,
-        fileName,
-        60 * 60,
-      );
-      this.logger.log(`获取文件URL成功: ${fileName}, 过期时间: 1小时`);
+      // 获取MinIO配置
+      const minioConfig = this.configService.get('minio');
+
+      // 构建永久有效的URL
+      const isSecure = minioConfig.useSSL;
+      const protocol = isSecure ? 'https' : 'http';
+      const port =
+        minioConfig.port !== 80 && minioConfig.port !== 443
+          ? `:${minioConfig.port}`
+          : '';
+
+      let url;
+      if (minioConfig.pathStyle) {
+        // 对于使用路径样式的MinIO服务器
+        url = `${protocol}://${minioConfig.endPoint}${port}/${this.bucketName}/${encodeURIComponent(fileName)}`;
+      } else {
+        // 对于使用子域名样式的MinIO服务器
+        url = `${protocol}://${this.bucketName}.${minioConfig.endPoint}${port}/${encodeURIComponent(fileName)}`;
+      }
+
+      this.logger.log(`获取文件永久URL成功: ${fileName}, URL: ${url}`);
       return url;
     } catch (error) {
       this.logger.error(`获取文件URL失败: ${error.message}`, error.stack);
