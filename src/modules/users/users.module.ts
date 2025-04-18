@@ -5,7 +5,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';  // 数据库连接工具
 import { User } from './entities/user.entity';     // 用户数据结构
 import { UsersService } from './users.service';    // 用户相关的业务逻辑
 import { UsersController } from './users.controller';
-import { UserInitService } from './services/user-init.service';  // 用户初始化服务
 import { Department } from '../department/entities/department.entity';
 import { DepartmentController } from '../department/controllers/department.controller';
 import { DepartmentService } from '../department/services/department.service';
@@ -23,8 +22,7 @@ import { PermissionsModule } from '../permissions/permissions.module'; // 导入
     DepartmentController
   ],
   providers: [
-    UsersService, 
-    UserInitService,
+    UsersService,
     DepartmentService
   ],
   exports: [UsersService, DepartmentService],                      // 允许其他模块使用用户服务

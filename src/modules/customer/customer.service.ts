@@ -56,13 +56,10 @@ export class CustomerService {
     // 获取用户的角色信息
     const userRoles = user.roles || [];
     
-    // 根据用户角色设置相应字段
-    if (userRoles.includes('sales_specialist') || 
-        userRoles.includes('register_specialist') || 
-        userRoles.includes('admin_specialist')) {
-      customer.submitter = user.username;
-    }
+    // 无论什么角色，submitter字段都设置为当前用户名
+    customer.submitter = user.username;
     
+    // 根据用户角色设置其他相应字段
     if (userRoles.includes('consultantAccountant')) {
       customer.consultantAccountant = user.username;
     }

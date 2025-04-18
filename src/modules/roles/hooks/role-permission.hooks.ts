@@ -5,7 +5,6 @@ import { EntityManager, DataSource, EntitySubscriberInterface, InsertEvent, Upda
 import { Role } from '../entities/role.entity';
 import { Permission } from '../../permissions/entities/permission.entity';
 import { RoleService } from '../services/role.service';
-import { initialPermissions } from '../../permissions/data/initial-permissions';
 
 @Injectable()
 export class RolePermissionHooks implements OnModuleInit, EntitySubscriberInterface<Role> {
@@ -46,16 +45,7 @@ export class RolePermissionHooks implements OnModuleInit, EntitySubscriberInterf
         .distinct(true)
         .groupBy('permission.page_name, permission.permission_name, permission.description')
         .getRawMany();
-      
-      // 如果数据库中没有权限记录，则使用初始权限数据
-      if (uniquePermissions.length === 0) {
-        this.logger.log('数据库中没有权限记录，将使用初始权限数据');
-        uniquePermissions = initialPermissions.map(p => ({
-          page_name: p.page_name,
-          permission_name: p.permission_name,
-          description: p.description
-        }));
-      }
+    
       
       if (uniquePermissions.length === 0) {
         this.logger.warn('没有找到任何权限定义，无法为角色创建权限记录');

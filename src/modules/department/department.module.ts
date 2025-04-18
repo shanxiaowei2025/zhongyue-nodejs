@@ -3,7 +3,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Department } from './entities/department.entity';
 import { DepartmentController } from './controllers/department.controller';
 import { DepartmentService } from './services/department.service';
-import { DepartmentInitService } from './services/department-init.service';
 import { User } from '../users/entities/user.entity';
 
 @Module({
@@ -12,8 +11,7 @@ import { User } from '../users/entities/user.entity';
   ],
   controllers: [DepartmentController],
   providers: [
-    DepartmentService,
-    DepartmentInitService,
+    DepartmentService
   ],
   exports: [DepartmentService],
 })

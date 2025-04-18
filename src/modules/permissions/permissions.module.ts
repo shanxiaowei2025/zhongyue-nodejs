@@ -5,7 +5,6 @@ import { PermissionService } from './services/permission.service';
 import { Permission } from './entities/permission.entity';
 import { Role } from '../roles/entities/role.entity';
 import { RolesModule } from '../roles/roles.module';
-import { PermissionInitService } from './services/permission-init.service';
 import { User } from '../users/entities/user.entity';
 
 @Module({
@@ -16,7 +15,6 @@ import { User } from '../users/entities/user.entity';
   controllers: [PermissionController],
   providers: [
     PermissionService,
-    PermissionInitService,
   ],
   exports: [PermissionService],
 })
