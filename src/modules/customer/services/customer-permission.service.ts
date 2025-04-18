@@ -28,14 +28,11 @@ export class CustomerPermissionService {
 
   // 获取用户的所有权限名称
   async getUserPermissions(userId: number): Promise<string[]> {
-    console.log(`获取用户 ${userId} 的权限`);
     
     // 查询用户信息获取角色
     const user = await this.userRepository.findOne({ where: { id: userId } });
-    console.log(`用户角色: ${JSON.stringify(user?.roles)}`);
     
     if (!user || !user.roles || user.roles.length === 0) {
-      console.log('用户没有角色，返回空权限');
       return [];
     }
   
@@ -43,8 +40,7 @@ export class CustomerPermissionService {
     const roles = await this.roleRepository.find({
       where: { code: In(user.roles) },
     });
-    
-    console.log(`找到角色: ${JSON.stringify(roles.map(r => r.name))}`);
+  
   
     if (!roles || roles.length === 0) {
       return [];
@@ -62,8 +58,6 @@ export class CustomerPermissionService {
     const enabledPermissions = permissions
       .filter(p => p.permission_value === true)
       .map(p => p.permission_name);
-    
-    console.log(`有效权限: ${JSON.stringify(enabledPermissions)}`);
     
     return enabledPermissions;
   }
@@ -91,12 +85,9 @@ export class CustomerPermissionService {
 
     const permissions = await this.getUserPermissions(userId);
     
-    // 检查是否是超级管理员
-    const isSuperAdmin = user.roles.includes('super_admin');
-    
-    // 即使是超级管理员，也必须有明确的权限才能查看所有数据
+    // 优先级处理：如果有查看所有权限，直接返回空对象（不添加任何过滤条件）
     if (permissions.includes('customer_date_view_all')) {
-      return {};
+      return {}; 
     }
 
     // 存储所有可能的过滤条件
