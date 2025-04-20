@@ -73,8 +73,8 @@ import { Department } from './modules/department/entities/department.entity';
         password: configService.get('DB_PASSWORD', ''),
         database: configService.get('DB_DATABASE', 'zhongyue'),
         entities: [
-          User, 
-          Customer, 
+          User,
+          Customer,
           // Contract,
           Role,
           Permission,
@@ -92,7 +92,7 @@ import { Department } from './modules/department/entities/department.entity';
     PermissionsModule, // 新增
     AuthModule, // 认证模块：处理登录、注册、权限
     CustomerModule, // 客户模块：处理客户相关的功能
-    StorageModule,
+    // StorageModule,
   ],
   controllers: [AppController], // 控制器：负责接收请求，像前台接待
   providers: [

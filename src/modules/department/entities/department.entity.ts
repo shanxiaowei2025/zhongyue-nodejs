@@ -1,4 +1,12 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+} from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 
 @Entity({ name: 'sys_department' })
@@ -12,11 +20,18 @@ export class Department {
   name: string;
 
   @ApiProperty({ description: '父部门ID' })
-  @ManyToOne(() => Department, department => department.children, { nullable: true, onDelete: 'SET NULL' })
+  @Column({ name: 'parent_id', nullable: true })
+  parent_id: number;
+
+  @ApiProperty({ description: '父部门关系' })
+  @ManyToOne(() => Department, (department) => department.children, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
   @JoinColumn({ name: 'parent_id' })
   parent: Department;
 
-  @OneToMany(() => Department, department => department.parent)
+  @OneToMany(() => Department, (department) => department.parent)
   children: Department[];
 
   @ApiProperty({ description: '排序' })
