@@ -115,7 +115,11 @@ export class CustomerPermissionService {
         relations: ['parent'],
       });
 
-      if (department?.parent) {
+      if (department.type === 2) {
+        conditions.push({
+          location: department.name,
+        });
+      } else if (department?.parent) {
         conditions.push({
           location: department.parent.name,
         });
