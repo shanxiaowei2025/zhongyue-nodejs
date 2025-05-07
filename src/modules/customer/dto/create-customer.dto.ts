@@ -1,7 +1,57 @@
 // 创建客户时的数据结构
-import { IsString, IsOptional, IsNumber, IsDate, IsObject, IsEnum, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsDate, IsObject, IsEnum, IsBoolean, IsArray, ValidateNested } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { EnterpriseStatus, TaxRegistrationType, BusinessStatus } from '../enums/customer.enum';
+import { Type } from 'class-transformer';
+
+// 已实缴金额数据结构
+export class PaidInCapitalItemDto {
+  @ApiProperty({ description: '姓名' })
+  @IsString()
+  name: string;
+
+  @ApiProperty({ description: '出资日期' })
+  @IsDate()
+  contributionDate: Date;
+
+  @ApiProperty({ description: '出资金额' })
+  @IsNumber()
+  amount: number;
+
+  @ApiProperty({ description: '图片列表' })
+  @IsArray()
+  images: string[];
+}
+
+// 行政许可数据结构
+export class AdministrativeLicenseItemDto {
+  @ApiProperty({ description: '行政许可类型' })
+  @IsString()
+  licenseType: string;
+
+  @ApiProperty({ description: '行政许可开始日期' })
+  @IsDate()
+  startDate: Date;
+
+  @ApiProperty({ description: '行政许可到期日期' })
+  @IsDate()
+  expiryDate: Date;
+
+  @ApiProperty({ description: '图片列表' })
+  @IsArray()
+  images: string[];
+}
+
+// 实际负责人数据结构
+export class ActualResponsibleItemDto {
+  @ApiProperty({ description: '实际负责人姓名' })
+  @IsString()
+  name: string;
+
+  @ApiProperty({ description: '实际负责人电话' })
+  @IsString()
+  phone: string;
+}
 
 export class CreateCustomerDto {
   @ApiProperty({ description: '企业名称' })
@@ -23,11 +73,21 @@ export class CreateCustomerDto {
   @IsString()
   @IsOptional()
   bookkeepingAccountant?: string;
+  
+  @ApiPropertyOptional({ description: '开票员' })
+  @IsString()
+  @IsOptional()
+  invoiceOfficer?: string;
 
   @ApiPropertyOptional({ description: '企业类型' })
   @IsString()
   @IsOptional()
   enterpriseType?: string;
+  
+  @ApiPropertyOptional({ description: '统一社会信用代码' })
+  @IsString()
+  @IsOptional()
+  unifiedSocialCreditCode?: string;
 
   @ApiPropertyOptional({ description: '税号' })
   @IsString()
@@ -49,15 +109,11 @@ export class CreateCustomerDto {
   @IsOptional()
   taxBureau?: string;
 
-  @ApiPropertyOptional({ description: '实际负责人姓名' })
+  
+  @ApiPropertyOptional({ description: '实际负责人(备注)' })
   @IsString()
   @IsOptional()
-  actualResponsibleName?: string;
-
-  @ApiPropertyOptional({ description: '实际负责人电话' })
-  @IsString()
-  @IsOptional()
-  actualResponsiblePhone?: string;
+  actualResponsibleRemark?: string;
 
   @ApiPropertyOptional({ description: '同宗企业' })
   @IsString()
@@ -93,6 +149,11 @@ export class CreateCustomerDto {
   @IsString()
   @IsOptional()
   businessPublicationPassword?: string;
+  
+  @ApiPropertyOptional({ description: '成立日期' })
+  @IsDate()
+  @IsOptional()
+  establishmentDate?: Date;
 
   @ApiPropertyOptional({ description: '营业执照期限' })
   @IsDate()
@@ -108,41 +169,31 @@ export class CreateCustomerDto {
   @IsDate()
   @IsOptional()
   capitalContributionDeadline?: Date;
-
-  @ApiPropertyOptional({ description: '已实缴金额' })
-  @IsNumber()
-  @IsOptional()
-  paidInCapital?: number;
-
-  @ApiProperty({ description: '法定代表人身份证的扫描件或照片地址' })
-  @IsObject()
-  legalPersonIdImages: Record<string, any>;
   
-  @ApiProperty({ description: '其他相关人员身份证的扫描件或照片地址' })
-  @IsObject()
-  otherIdImages: Record<string, any>;
-  
-  @ApiProperty({ description: '企业营业执照的扫描件或照片地址' })
-  @IsObject()
-  businessLicenseImages: Record<string, any>;
-  
-  @ApiProperty({ description: '企业开户许可证的扫描件或照片地址' })
-  @IsObject()
-  bankAccountLicenseImages: Record<string, any>;
-  
-  @ApiProperty({ description: '其他补充的扫描件或照片地址' })
-  @IsObject()
-  supplementaryImages: Record<string, any>;
-
-  @ApiPropertyOptional({ description: '行政许可类型' })
-  @IsString()
-  @IsOptional()
-  administrativeLicenseType?: string;
-
-  @ApiPropertyOptional({ description: '行政许可到期日期' })
+  @ApiPropertyOptional({ description: '认缴到期日期2' })
   @IsDate()
   @IsOptional()
-  administrativeLicenseExpiryDate?: Date;
+  capitalContributionDeadline2?: Date;
+
+  @ApiPropertyOptional({ 
+    description: '已实缴金额，数组对象[{姓名, 出资日期, 出资金额, 图片}]',
+    type: [PaidInCapitalItemDto]
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PaidInCapitalItemDto)
+  @IsOptional()
+  paidInCapital?: PaidInCapitalItemDto[];
+  
+  @ApiPropertyOptional({ 
+    description: '行政许可，数组对象[{行政许可类型, 行政许可开始日期, 行政许可到期日期, 图片}]',
+    type: [AdministrativeLicenseItemDto]
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AdministrativeLicenseItemDto)
+  @IsOptional()
+  administrativeLicense?: AdministrativeLicenseItemDto[];
 
   @ApiPropertyOptional({ description: '对公开户行' })
   @IsString()
@@ -153,6 +204,26 @@ export class CreateCustomerDto {
   @IsString()
   @IsOptional()
   bankAccountNumber?: string;
+  
+  @ApiPropertyOptional({ description: '基本存款账户编号' })
+  @IsString()
+  @IsOptional()
+  basicDepositAccountNumber?: string;
+  
+  @ApiPropertyOptional({ description: '一般户开户行' })
+  @IsString()
+  @IsOptional()
+  generalAccountBank?: string;
+  
+  @ApiPropertyOptional({ description: '一般户账号' })
+  @IsString()
+  @IsOptional()
+  generalAccountNumber?: string;
+  
+  @ApiPropertyOptional({ description: '一般户开户时间' })
+  @IsDate()
+  @IsOptional()
+  generalAccountOpeningDate?: Date;
 
   @ApiPropertyOptional({ description: '对公开户时间' })
   @IsDate()
@@ -178,6 +249,11 @@ export class CreateCustomerDto {
   @IsString()
   @IsOptional()
   legalRepresentativePhone?: string;
+  
+  @ApiPropertyOptional({ description: '法人电话2' })
+  @IsString()
+  @IsOptional()
+  legalRepresentativePhone2?: string;
 
   @ApiPropertyOptional({ description: '法人身份证号' })
   @IsString()
@@ -324,4 +400,14 @@ export class CreateCustomerDto {
   @IsString()
   @IsOptional()
   remarks?: string;
+
+  @ApiPropertyOptional({ 
+    description: '实际负责人，数组对象[{姓名, 电话}]',
+    type: [ActualResponsibleItemDto]
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ActualResponsibleItemDto)
+  @IsOptional()
+  actualResponsibles?: ActualResponsibleItemDto[];
 }

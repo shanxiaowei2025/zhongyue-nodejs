@@ -49,6 +49,16 @@ export class QueryCustomerDto {
   @IsEnum(BusinessStatus)
   businessStatus?: BusinessStatus;
 
+  @ApiPropertyOptional({ description: '出资人姓名关键词' })
+  @IsOptional()
+  @IsString()
+  contributorName?: string;
+
+  @ApiPropertyOptional({ description: '行政许可类型关键词' })
+  @IsOptional()
+  @IsString()
+  licenseType?: string;
+
   @ApiPropertyOptional({ description: '开始日期' })
   @IsOptional()
   @IsDate()

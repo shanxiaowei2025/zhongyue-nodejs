@@ -15,7 +15,6 @@ export class Customer {
   @Column({ nullable: true, comment: '企业名称' })
   companyName: string;
 
-  // 归属地
   @Column({ nullable: true, comment: '归属地' })
   location: string;
 
@@ -25,8 +24,14 @@ export class Customer {
   @Column({ nullable: true, comment: '记账会计' })
   bookkeepingAccountant: string;
 
+  @Column({ nullable: true, comment: '开票员' })
+  invoiceOfficer: string;
+
   @Column({ nullable: true, comment: '企业类型' })
   enterpriseType: string;
+
+  @Column({ nullable: true, length: 100, comment: '统一社会信用代码' })
+  unifiedSocialCreditCode: string;
 
   @Column({ nullable: true, length: 60, comment: '税号' })
   taxNumber: string;
@@ -40,11 +45,18 @@ export class Customer {
   @Column({ nullable: true, comment: '所属分局' })
   taxBureau: string;
 
-  @Column({ nullable: true, comment: '实际负责人姓名' })
-  actualResponsibleName: string;
+  @Column({ 
+    nullable: true, 
+    type: 'json', 
+    comment: '实际负责人，数组对象[{姓名, 电话}]'
+  })
+  actualResponsibles: Array<{
+    name: string;
+    phone: string;
+  }>;
 
-  @Column({ nullable: true, length: 60, comment: '实际负责人电话' })
-  actualResponsiblePhone: string;
+  @Column({ nullable: true, comment: '实际负责人(备注)' })
+  actualResponsibleRemark: string;
 
   @Column({ nullable: true, type: 'text', comment: '同宗企业' })
   affiliatedEnterprises: string;
@@ -67,6 +79,9 @@ export class Customer {
   @Column({ nullable: true, comment: '工商公示密码' })
   businessPublicationPassword: string;
 
+  @Column({ nullable: true, type: 'date', comment: '成立日期' })
+  establishmentDate: Date;
+
   @Column({ nullable: true, type: 'date', comment: '营业执照期限' })
   licenseExpiryDate: Date;
 
@@ -76,35 +91,50 @@ export class Customer {
   @Column({ nullable: true, type: 'date', comment: '认缴到期日期' })
   capitalContributionDeadline: Date;
 
-  @Column({ nullable: true, type: 'decimal', precision: 15, scale: 2, comment: '已实缴金额' })
-  paidInCapital: number;
+  @Column({ nullable: true, type: 'date', comment: '认缴到期日期2' })
+  capitalContributionDeadline2: Date;
 
-  @Column({ nullable: true, type: 'json', comment: '法定代表人身份证的扫描件或照片地址' })
-  legalPersonIdImages: Record<string, any>;
+  @Column({ 
+    nullable: true, 
+    type: 'json', 
+    comment: '已实缴金额，数组对象[{姓名, 出资日期, 出资金额, 图片}]'
+  })
+  paidInCapital: Array<{
+    name: string;
+    contributionDate: Date;
+    amount: number;
+    images: string[];
+  }>;
 
-  @Column({ nullable: true, type: 'json', comment: '其他相关人员身份证的扫描件或照片地址' })
-  otherIdImages: Record<string, any>;
-
-  @Column({ nullable: true, type: 'json', comment: '企业营业执照的扫描件或照片地址' })
-  businessLicenseImages: Record<string, any>;
-
-  @Column({ nullable: true, type: 'json', comment: '企业开户许可证的扫描件或照片地址' })
-  bankAccountLicenseImages: Record<string, any>;
-
-  @Column({ nullable: true,type: 'json', comment: '其他补充的扫描件或照片地址' })
-  supplementaryImages: Record<string, any>;
-
-  @Column({ nullable: true, comment: '行政许可类型' })
-  administrativeLicenseType: string;
-
-  @Column({ nullable: true, type: 'date', comment: '行政许可到期日期' })
-  administrativeLicenseExpiryDate: Date;
+  @Column({ 
+    nullable: true, 
+    type: 'json', 
+    comment: '行政许可，数组对象[{行政许可类型, 行政许可开始日期, 行政许可到期日期, 图片}]'
+  })
+  administrativeLicense: Array<{
+    licenseType: string;
+    startDate: Date;
+    expiryDate: Date;
+    images: string[];
+  }>;
 
   @Column({ nullable: true, comment: '对公开户行' })
   publicBank: string;
 
-  @Column({ nullable: true, length: 30, comment: '开户行账号' })
+  @Column({ nullable: true, length: 255, comment: '开户行账号' })
   bankAccountNumber: string;
+
+  @Column({ nullable: true, comment: '基本存款账户编号' })
+  basicDepositAccountNumber: string;
+
+  @Column({ nullable: true, comment: '一般户开户行' })
+  generalAccountBank: string;
+
+  @Column({ nullable: true, length: 255, comment: '一般户账号' })
+  generalAccountNumber: string;
+
+  @Column({ nullable: true, type: 'date', comment: '一般户开户时间' })
+  generalAccountOpeningDate: Date;
 
   @Column({ nullable: true, type: 'date', comment: '对公开户时间' })
   publicBankOpeningDate: Date;
@@ -120,6 +150,9 @@ export class Customer {
 
   @Column({ nullable: true, length: 60, comment: '法人电话' })
   legalRepresentativePhone: string;
+
+  @Column({ nullable: true, length: 60, comment: '法人电话2' })
+  legalRepresentativePhone2: string;
 
   @Column({ nullable: true, length: 100, comment: '法人身份证号' })
   legalRepresentativeId: string;

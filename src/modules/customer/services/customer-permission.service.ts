@@ -139,9 +139,9 @@ export class CustomerPermissionService {
           consultantAccountant: user.username,
         });
       }
-      if (roleCodes.includes('invoiceOfficerName')) {
+      if (roleCodes.includes('invoiceOfficer')) {
         conditions.push({
-          invoiceOfficerName: user.username,
+          invoiceOfficer: user.username,
         });
       }
     }
@@ -159,9 +159,9 @@ export class CustomerPermissionService {
       });
     }
 
-    if (roleCodes.includes('invoiceOfficerName')) {
+    if (roleCodes.includes('invoiceOfficer')) {
       conditions.push({
-        invoiceOfficerName: user.username,
+        invoiceOfficer: user.username,
       });
     }
 

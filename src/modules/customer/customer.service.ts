@@ -73,8 +73,8 @@ export class CustomerService {
       customer.bookkeepingAccountant = user.username;
     }
 
-    if (userRoles.includes('invoiceOfficerName')) {
-      customer.invoiceOfficerName = user.username;
+    if (userRoles.includes('invoiceOfficer')) {
+      customer.invoiceOfficer = user.username;
     }
 
     if (userRoles.includes('branch_manager') && user.dept_id) {
@@ -106,6 +106,8 @@ export class CustomerService {
       location,
       startDate,
       endDate,
+      contributorName,
+      licenseType,
       page = 1,
       pageSize = 10,
     } = query;
@@ -181,6 +183,27 @@ export class CustomerService {
       queryBuilder.andWhere('customer.location LIKE :location', {
         location: `%${location}%`,
       });
+    }
+
+    // 添加对JSON字段的搜索条件
+    if (contributorName) {
+      // MySQL中搜索JSON数组中的对象字段
+      queryBuilder.andWhere(
+        `JSON_SEARCH(JSON_EXTRACT(customer.paidInCapital, '$[*].name'), 'one', :contributorName) IS NOT NULL`,
+        {
+          contributorName: `%${contributorName}%`,
+        },
+      );
+    }
+
+    if (licenseType) {
+      // MySQL中搜索JSON数组中的对象字段
+      queryBuilder.andWhere(
+        `JSON_SEARCH(JSON_EXTRACT(customer.administrativeLicense, '$[*].licenseType'), 'one', :licenseType) IS NOT NULL`,
+        {
+          licenseType: `%${licenseType}%`,
+        },
+      );
     }
 
     if (startDate && endDate) {
