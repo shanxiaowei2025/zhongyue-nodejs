@@ -106,6 +106,21 @@ export class Customer {
     images: string[];
   }>;
 
+  @Column({ nullable: true, type: 'json', comment: '法定代表人身份证的扫描件或照片地址' })
+  legalPersonIdImages: Record<string, any>;
+
+  @Column({ nullable: true, type: 'json', comment: '其他相关人员身份证的扫描件或照片地址' })
+  otherIdImages: Record<string, any>;
+
+  @Column({ nullable: true, type: 'json', comment: '企业营业执照的扫描件或照片地址' })
+  businessLicenseImages: Record<string, any>;
+
+  @Column({ nullable: true, type: 'json', comment: '企业开户许可证的扫描件或照片地址' })
+  bankAccountLicenseImages: Record<string, any>;
+
+  @Column({ nullable: true,type: 'json', comment: '其他补充的扫描件或照片地址' })
+  supplementaryImages: Record<string, any>;
+
   @Column({ 
     nullable: true, 
     type: 'json', 

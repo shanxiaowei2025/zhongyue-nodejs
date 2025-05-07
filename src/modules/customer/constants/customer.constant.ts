@@ -21,8 +21,3 @@ export const TAX_REGISTRATION_TYPES = { // 税号类型
   SPECIAL: 'special'
 };
 
-export const ENTERPRISE_TYPES = { // 企业类型
-  COMPANY: 'company', 
-  PERSON: 'person'
-};
-
