@@ -410,4 +410,29 @@ export class CreateCustomerDto {
   @Type(() => ActualResponsibleItemDto)
   @IsOptional()
   actualResponsibles?: ActualResponsibleItemDto[];
+
+  @ApiPropertyOptional({ description: '法定代表人身份证的扫描件或照片地址' })
+  @IsObject()
+  @IsOptional()
+  legalPersonIdImages?: Record<string, any>;
+
+  @ApiPropertyOptional({ description: '其他相关人员身份证的扫描件或照片地址' })
+  @IsObject()
+  @IsOptional()
+  otherIdImages?: Record<string, any>;
+
+  @ApiPropertyOptional({ description: '企业营业执照的扫描件或照片地址' })
+  @IsObject()
+  @IsOptional()
+  businessLicenseImages?: Record<string, any>;
+
+  @ApiPropertyOptional({ description: '企业开户许可证的扫描件或照片地址' })
+  @IsObject()
+  @IsOptional()
+  bankAccountLicenseImages?: Record<string, any>;
+
+  @ApiPropertyOptional({ description: '其他补充的扫描件或照片地址' })
+  @IsObject()
+  @IsOptional()
+  supplementaryImages?: Record<string, any>;
 }
