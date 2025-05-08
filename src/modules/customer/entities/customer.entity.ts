@@ -103,7 +103,7 @@ export class Customer {
     name: string;
     contributionDate: Date;
     amount: number;
-    images: string[];
+    images: Record<string, any>;
   }>;
 
   @Column({ nullable: true, type: 'json', comment: '法定代表人身份证的扫描件或照片地址' })
@@ -130,7 +130,7 @@ export class Customer {
     licenseType: string;
     startDate: Date;
     expiryDate: Date;
-    images: string[];
+    images: Record<string, any>;
   }>;
 
   @Column({ nullable: true, comment: '对公开户行' })

@@ -18,9 +18,9 @@ export class PaidInCapitalItemDto {
   @IsNumber()
   amount: number;
 
-  @ApiProperty({ description: '图片列表' })
-  @IsArray()
-  images: string[];
+  @ApiProperty({ description: '图片对象' })
+  @IsObject()
+  images: Record<string, any>;
 }
 
 // 行政许可数据结构
@@ -37,9 +37,9 @@ export class AdministrativeLicenseItemDto {
   @IsDate()
   expiryDate: Date;
 
-  @ApiProperty({ description: '图片列表' })
-  @IsArray()
-  images: string[];
+  @ApiProperty({ description: '图片对象' })
+  @IsObject()
+  images: Record<string, any>;
 }
 
 // 实际负责人数据结构
