@@ -8,49 +8,59 @@ import { Type } from 'class-transformer';
 export class PaidInCapitalItemDto {
   @ApiProperty({ description: '姓名' })
   @IsString()
-  name: string;
+  @IsOptional()
+  name?: string;
 
   @ApiProperty({ description: '出资日期' })
   @IsDate()
-  contributionDate: Date;
+  @IsOptional()
+  contributionDate?: Date;
 
   @ApiProperty({ description: '出资金额' })
   @IsNumber()
-  amount: number;
+  @IsOptional()
+  amount?: number;
 
   @ApiProperty({ description: '图片对象' })
   @IsObject()
-  images: Record<string, any>;
+  @IsOptional()
+  images?: Record<string, any>;
 }
 
 // 行政许可数据结构
 export class AdministrativeLicenseItemDto {
   @ApiProperty({ description: '行政许可类型' })
   @IsString()
-  licenseType: string;
+  @IsOptional()
+  licenseType?: string;
 
   @ApiProperty({ description: '行政许可开始日期' })
   @IsDate()
-  startDate: Date;
+  @IsOptional()
+  startDate?: Date;
 
   @ApiProperty({ description: '行政许可到期日期' })
   @IsDate()
-  expiryDate: Date;
+  @IsOptional()
+  expiryDate?: Date;
 
   @ApiProperty({ description: '图片对象' })
   @IsObject()
-  images: Record<string, any>;
+  @IsOptional()
+  images?: Record<string, any>;
 }
 
 // 实际负责人数据结构
 export class ActualResponsibleItemDto {
   @ApiProperty({ description: '实际负责人姓名' })
   @IsString()
-  name: string;
+  @IsOptional()
+  name?: string;
 
   @ApiProperty({ description: '实际负责人电话' })
   @IsString()
-  phone: string;
+  @IsOptional()
+  phone?: string;
 }
 
 export class CreateCustomerDto {
@@ -396,10 +406,6 @@ export class CreateCustomerDto {
   @IsOptional()
   submitter?: string;
 
-  @ApiPropertyOptional({ description: '备注信息' })
-  @IsString()
-  @IsOptional()
-  remarks?: string;
 
   @ApiPropertyOptional({ 
     description: '实际负责人，数组对象[{姓名, 电话}]',

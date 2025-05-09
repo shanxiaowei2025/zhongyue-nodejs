@@ -51,8 +51,8 @@ export class Customer {
     comment: '实际负责人，数组对象[{姓名, 电话}]'
   })
   actualResponsibles: Array<{
-    name: string;
-    phone: string;
+    name?: string;
+    phone?: string;
   }>;
 
   @Column({ nullable: true, comment: '实际负责人(备注)' })
@@ -100,10 +100,10 @@ export class Customer {
     comment: '已实缴金额，数组对象[{姓名, 出资日期, 出资金额, 图片}]'
   })
   paidInCapital: Array<{
-    name: string;
-    contributionDate: Date;
-    amount: number;
-    images: Record<string, any>;
+    name?: string;
+    contributionDate?: Date;
+    amount?: number;
+    images?: Record<string, any>;
   }>;
 
   @Column({ nullable: true, type: 'json', comment: '法定代表人身份证的扫描件或照片地址' })
@@ -127,10 +127,10 @@ export class Customer {
     comment: '行政许可，数组对象[{行政许可类型, 行政许可开始日期, 行政许可到期日期, 图片}]'
   })
   administrativeLicense: Array<{
-    licenseType: string;
-    startDate: Date;
-    expiryDate: Date;
-    images: Record<string, any>;
+    licenseType?: string;
+    startDate?: Date; // 可为空
+    expiryDate?: Date; // 可为空
+    images?: Record<string, any>;
   }>;
 
   @Column({ nullable: true, comment: '对公开户行' })
@@ -267,7 +267,4 @@ export class Customer {
 
   @Column({ nullable: true, comment: '创建或最后修改该记录的用户' })
   submitter: string;
-
-  @Column({ type: 'text', nullable: true, comment: '备注信息' })
-  remarks: string;
 }
