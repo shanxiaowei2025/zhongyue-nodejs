@@ -267,4 +267,7 @@ export class Customer {
 
   @Column({ nullable: true, comment: '创建或最后修改该记录的用户' })
   submitter: string;
+
+  @Column({ type: 'text', nullable: true, comment: '备注信息' })
+  remarks: string;
 }

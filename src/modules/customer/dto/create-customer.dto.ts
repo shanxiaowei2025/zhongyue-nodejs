@@ -406,6 +406,10 @@ export class CreateCustomerDto {
   @IsOptional()
   submitter?: string;
 
+  @ApiPropertyOptional({ description: '备注信息' })
+  @IsString()
+  @IsOptional()
+  remarks?: string;
 
   @ApiPropertyOptional({ 
     description: '实际负责人，数组对象[{姓名, 电话}]',

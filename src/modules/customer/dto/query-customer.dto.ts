@@ -79,6 +79,11 @@ export class QueryCustomerDto {
   @IsNumber()
   pageSize?: number = 10;
 
+  @ApiPropertyOptional({ description: '备注信息关键词' })
+  @IsOptional()
+  @IsString()
+  remarks?: string;
+  
   @ApiPropertyOptional({ description: '归属地' })
   @IsOptional()
   @IsString()

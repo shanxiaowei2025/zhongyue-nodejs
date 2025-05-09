@@ -232,22 +232,23 @@ export class CustomerService {
         )
       ) {
         // 如果没有空对象，添加权限条件
+        const allParams = {};
         const orConditions = permissionConditions.map((condition, index) => {
-          const params = {};
           const conditions = [];
 
           Object.entries(condition).forEach(([key, value]) => {
-            const paramKey = `${key}${index}`;
-            params[paramKey] = value;
+            const paramKey = `perm_${key}_${index}`;
+            allParams[paramKey] = value;
             conditions.push(`customer.${key} = :${paramKey}`);
           });
 
-          queryBuilder.setParameters(params);
           return conditions.join(' AND ');
         });
 
         if (orConditions.length > 0) {
           queryBuilder.andWhere(`(${orConditions.join(' OR ')})`);
+          queryBuilder.setParameters(allParams);
+          console.log('设置的参数:', allParams);
         }
       }
     } else if (Object.keys(permissionConditions).length > 0) {
@@ -258,6 +259,7 @@ export class CustomerService {
     }
 
     console.log('最终SQL:', queryBuilder.getSql());
+    console.log('最终参数:', queryBuilder.getParameters());
 
     // 添加分页和排序
     queryBuilder
@@ -302,13 +304,13 @@ export class CustomerService {
         )
       ) {
         // 如果没有空对象，添加权限条件
+        const allParams = {};
         const orConditions = permissionConditions.map((condition, index) => {
-          const params = {};
           const conditions = [];
 
           Object.entries(condition).forEach(([key, value]) => {
-            const paramKey = `${key}${index}`;
-            params[paramKey] = value;
+            const paramKey = `perm_${key}_${index}`;
+            allParams[paramKey] = value;
             conditions.push(`customer.${key} = :${paramKey}`);
           });
 
@@ -317,6 +319,8 @@ export class CustomerService {
 
         if (orConditions.length > 0) {
           queryBuilder.andWhere(`(${orConditions.join(' OR ')})`);
+          queryBuilder.setParameters(allParams);
+          console.log('设置的参数:', allParams);
         }
       }
     } else if (Object.keys(permissionConditions).length > 0) {
@@ -327,6 +331,7 @@ export class CustomerService {
     }
 
     console.log('最终SQL:', queryBuilder.getSql());
+    console.log('最终参数:', queryBuilder.getParameters());
 
     // 执行查询
     const customer = await queryBuilder.getOne();
