@@ -13,6 +13,7 @@ services:
       - '3000:3000'
     environment:
       - NODE_ENV=development
+      - TZ=UTC
     command: pnpm run start:dev
     env_file:
       - .env

@@ -12,6 +12,7 @@ services:
       - '3000:3000'
     environment:
       - NODE_ENV=production
+      - TZ=UTC
       # 移除了重复的数据库配置
     env_file:
       - .env
