@@ -193,6 +193,9 @@ export class UsersService {
     // 加密新密码
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
+    
+    // 更新密码修改时间
+    user.passwordUpdatedAt = new Date();
 
     // 保存更新后的用户信息
     return this.userRepository.save(user);

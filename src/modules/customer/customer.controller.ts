@@ -22,6 +22,7 @@ import { CustomerService } from './customer.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { QueryCustomerDto } from './dto/query-customer.dto';
+import { ReplacePersonnelDto } from './dto/replace-personnel.dto';
 import {
   ApiBearerAuth,
   ApiTags,
@@ -99,5 +100,18 @@ export class CustomerController {
     }
     
     return this.customerService.remove(+id, req.user.id);
+  }
+
+  @Post('batch-replace')
+  @ApiOperation({ summary: '批量替换人员信息', description: '将特定职位的特定人员批量替换为其他人员' })
+  @ApiResponse({ status: 200, description: '批量替换成功' })
+  @ApiResponse({ status: 403, description: '没有权限执行此操作' })
+  replacePersonnel(@Body() replacePersonnelDto: ReplacePersonnelDto, @Request() req) {
+    if (!req.user || !req.user.id) {
+      throw new ForbiddenException('未能获取有效的用户身份');
+    }
+    
+    this.logger.debug(`用户请求批量替换人员，参数: ${JSON.stringify(replacePersonnelDto)}`);
+    return this.customerService.replacePersonnel(replacePersonnelDto, req.user.id);
   }
 }

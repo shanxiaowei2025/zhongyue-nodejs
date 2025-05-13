@@ -63,6 +63,7 @@ export class AuthService {
         roles: roles,
         phone: user.phone,
         email: user.email,
+        passwordUpdatedAt: user.passwordUpdatedAt,
       },
     };
   }
@@ -134,6 +135,25 @@ export class AuthService {
     return {
       message: '密码修改成功',
       data: null,
+    };
+  }
+
+  // 获取用户完整资料（包含密码更新时间）
+  async getUserProfile(userId: number) {
+    const user = await this.usersService.findById(userId);
+    if (!user) {
+      throw new BadRequestException('用户不存在');
+    }
+
+    return {
+      id: user.id,
+      username: user.username,
+      roles: user.roles,
+      phone: user.phone,
+      email: user.email,
+      passwordUpdatedAt: user.passwordUpdatedAt,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
     };
   }
 }

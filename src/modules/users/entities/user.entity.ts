@@ -23,6 +23,11 @@ export class User {
   @Exclude() // 在响应中排除密码
   password: string;
 
+  @ApiProperty({ description: '密码最后更新时间' })
+  // 密码最后更新时间，默认为创建时间
+  @Column({ type: 'datetime', comment: '密码最后更新时间', default: () => 'CURRENT_TIMESTAMP' })
+  passwordUpdatedAt: Date;
+
   @ApiProperty({ description: '是否启用', example: true })
   // 是否启用，默认启用
   @Column({ default: true, comment: '是否启用' })
@@ -82,6 +87,13 @@ export class User {
     if (!this.roles || !Array.isArray(this.roles) || this.roles.length === 0) {
       this.roles = ['user'];
     }
+  }
+
+  // 在插入数据之前，设置密码更新时间
+  @BeforeInsert()
+  setPasswordUpdatedAt() {
+    // 创建时，密码更新时间就是当前时间
+    this.passwordUpdatedAt = new Date();
   }
 
   // 验证密码

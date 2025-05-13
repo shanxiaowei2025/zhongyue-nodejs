@@ -52,8 +52,10 @@ export class AuthController {
   })
   @ApiResponse({ status: 200, description: '成功获取用户信息' })
   @ApiResponse({ status: 401, description: '未授权的访问' })
-  getProfile(@Request() req) {
-    return req.user;
+  async getProfile(@Request() req) {
+    // 获取完整的用户信息，包括密码更新时间
+    const user = await this.authService.getUserProfile(req.user.id);
+    return user;
   }
 
   // 更新当前用户信息
