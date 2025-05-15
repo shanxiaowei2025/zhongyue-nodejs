@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
@@ -6,6 +6,7 @@ import { Role } from '../../roles/entities/role.entity';
 import { Permission } from '../../permissions/entities/permission.entity';
 import { Department } from '../../department/entities/department.entity';
 import { Expense } from '../entities/expense.entity';
+import { hasSubscribers } from 'diagnostics_channel';
 
 @Injectable()
 export class ExpensePermissionService {
@@ -60,11 +61,17 @@ export class ExpensePermissionService {
   async hasExpenseEditPermission(userId: number): Promise<boolean> {
     const permissions = await this.getUserPermissions(userId);
     const hasPermission = permissions.includes('expense_action_create') &&
-      permissions.includes('expense_action_edit') &&
-      permissions.includes('expense_action_delete');
-    
+      permissions.includes('expense_action_edit');
+
     return hasPermission;
   }
+    // 检查用户是否有费用删除权限
+    async hasExpenseDeletePermission(userId: number): Promise<boolean> {
+      const permissions = await this.getUserPermissions(userId);
+      const hasPermission = permissions.includes('expense_action_delete');
+      
+      return hasPermission;
+    }
 
   // 检查用户是否有费用审核权限
   async hasExpenseAuditPermission(userId: number): Promise<boolean> {

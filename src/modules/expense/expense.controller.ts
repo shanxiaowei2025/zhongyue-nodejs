@@ -9,6 +9,9 @@ import {
   Query,
   UseGuards,
   Req,
+  ForbiddenException,
+  Request,
+  BadRequestException,
 } from '@nestjs/common';
 import { ExpenseService } from './expense.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
@@ -45,9 +48,23 @@ export class ExpenseController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: '更新费用记录' })
-  update(@Param('id') id: string, @Body() updateExpenseDto: UpdateExpenseDto, @Req() req) {
-    return this.expenseService.update(+id, updateExpenseDto, req.user.id);
+  @ApiOperation({ summary: '更新费用记录', description: '管理员可编辑任何记录，被退回的记录原提交人可编辑' })
+  @ApiResponse({ status: 200, description: '更新成功' })
+  update(
+    @Param('id') id: string,
+    @Body() updateExpenseDto: UpdateExpenseDto,
+    @Request() req
+  ) {
+    if (!req.user || !req.user.id) {
+      throw new ForbiddenException('未能获取有效的用户身份');
+    }
+    
+    return this.expenseService.update(
+      +id, 
+      updateExpenseDto, 
+      req.user.id,
+      req.user.username // 传递当前用户名
+    );
   }
 
   @Delete(':id')
@@ -57,32 +74,63 @@ export class ExpenseController {
   }
 
   @Post(':id/audit')
-  @ApiOperation({ summary: '审核费用记录' })
-  @ApiParam({ name: 'id', description: '费用记录ID' })
+  @ApiOperation({ summary: '审核费用记录', description: '可设置为通过(1)或退回(2)状态' })
+  @ApiParam({ name: 'id', description: '费用记录ID', example: 1 })
   @ApiBody({
+    description: '审核数据',
     schema: {
       type: 'object',
+      required: ['status'],
       properties: {
         status: {
           type: 'number',
+          description: '审核状态：1-通过，2-退回',
           enum: [1, 2],
-          description: '审核状态：1-通过，2-拒绝'
+          example: 1
         },
-        rejectReason: {
-          type: 'string',
-          description: '拒绝原因（status=2时必填）'
+        reason: {
+          type: 'string', 
+          description: '退回原因（状态为2时必填）',
+          example: '请补充发票信息'
         }
       },
-      required: ['status']
+      examples: {
+        '审核通过': {
+          value: {
+            status: 1
+          },
+          summary: '审核通过示例'
+        },
+        '审核退回': {
+          value: {
+            status: 2,
+            reason: '请补充发票信息'
+          },
+          summary: '审核退回示例'
+        }
+      }
     }
   })
-  audit(
+  @ApiResponse({ status: 200, description: '审核成功' })
+  @ApiResponse({ status: 400, description: '退回时未提供退回原因' })
+  @ApiResponse({ status: 403, description: '没有权限审核费用记录' })
+  @ApiResponse({ status: 404, description: '费用记录不存在' })
+  async auditExpense(
     @Param('id') id: string,
-    @Body('status') status: number,
-    @Body('rejectReason') rejectReason: string,
-  @Req() req,
+    @Body() auditDto: { status: number, reason?: string },
+    @Request() req
   ) {
-    return this.expenseService.audit(+id, req.user.id, req.user.username, status, rejectReason);
+    if (auditDto.status === 2 && !auditDto.reason) {
+      throw new BadRequestException('退回时必须提供退回原因');
+    }
+    
+    return this.expenseService.audit(
+      +id,
+      req.user.id,
+      req.user.username,
+      auditDto.status,
+      auditDto.reason
+    );
   }
 
   @Post(':id/cancel-audit')
@@ -106,7 +154,7 @@ export class ExpenseController {
   }
 
   @Get('autocomplete/:field')
-  @ApiOperation({ summary: '获取字段自动完成选项' })
+  @ApiOperation({ summary: '获取去重后的字段值列表' })
   getAutocompleteOptions(@Param('field') field: string) {
     return this.expenseService.getAutocompleteOptions(field);
   }

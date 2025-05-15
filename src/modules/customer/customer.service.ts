@@ -10,7 +10,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Not } from 'typeorm';
 import { Customer } from './entities/customer.entity';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
@@ -44,6 +44,17 @@ export class CustomerService {
     if (!hasPermission) {
       console.log(`用户 ${userId} 无权创建客户，抛出异常`);
       throw new ForbiddenException('没有创建客户的权限');
+    }
+
+    // 检查统一社会信用代码是否已存在
+    if (createCustomerDto.unifiedSocialCreditCode) {
+      const existingCustomer = await this.customerRepository.findOne({
+        where: { unifiedSocialCreditCode: createCustomerDto.unifiedSocialCreditCode }
+      });
+      
+      if (existingCustomer) {
+        throw new ForbiddenException(`统一社会信用代码 ${createCustomerDto.unifiedSocialCreditCode} 已存在，不能重复创建`);
+      }
     }
 
     // 获取用户信息
@@ -356,7 +367,26 @@ export class CustomerService {
     }
 
     // 先查找客户，检查是否存在
-    await this.findOne(id, userId);
+    const existingCustomer = await this.findOne(id, userId);
+
+    // 如果更新了统一社会信用代码，检查是否与其他客户重复
+    if (
+      updateCustomerDto.unifiedSocialCreditCode && 
+      updateCustomerDto.unifiedSocialCreditCode !== existingCustomer.unifiedSocialCreditCode
+    ) {
+      const duplicateCustomer = await this.customerRepository.findOne({
+        where: { 
+          unifiedSocialCreditCode: updateCustomerDto.unifiedSocialCreditCode,
+          id: Not(id) // 排除当前客户自身
+        }
+      });
+
+      if (duplicateCustomer) {
+        throw new ForbiddenException(
+          `统一社会信用代码 ${updateCustomerDto.unifiedSocialCreditCode} 已存在，不能重复使用`
+        );
+      }
+    }
 
     // 更新客户信息
     await this.customerRepository.update(id, updateCustomerDto);

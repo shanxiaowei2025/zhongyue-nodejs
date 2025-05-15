@@ -90,6 +90,7 @@ export class ExpenseService {
 
     // 检查用户是否有权限查看该记录
     const permissionFilter = await this.expensePermissionService.buildExpenseQueryFilter(userId);
+    
     const hasPermission = Array.isArray(permissionFilter)
       ? permissionFilter.some(filter => this.matchesFilter(expense, filter))
       : this.matchesFilter(expense, permissionFilter);
@@ -108,16 +109,33 @@ export class ExpenseService {
     return Object.entries(filter).every(([key, value]) => expense[key] === value);
   }
 
-  async update(id: number, updateExpenseDto: UpdateExpenseDto, userId: number) {
+  async update(id: number, updateExpenseDto: UpdateExpenseDto, userId: number, username: string) {
     const expense = await this.findOne(id, userId);
     
-    // 检查用户是否有编辑权限
-    const hasEditPermission = await this.expensePermissionService.hasExpenseEditPermission(userId);
+    // 检查是否有权限编辑
+    // 1. 有费用编辑权限的用户可以编辑
+    // 2. 或者是被退回状态(status=2)下的原提交人可以编辑
+    let hasEditPermission = await this.expensePermissionService.hasExpenseEditPermission(userId);
+    
+    // 如果是退回状态且当前用户是原提交人，也赋予编辑权限
+    if (!hasEditPermission && expense.status === 2 && expense.submitter === username) {
+      hasEditPermission = true;
+    }
+    
     if (!hasEditPermission) {
       throw new BadRequestException('没有权限编辑费用记录');
     }
 
     const updated = Object.assign(expense, updateExpenseDto);
+    
+    // 如果是退回状态且提交人编辑，则重置为待审核状态
+    if (expense.status === 2 && expense.submitter === username) {
+      updated.status = 0; // 重新设置为未审核状态
+      updated.auditor = null;
+      updated.auditDate = null;
+      updated.rejectReason = null; // 清除退回原因
+    }
+    
     return await this.expenseRepository.save(updated);
   }
 
@@ -125,7 +143,7 @@ export class ExpenseService {
     const expense = await this.findOne(id, userId);
     
     // 检查用户是否有编辑权限
-    const hasEditPermission = await this.expensePermissionService.hasExpenseEditPermission(userId);
+    const hasEditPermission = await this.expensePermissionService.hasExpenseDeletePermission(userId);
     if (!hasEditPermission) {
       throw new BadRequestException('没有权限删除费用记录');
     }
@@ -133,7 +151,7 @@ export class ExpenseService {
     return await this.expenseRepository.remove(expense);
   }
 
-  async audit(id: number, userId: number, auditor: string, status: number, rejectReason?: string) {
+  async audit(id: number, userId: number, auditor: string, status: number, reason?: string) {
     const expense = await this.findOne(id, userId);
     
     // 检查用户是否有审核权限
@@ -150,12 +168,14 @@ export class ExpenseService {
     expense.status = status;
     expense.auditDate = new Date();
     
-    if (status === 2 && !rejectReason) {
-      throw new BadRequestException('拒绝时必须提供拒绝原因');
+    // 当状态为退回(2)时必须提供原因
+    if (status === 2 && !reason) {
+      throw new BadRequestException('退回时必须提供退回原因');
     }
     
-    if (rejectReason) {
-      expense.rejectReason = rejectReason;
+    if (reason) {
+      // 继续使用 rejectReason 字段，但含义变为"退回原因"
+      expense.rejectReason = reason;
     }
 
     return await this.expenseRepository.save(expense);

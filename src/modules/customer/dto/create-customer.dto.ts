@@ -94,8 +94,11 @@ export class CreateCustomerDto {
   @IsOptional()
   enterpriseType?: string;
   
-  @ApiPropertyOptional({ description: '统一社会信用代码' })
-  @IsString()
+  @ApiPropertyOptional({ 
+    description: '统一社会信用代码（必须唯一，系统会检查是否已存在）',
+    example: '91110000100000000A' 
+  })
+  @IsString({ message: '统一社会信用代码必须是字符串' })
   @IsOptional()
   unifiedSocialCreditCode?: string;
 
