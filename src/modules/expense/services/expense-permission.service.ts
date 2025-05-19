@@ -132,7 +132,7 @@ export class ExpensePermissionService {
     // 处理查看自己提交的权限
     if (permissions.includes('expense_data_view_own')) {
       conditions.push({
-        submitter: user.username,
+        salesperson: user.username,
       });
     }
 

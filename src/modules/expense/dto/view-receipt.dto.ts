@@ -16,6 +16,6 @@ export class ViewReceiptDto {
   @ApiProperty({ description: '收费方式' })
   chargeMethod: string;
 
-  @ApiProperty({ description: '备注信息' })
+  @ApiProperty({ description: '收据备注' })
   remarks: string;
 } 

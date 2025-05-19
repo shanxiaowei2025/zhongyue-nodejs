@@ -21,14 +21,20 @@ export class Expense {
   @Column({ type: 'int', nullable: true, comment: '办照费用' })
   licenseFee: number;
 
-  @Column({ type: 'int', nullable: true, comment: '一次性地址费' })
-  oneTimeAddressFee: number;
+  // @Column({ type: 'int', nullable: true, comment: '一次性地址费' })
+  // oneTimeAddressFee: number;
 
   @Column({ type: 'int', nullable: true, comment: '牌子费' })
   brandFee: number;
 
-  @Column({ type: 'int', nullable: true, comment: '刻章费' })
-  sealFee: number;
+  // @Column({ type: 'int', nullable: true, comment: '刻章费' })
+  // sealFee: number;
+  
+  @Column({ type: 'int', nullable: true, comment: '备案章费用' })
+  recordSealFee: number;
+  
+  @Column({ type: 'int', nullable: true, comment: '一般刻章费用' })
+  generalSealFee: number;
 
   @Column({ type: 'varchar', length: 100, nullable: true, comment: '代理类型' })
   agencyType: string;
@@ -39,8 +45,20 @@ export class Expense {
   @Column({ type: 'int', nullable: true, comment: '记账软件费' })
   accountingSoftwareFee: number;
 
+  @Column({ type: 'date', nullable: true, comment: '记账软件开始日期' })
+  accountingSoftwareStartDate: string;
+
+  @Column({ type: 'date', nullable: true, comment: '记账软件结束日期' })
+  accountingSoftwareEndDate: string;
+
   @Column({ type: 'int', nullable: true, comment: '地址费' })
   addressFee: number;
+
+  @Column({ type: 'date', nullable: true, comment: '地址费开始日期' })
+  addressStartDate: string;
+
+  @Column({ type: 'date', nullable: true, comment: '地址费结束日期' })
+  addressEndDate: string;
 
   @Column({ type: 'date', nullable: true, comment: '代理开始日期' })
   agencyStartDate: string;
@@ -57,8 +75,8 @@ export class Expense {
   @Column({ type: 'varchar', length: 255, nullable: true, comment: '合同图片' })
   contractImage: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true, comment: '开票软件服务商' })
-  invoiceSoftwareProvider: string;
+  // @Column({ type: 'varchar', length: 255, nullable: true, comment: '开票软件服务商' })
+  // invoiceSoftwareProvider: string;
 
   @Column({ type: 'int', nullable: true, comment: '开票软件费' })
   invoiceSoftwareFee: number;
@@ -117,8 +135,8 @@ export class Expense {
   @Column({ type: 'int', nullable: true, comment: '总费用' })
   totalFee: number;
 
-  @Column({ type: 'varchar', length: 100, nullable: true, comment: '提交人' })
-  submitter: string;
+  @Column({ type: 'varchar', length: 100, nullable: true, comment: '业务员' })
+  salesperson: string;
 
   @ApiProperty({ description: '创建时间' })
   @CreateDateColumn({ comment: '创建时间' })
@@ -140,12 +158,15 @@ export class Expense {
   @Column({ type: 'date', nullable: true, comment: '审核日期' })
   auditDate: Date;
 
-  @Column({ type: 'int', default: 0, comment: '状态：0-未审核，1-已审核，2-已拒绝' })
+  @Column({ type: 'int', default: 0, comment: '状态：0-未审核，1-已审核，2-已退回' })
   status: number;
 
-  @Column({ type: 'text', nullable: true, comment: '审核拒绝原因' })
+  @Column({ type: 'text', nullable: true, comment: '审核退回原因' })
   rejectReason: string;
 
-  @Column({ type: 'text', nullable: true, comment: '备注信息' })
-  remarks: string;
+  @Column({ type: 'text', nullable: true, comment: '收据备注' })
+  receiptRemarks: string;
+  
+  @Column({ type: 'text', nullable: true, comment: '内部备注' })
+  internalRemarks: string;
 } 

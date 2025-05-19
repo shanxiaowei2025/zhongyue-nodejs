@@ -18,7 +18,7 @@ export class ExpenseService {
   async create(createExpenseDto: CreateExpenseDto, username: string) {
     const expense = this.expenseRepository.create({
       ...createExpenseDto,
-      submitter: username,
+      salesperson: username,
     });
     return await this.expenseRepository.save(expense);
   }
@@ -50,8 +50,8 @@ export class ExpenseService {
       if (query.status !== undefined) {
         conditions.status = query.status;
       }
-      if (query.submitter) {
-        conditions.submitter = query.submitter;
+      if (query.salesperson) {
+        conditions.salesperson = query.salesperson;
       }
       if (query.startDate && query.endDate) {
         conditions.createdAt = Between(new Date(query.startDate), new Date(query.endDate));
@@ -114,11 +114,11 @@ export class ExpenseService {
     
     // 检查是否有权限编辑
     // 1. 有费用编辑权限的用户可以编辑
-    // 2. 或者是被退回状态(status=2)下的原提交人可以编辑
+    // 2. 或者是被退回状态(status=2)下的原业务员可以编辑
     let hasEditPermission = await this.expensePermissionService.hasExpenseEditPermission(userId);
     
-    // 如果是退回状态且当前用户是原提交人，也赋予编辑权限
-    if (!hasEditPermission && expense.status === 2 && expense.submitter === username) {
+    // 如果是退回状态且当前用户是原业务员，也赋予编辑权限
+    if (!hasEditPermission && expense.status === 2 && expense.salesperson === username) {
       hasEditPermission = true;
     }
     
@@ -128,8 +128,8 @@ export class ExpenseService {
 
     const updated = Object.assign(expense, updateExpenseDto);
     
-    // 如果是退回状态且提交人编辑，则重置为待审核状态
-    if (expense.status === 2 && expense.submitter === username) {
+    // 如果是退回状态且业务员编辑，则重置为待审核状态
+    if (expense.status === 2 && expense.salesperson === username) {
       updated.status = 0; // 重新设置为未审核状态
       updated.auditor = null;
       updated.auditDate = null;
@@ -224,26 +224,22 @@ export class ExpenseService {
       chargeDate: expense.chargeDate,
       totalFee: expense.totalFee,
       chargeMethod: expense.chargeMethod,
-      remarks: expense.remarks
+      remarks: expense.receiptRemarks
     };
   }
 
   async getAutocompleteOptions(field: string) {
-    // 验证字段名是否合法
-    const allowedFields = ['companyName', 'companyType', 'companyLocation', 'businessType', 'submitter'];
+    const allowedFields = ['companyName', 'companyType', 'companyLocation', 'businessType', 'salesperson'];
+    
     if (!allowedFields.includes(field)) {
-      throw new BadRequestException(`不支持的字段名: ${field}`);
+      throw new BadRequestException(`不支持的字段: ${field}`);
     }
-
-    // 获取去重后的字段值列表
-    const values = await this.expenseRepository
-      .createQueryBuilder('expense')
-      .select(`DISTINCT expense.${field}`, field)
-      .where(`expense.${field} IS NOT NULL`)
-      .orderBy(`expense.${field}`, 'ASC')
-      .getRawMany();
-
-    // 提取字段值并返回
-    return values.map(item => item[field]);
+    
+    // 获取字段的唯一值
+    const query = `SELECT DISTINCT ${field} FROM sys_expense WHERE ${field} IS NOT NULL AND ${field} != '' ORDER BY ${field}`;
+    const results = await this.expenseRepository.query(query);
+    
+    // 提取字段值
+    return results.map(item => item[field]);
   }
 } 

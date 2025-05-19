@@ -27,20 +27,30 @@ export class CreateExpenseDto {
   @IsNumber()
   licenseFee?: number;
 
-  @ApiProperty({ description: '一次性地址费', required: false })
-  @IsOptional()
-  @IsNumber()
-  oneTimeAddressFee?: number;
+  // @ApiProperty({ description: '一次性地址费', required: false })
+  // @IsOptional()
+  // @IsNumber()
+  // oneTimeAddressFee?: number;
 
   @ApiProperty({ description: '牌子费', required: false })
   @IsOptional()
   @IsNumber()
   brandFee?: number;
 
-  @ApiProperty({ description: '刻章费', required: false })
+  // @ApiProperty({ description: '刻章费', required: false })
+  // @IsOptional()
+  // @IsNumber()
+  // sealFee?: number;
+  
+  @ApiProperty({ description: '备案章费用', required: false })
   @IsOptional()
   @IsNumber()
-  sealFee?: number;
+  recordSealFee?: number;
+  
+  @ApiProperty({ description: '一般刻章费用', required: false })
+  @IsOptional()
+  @IsNumber()
+  generalSealFee?: number;
 
   @ApiProperty({ description: '代理类型', required: false })
   @IsOptional()
@@ -57,10 +67,30 @@ export class CreateExpenseDto {
   @IsNumber()
   accountingSoftwareFee?: number;
 
+  @ApiProperty({ description: '记账软件开始日期', required: false })
+  @IsOptional()
+  @IsString()
+  accountingSoftwareStartDate?: string;
+
+  @ApiProperty({ description: '记账软件结束日期', required: false })
+  @IsOptional()
+  @IsString()
+  accountingSoftwareEndDate?: string;
+
   @ApiProperty({ description: '地址费', required: false })
   @IsOptional()
   @IsNumber()
   addressFee?: number;
+
+  @ApiProperty({ description: '地址费开始日期', required: false })
+  @IsOptional()
+  @IsString()
+  addressStartDate?: string;
+
+  @ApiProperty({ description: '地址费结束日期', required: false })
+  @IsOptional()
+  @IsString()
+  addressEndDate?: string;
 
   @ApiProperty({ description: '代理开始日期', required: false })
   @IsOptional()
@@ -87,10 +117,10 @@ export class CreateExpenseDto {
   @IsString()
   contractImage?: string;
 
-  @ApiProperty({ description: '开票软件服务商', required: false })
-  @IsOptional()
-  @IsString()
-  invoiceSoftwareProvider?: string;
+  // @ApiProperty({ description: '开票软件服务商', required: false })
+  // @IsOptional()
+  // @IsString()
+  // invoiceSoftwareProvider?: string;
 
   @ApiProperty({ description: '开票软件费', required: false })
   @IsOptional()
@@ -187,10 +217,10 @@ export class CreateExpenseDto {
   @IsNumber()
   totalFee?: number;
 
-  @ApiProperty({ description: '提交人', required: false })
+  @ApiProperty({ description: '业务员', required: false })
   @IsOptional()
   @IsString()
-  submitter?: string;
+  salesperson?: string;
 
   @ApiProperty({ description: '收费日期', required: false })
   @IsOptional()
@@ -202,8 +232,13 @@ export class CreateExpenseDto {
   @IsString()
   chargeMethod?: string;
 
-  @ApiProperty({ description: '备注信息', required: false })
+  @ApiProperty({ description: '收据备注', required: false })
   @IsOptional()
   @IsString()
-  remarks?: string;
+  receiptRemarks?: string;
+  
+  @ApiProperty({ description: '内部备注', required: false })
+  @IsOptional()
+  @IsString()
+  internalRemarks?: string;
 } 
