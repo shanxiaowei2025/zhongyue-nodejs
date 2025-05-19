@@ -12,19 +12,24 @@ import {
   ForbiddenException,
   Request,
   BadRequestException,
+  Res,
 } from '@nestjs/common';
 import { ExpenseService } from './expense.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiHeader, ApiParam, ApiBody } from '@nestjs/swagger';
+import { QueryExpenseDto } from './dto/query-expense.dto';
+import { ApiTags, ApiOperation, ApiResponse, ApiHeader, ApiParam, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { ViewReceiptDto } from './dto/view-receipt.dto';
 import { CancelAuditDto } from './dto/cancel-audit.dto';
+import { ExportExpenseDto } from './dto/export-expense.dto';
+import { Response } from 'express';
 
 @ApiTags('费用管理')
 @Controller('expense')
 @UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class ExpenseController {
   constructor(private readonly expenseService: ExpenseService) {}
 
@@ -36,9 +41,13 @@ export class ExpenseController {
   }
 
   @Get()
-  @ApiOperation({ summary: '获取费用记录列表' })
-  findAll(@Query() query: any, @Query() pagination: PaginationDto, @Req() req) {
-    return this.expenseService.findAll(query, pagination, req.user.id);
+  @ApiOperation({ summary: '获取费用列表' })
+  @ApiResponse({ status: 200, description: '成功获取费用列表' })
+  findAll(@Query() query: QueryExpenseDto, @Req() req) {
+    const { page, pageSize, ...filters } = query;
+    const pagination = { page, pageSize };
+    
+    return this.expenseService.findAll(filters, pagination, req.user.id);
   }
 
   @Get(':id')
@@ -164,5 +173,29 @@ export class ExpenseController {
   @ApiResponse({ status: 200, description: '查看成功', type: ViewReceiptDto })
   viewReceipt(@Param('id') id: string, @Req() req) {
     return this.expenseService.viewReceipt(+id, req.user.id);
+  }
+
+  @Get('export/csv')
+  @ApiOperation({ summary: '导出费用记录为CSV' })
+  @ApiResponse({ status: 200, description: '导出成功' })
+  async exportToCsv(
+    @Query() query: ExportExpenseDto,
+    @Req() req,
+    @Res() res: Response
+  ) {
+    const csvData = await this.expenseService.exportToCsv(query, req.user.id);
+    
+    // 生成带日期的文件名
+    const filename = `expense.csv`;
+    
+    // 确保使用最通用的MIME类型和下载设置
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename=${encodeURIComponent(filename)}`);
+    res.setHeader('Content-Transfer-Encoding', 'binary');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    
+    // 发送CSV数据并结束响应
+    res.end(csvData);
   }
 } 

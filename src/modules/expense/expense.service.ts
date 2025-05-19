@@ -1,11 +1,13 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, Between, FindOptionsWhere, Not, IsNull } from 'typeorm';
+import { Repository, Like, Between, FindOptionsWhere, Not, IsNull, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 import { Expense } from './entities/expense.entity';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { ExpensePermissionService } from './services/expense-permission.service';
+import { Parser } from 'json2csv';
+import { ExportExpenseDto } from './dto/export-expense.dto';
 
 @Injectable()
 export class ExpenseService {
@@ -52,6 +54,13 @@ export class ExpenseService {
       }
       if (query.salesperson) {
         conditions.salesperson = query.salesperson;
+      }
+      if (query.chargeDateStart && query.chargeDateEnd) {
+        conditions.chargeDate = Between(query.chargeDateStart, query.chargeDateEnd);
+      } else if (query.chargeDateStart) {
+        conditions.chargeDate = MoreThanOrEqual(query.chargeDateStart);
+      } else if (query.chargeDateEnd) {
+        conditions.chargeDate = LessThanOrEqual(query.chargeDateEnd);
       }
       if (query.startDate && query.endDate) {
         conditions.createdAt = Between(new Date(query.startDate), new Date(query.endDate));
@@ -241,5 +250,159 @@ export class ExpenseService {
     
     // 提取字段值
     return results.map(item => item[field]);
+  }
+
+  async exportToCsv(query: ExportExpenseDto, userId: number): Promise<string> {
+    // 获取权限过滤条件
+    const permissionFilter = await this.expensePermissionService.buildExpenseQueryFilter(userId);
+    const where: FindOptionsWhere<Expense> | FindOptionsWhere<Expense>[] = Array.isArray(permissionFilter)
+      ? permissionFilter.map(filter => ({ ...filter }))
+      : { ...permissionFilter };
+
+    // 处理查询条件
+    const addConditions = (conditions: any) => {
+      if (query.companyName) {
+        conditions.companyName = Like(`%${query.companyName}%`);
+      }
+      if (query.companyType) {
+        conditions.companyType = query.companyType;
+      }
+      if (query.companyLocation) {
+        conditions.companyLocation = query.companyLocation;
+      }
+      if (query.businessType) {
+        conditions.businessType = query.businessType;
+      }
+      if (query.status !== undefined) {
+        conditions.status = query.status;
+      }
+      if (query.salesperson) {
+        conditions.salesperson = query.salesperson;
+      }
+      if (query.chargeDateStart && query.chargeDateEnd) {
+        conditions.chargeDate = Between(query.chargeDateStart, query.chargeDateEnd);
+      } else if (query.chargeDateStart) {
+        conditions.chargeDate = MoreThanOrEqual(query.chargeDateStart);
+      } else if (query.chargeDateEnd) {
+        conditions.chargeDate = LessThanOrEqual(query.chargeDateEnd);
+      }
+    };
+
+    // 根据权限过滤条件类型添加查询条件
+    if (Array.isArray(where)) {
+      where.forEach(condition => addConditions(condition));
+    } else {
+      addConditions(where);
+    }
+
+    // 查询数据
+    const expenses = await this.expenseRepository.find({
+      where,
+      order: {
+        id: 'DESC',
+      },
+    });
+
+    // 定义CSV字段映射
+    const fieldMapping = {
+      // 移除ID字段
+      // id: 'ID',
+      companyName: '企业名称',
+      companyType: '企业类型',
+      companyLocation: '企业归属地',
+      licenseType: '办照类型',
+      licenseFee: '办照费用',
+      brandFee: '牌子费',
+      recordSealFee: '备案章费用',
+      generalSealFee: '一般刻章费用',
+      agencyType: '代理类型',
+      agencyFee: '代理费',
+      accountingSoftwareFee: '记账软件费',
+      accountingSoftwareStartDate: '记账软件开始日期',
+      accountingSoftwareEndDate: '记账软件结束日期',
+      addressFee: '地址费',
+      addressStartDate: '地址费开始日期',
+      addressEndDate: '地址费结束日期',
+      agencyStartDate: '代理开始日期',
+      agencyEndDate: '代理结束日期',
+      businessType: '业务类型',
+      contractType: '合同类型',
+      contractImage: '合同图片',
+      invoiceSoftwareFee: '开票软件费',
+      invoiceSoftwareStartDate: '开票软件开始日期',
+      invoiceSoftwareEndDate: '开票软件结束日期',
+      insuranceTypes: '参保险种',
+      insuredCount: '参保人数',
+      socialInsuranceAgencyFee: '社保代理费',
+      socialInsuranceStartDate: '社保开始日期',
+      socialInsuranceEndDate: '社保结束日期',
+      statisticalReportFee: '统计局报表费',
+      statisticalStartDate: '统计开始日期',
+      statisticalEndDate: '统计结束日期',
+      changeBusiness: '变更业务',
+      changeFee: '变更收费',
+      administrativeLicense: '行政许可',
+      administrativeLicenseFee: '行政许可收费',
+      otherBusiness: '其他业务',
+      otherBusinessFee: '其他业务收费',
+      totalFee: '总费用',
+      salesperson: '业务员',
+      chargeDate: '收费日期',
+      chargeMethod: '收费方式',
+      status: '状态',
+      createdAt: '创建时间',
+      updatedAt: '更新时间',
+      auditor: '审核员',
+      auditDate: '审核日期',
+      rejectReason: '退回原因',
+      receiptRemarks: '收据备注',
+      internalRemarks: '内部备注'
+    };
+
+    // 处理导出数据
+    const exportData = expenses.map(expense => {
+      // 使用any类型来避免类型错误
+      const item: any = { ...expense };
+      
+      // 移除ID字段
+      delete item.id;
+      
+      // 处理状态显示
+      if (item.status === 0) {
+        item.status = '未审核';
+      } else if (item.status === 1) {
+        item.status = '已审核';
+      } else if (item.status === 2) {
+        item.status = '已退回';
+      }
+      
+      // 处理数组类型的收费凭证
+      if (item.proofOfCharge) {
+        try {
+          item.proofOfCharge = Array.isArray(item.proofOfCharge) 
+            ? item.proofOfCharge.join(',') 
+            : JSON.stringify(item.proofOfCharge);
+        } catch (e) {
+          item.proofOfCharge = ''; // 处理无法转换的情况
+        }
+      }
+      
+      return item;
+    });
+
+    // 创建字段标题
+    const fields = Object.keys(fieldMapping).map(field => ({
+      label: fieldMapping[field],
+      value: field
+    }));
+
+    // 使用json2csv转换数据
+    try {
+      const parser = new Parser({ fields });
+      // 添加UTF-8 BOM标记确保Excel正确识别中文
+      return "\uFEFF" + parser.parse(exportData);
+    } catch (err) {
+      throw new BadRequestException(`导出CSV失败: ${err.message}`);
+    }
   }
 } 
