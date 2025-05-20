@@ -90,8 +90,8 @@ export class Expense {
   @Column({ type: 'date', nullable: true, comment: '开票软件结束日期' })
   invoiceSoftwareEndDate: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true, comment: '参保险种' })
-  insuranceTypes: string;
+  @Column({ type: 'simple-array', nullable: true, comment: '参保险种' })
+  insuranceTypes: string[];
 
   @Column({ type: 'int', nullable: true, comment: '参保人数' })
   insuredCount: number;
@@ -114,20 +114,20 @@ export class Expense {
   @Column({ type: 'date', nullable: true, comment: '统计结束日期' })
   statisticalEndDate: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true, comment: '变更业务' })
-  changeBusiness: string;
+  @Column({ type: 'simple-array', nullable: true, comment: '变更业务' })
+  changeBusiness: string[];
 
   @Column({ type: 'int', nullable: true, comment: '变更收费' })
   changeFee: number;
 
-  @Column({ type: 'varchar', length: 255, nullable: true, comment: '行政许可' })
-  administrativeLicense: string;
+  @Column({ type: 'simple-array', nullable: true, comment: '行政许可' })
+  administrativeLicense: string[];
 
   @Column({ type: 'int', nullable: true, comment: '行政许可收费' })
   administrativeLicenseFee: number;
 
-  @Column({ type: 'varchar', length: 255, nullable: true, comment: '其他业务' })
-  otherBusiness: string;
+  @Column({ type: 'simple-array', nullable: true, comment: '其他业务' })
+  otherBusiness: string[];
 
   @Column({ type: 'int', nullable: true, comment: '其他业务收费' })
   otherBusinessFee: number;

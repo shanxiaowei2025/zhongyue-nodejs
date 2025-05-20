@@ -394,6 +394,13 @@ export class ExpenseService {
         }
       }
       
+      // 处理字符串数组类型字段
+      ['insuranceTypes', 'changeBusiness', 'administrativeLicense', 'otherBusiness'].forEach(field => {
+        if (item[field] && Array.isArray(item[field])) {
+          item[field] = item[field].join(',');
+        }
+      });
+      
       return item;
     });
 

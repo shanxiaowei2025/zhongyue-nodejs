@@ -144,8 +144,9 @@ export class CreateExpenseDto {
 
   @ApiProperty({ description: '参保险种', required: false })
   @IsOptional()
-  @IsString()
-  insuranceTypes?: string;
+  @IsArray()
+  @IsString({ each: true })
+  insuranceTypes?: string[];
 
   @ApiProperty({ description: '参保人数', required: false })
   @IsOptional()
@@ -184,8 +185,9 @@ export class CreateExpenseDto {
 
   @ApiProperty({ description: '变更业务', required: false })
   @IsOptional()
-  @IsString()
-  changeBusiness?: string;
+  @IsArray()
+  @IsString({ each: true })
+  changeBusiness?: string[];
 
   @ApiProperty({ description: '变更收费', required: false })
   @IsOptional()
@@ -194,8 +196,9 @@ export class CreateExpenseDto {
 
   @ApiProperty({ description: '行政许可', required: false })
   @IsOptional()
-  @IsString()
-  administrativeLicense?: string;
+  @IsArray()
+  @IsString({ each: true })
+  administrativeLicense?: string[];
 
   @ApiProperty({ description: '行政许可收费', required: false })
   @IsOptional()
@@ -204,8 +207,9 @@ export class CreateExpenseDto {
 
   @ApiProperty({ description: '其他业务', required: false })
   @IsOptional()
-  @IsString()
-  otherBusiness?: string;
+  @IsArray()
+  @IsString({ each: true })
+  otherBusiness?: string[];
 
   @ApiProperty({ description: '其他业务收费', required: false })
   @IsOptional()
