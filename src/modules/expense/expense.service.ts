@@ -40,6 +40,9 @@ export class ExpenseService {
       if (query.companyName) {
         conditions.companyName = Like(`%${query.companyName}%`);
       }
+      if (query.unifiedSocialCreditCode) {
+        conditions.unifiedSocialCreditCode = Like(`%${query.unifiedSocialCreditCode}%`);
+      }
       if (query.companyType) {
         conditions.companyType = query.companyType;
       }
@@ -264,6 +267,9 @@ export class ExpenseService {
       if (query.companyName) {
         conditions.companyName = Like(`%${query.companyName}%`);
       }
+      if (query.unifiedSocialCreditCode) {
+        conditions.unifiedSocialCreditCode = Like(`%${query.unifiedSocialCreditCode}%`);
+      }
       if (query.companyType) {
         conditions.companyType = query.companyType;
       }
@@ -308,6 +314,7 @@ export class ExpenseService {
       // 移除ID字段
       // id: 'ID',
       companyName: '企业名称',
+      unifiedSocialCreditCode: '统一社会信用代码',
       companyType: '企业类型',
       companyLocation: '企业归属地',
       licenseType: '办照类型',

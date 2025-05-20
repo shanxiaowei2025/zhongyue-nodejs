@@ -7,6 +7,11 @@ export class CreateExpenseDto {
   @IsString()
   companyName?: string;
 
+  @ApiProperty({ description: '统一社会信用代码', required: false })
+  @IsOptional()
+  @IsString()
+  unifiedSocialCreditCode?: string;
+
   @ApiProperty({ description: '企业类型', required: false })
   @IsOptional()
   @IsString()

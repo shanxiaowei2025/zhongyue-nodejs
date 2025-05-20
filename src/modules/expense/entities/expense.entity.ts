@@ -9,6 +9,9 @@ export class Expense {
   @Column({ type: 'varchar', length: 255, nullable: true, comment: '企业名称' })
   companyName: string;
 
+  @Column({ type: 'varchar', length: 100, nullable: true, comment: '统一社会信用代码' })
+  unifiedSocialCreditCode: string;
+
   @Column({ type: 'varchar', length: 100, nullable: true, comment: '企业类型' })
   companyType: string;
 

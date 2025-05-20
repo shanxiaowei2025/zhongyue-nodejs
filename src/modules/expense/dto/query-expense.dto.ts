@@ -8,6 +8,11 @@ export class QueryExpenseDto {
   @IsString()
   companyName?: string;
 
+  @ApiProperty({ description: '统一社会信用代码', required: false })
+  @IsOptional()
+  @IsString()
+  unifiedSocialCreditCode?: string;
+
   @ApiProperty({ description: '状态：0-未审核，1-已审核，2-已退回', required: false })
   @IsOptional()
   @Type(() => Number)
