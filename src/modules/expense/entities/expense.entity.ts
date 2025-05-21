@@ -152,6 +152,9 @@ export class Expense {
   @Column({ type: 'date', nullable: true, comment: '收费日期' })
   chargeDate: string;
 
+  @Column({ type: 'varchar', length: 12, nullable: true, comment: '收据编号' })
+  receiptNo: string;
+
   @Column({ type: 'varchar', length: 100, nullable: true, comment: '收费方式' })
   chargeMethod: string;
 

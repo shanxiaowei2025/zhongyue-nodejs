@@ -236,6 +236,11 @@ export class CreateExpenseDto {
   @IsString()
   chargeDate?: string;
 
+  @ApiProperty({ description: '收据编号', required: false })
+  @IsOptional()
+  @IsString()
+  receiptNo?: string;
+
   @ApiProperty({ description: '收费方式', required: false })
   @IsOptional()
   @IsString()

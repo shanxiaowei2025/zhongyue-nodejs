@@ -22,7 +22,92 @@ export class ExpenseService {
       ...createExpenseDto,
       salesperson: username,
     });
+
+    // 如果有收费日期，则生成收据编号
+    if (expense.chargeDate) {
+      try {
+        expense.receiptNo = await this.generateReceiptNo(expense.chargeDate);
+        console.log('生成收据编号:', expense.receiptNo, '收费日期:', expense.chargeDate);
+      } catch (error) {
+        console.error('生成收据编号出错:', error);
+      }
+    } else {
+      console.log('没有收费日期，跳过收据编号生成');
+    }
+
     return await this.expenseRepository.save(expense);
+  }
+
+  // 生成收据编号的辅助方法
+  private async generateReceiptNo(chargeDate: string | Date): Promise<string> {
+    if (!chargeDate) {
+      throw new Error('收费日期不能为空');
+    }
+    
+    // 格式化日期为YYYYMMDD
+    // 确保日期格式正确
+    let datePart: string;
+    if (typeof chargeDate === 'string') {
+      // 如果是字符串，直接去除短横线
+      datePart = chargeDate.replace(/-/g, '');
+    } else if (chargeDate instanceof Date) {
+      // 如果是Date对象，格式化为YYYYMMDD
+      datePart = chargeDate.toISOString().slice(0, 10).replace(/-/g, '');
+    } else {
+      throw new Error(`无效的日期格式: ${chargeDate}`);
+    }
+    
+    // 确保得到的datePart是8位数字
+    if (!/^\d{8}$/.test(datePart)) {
+      throw new Error(`日期格式不正确: ${chargeDate}, 格式化结果: ${datePart}`);
+    }
+    
+    console.log('生成收据编号 - 日期部分:', datePart);
+    
+    // 查询当天最大的收据编号
+    const query = `
+      SELECT receiptNo 
+      FROM sys_expense 
+      WHERE chargeDate = ? 
+      AND receiptNo IS NOT NULL 
+      AND receiptNo LIKE '${datePart}%'
+      ORDER BY receiptNo DESC 
+      LIMIT 1
+    `;
+    
+    console.log('执行查询:', query, '参数:', chargeDate);
+    const result = await this.expenseRepository.query(query, [chargeDate]);
+    console.log('查询结果:', result);
+    
+    let sequenceNumber = 1;
+    if (result && result.length > 0 && result[0].receiptNo) {
+      // 提取序列号部分并加1
+      const lastReceiptNo = result[0].receiptNo;
+      console.log('找到最后的收据编号:', lastReceiptNo);
+      
+      // 确保receiptNo至少有9个字符（8位日期+至少1位序号）
+      if (lastReceiptNo.length >= 9) {
+        const lastNumber = parseInt(lastReceiptNo.substring(8), 10);
+        if (!isNaN(lastNumber)) {
+          sequenceNumber = lastNumber + 1;
+          console.log('新序列号:', sequenceNumber);
+        } else {
+          console.error('无法解析序列号部分:', lastReceiptNo.substring(8));
+        }
+      } else {
+        console.error('收据编号格式不正确:', lastReceiptNo);
+      }
+    } else {
+      console.log('没有找到现有收据编号，使用序列号1');
+    }
+    
+    // 格式化序列号为4位
+    const sequencePart = String(sequenceNumber).padStart(4, '0');
+    
+    const receiptNo = `${datePart}${sequencePart}`;
+    console.log('生成的完整收据编号:', receiptNo);
+    
+    return receiptNo;
   }
 
   async findAll(query: any, pagination: PaginationDto, userId: number) {
@@ -138,7 +223,31 @@ export class ExpenseService {
       throw new BadRequestException('没有权限编辑费用记录');
     }
 
+    // 检查收费日期是否有变更
+    let needUpdateReceiptNo = false;
+    
+    if (updateExpenseDto.chargeDate !== undefined) {
+      // 确保两个日期的格式一致后再比较
+      const oldDateStr = expense.chargeDate ? expense.chargeDate.toString().split('T')[0] : '';
+      const newDateStr = updateExpenseDto.chargeDate ? updateExpenseDto.chargeDate.toString().split('T')[0] : '';
+      
+      console.log('更新收费日期 - 旧日期:', oldDateStr, '新日期:', newDateStr);
+      
+      needUpdateReceiptNo = oldDateStr !== newDateStr;
+      console.log('需要更新收据编号:', needUpdateReceiptNo);
+    }
+
     const updated = Object.assign(expense, updateExpenseDto);
+    
+    // 如果收费日期变更，重新生成收据编号
+    if (needUpdateReceiptNo && updated.chargeDate) {
+      try {
+        updated.receiptNo = await this.generateReceiptNo(updated.chargeDate);
+        console.log('更新后的收据编号:', updated.receiptNo);
+      } catch (error) {
+        console.error('更新收据编号时出错:', error);
+      }
+    }
     
     // 如果是退回状态且业务员编辑，则重置为待审核状态
     if (expense.status === 2 && expense.salesperson === username) {
@@ -230,13 +339,43 @@ export class ExpenseService {
       throw new BadRequestException('只能查看已审核通过的费用记录的收据');
     }
 
+    // 收集所有非零费用字段
+    const feeItems = [];
+    const feeFieldsMap = {
+      licenseFee: '办照费用',
+      brandFee: '牌子费',
+      recordSealFee: '备案章费用',
+      generalSealFee: '一般刻章费用',
+      agencyFee: '代理费',
+      accountingSoftwareFee: '记账软件费',
+      addressFee: '地址费',
+      invoiceSoftwareFee: '开票软件费',
+      socialInsuranceAgencyFee: '社保代理费',
+      statisticalReportFee: '统计局报表费',
+      changeFee: '变更收费',
+      administrativeLicenseFee: '行政许可收费',
+      otherBusinessFee: '其他业务收费'
+    };
+
+    // 遍历费用字段，找出非零正数的费用
+    for (const [field, name] of Object.entries(feeFieldsMap)) {
+      if (expense[field] && expense[field] > 0) {
+        feeItems.push({
+          name,
+          amount: expense[field]
+        });
+      }
+    }
+
     return {
       id: expense.id,
       companyName: expense.companyName,
       chargeDate: expense.chargeDate,
+      receiptNo: expense.receiptNo,
       totalFee: expense.totalFee,
       chargeMethod: expense.chargeMethod,
-      remarks: expense.receiptRemarks
+      remarks: expense.receiptRemarks,
+      feeItems
     };
   }
 
