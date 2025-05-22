@@ -29,9 +29,10 @@ ENV NODE_ENV=${NODE_ENV}
 WORKDIR /usr/src/app
 
 # 安装Python和必要依赖
-RUN dnf install -y python3 python3-pip && \
+RUN apt update && \
+    apt install -y python3 python3-pip && \
     pip3 install --no-cache-dir pandas sqlalchemy pymysql openpyxl && \
-    dnf clean all
+    apt clean && rm -rf /var/lib/apt/lists/*
 
 # 设置国内镜像
 RUN npm config set registry https://registry.npmmirror.com && \
