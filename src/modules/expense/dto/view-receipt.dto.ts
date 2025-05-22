@@ -6,6 +6,12 @@ export class FeeItem {
 
   @ApiProperty({ description: '费用金额' })
   amount: number;
+  
+  @ApiProperty({ description: '开始日期', required: false })
+  startDate?: string;
+  
+  @ApiProperty({ description: '结束日期', required: false })
+  endDate?: string;
 }
 
 export class ViewReceiptDto {

@@ -75,8 +75,8 @@ export class Expense {
   @Column({ type: 'varchar', length: 100, nullable: true, comment: '合同类型' })
   contractType: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true, comment: '合同图片' })
-  contractImage: string;
+  @Column({ type: 'simple-json', nullable: true, comment: '合同图片列表' })
+  contractImage: any[];
 
   // @Column({ type: 'varchar', length: 255, nullable: true, comment: '开票软件服务商' })
   // invoiceSoftwareProvider: string;
@@ -104,6 +104,21 @@ export class Expense {
 
   @Column({ type: 'date', nullable: true, comment: '社保结束日期' })
   socialInsuranceEndDate: string;
+  
+  @Column({ type: 'boolean', default: false, comment: '是否有公积金' })
+  hasHousingFund: boolean;
+  
+  @Column({ type: 'int', nullable: true, comment: '公积金人数' })
+  housingFundCount: number;
+  
+  @Column({ type: 'int', nullable: true, comment: '公积金代理费' })
+  housingFundAgencyFee: number;
+  
+  @Column({ type: 'date', nullable: true, comment: '公积金开始日期' })
+  housingFundStartDate: string;
+  
+  @Column({ type: 'date', nullable: true, comment: '公积金结束日期' })
+  housingFundEndDate: string;
 
   @Column({ type: 'int', nullable: true, comment: '统计局报表费' })
   statisticalReportFee: number;

@@ -341,29 +341,78 @@ export class ExpenseService {
 
     // 收集所有非零费用字段
     const feeItems = [];
-    const feeFieldsMap = {
-      licenseFee: '办照费用',
-      brandFee: '牌子费',
-      recordSealFee: '备案章费用',
-      generalSealFee: '一般刻章费用',
-      agencyFee: '代理费',
-      accountingSoftwareFee: '记账软件费',
-      addressFee: '地址费',
-      invoiceSoftwareFee: '开票软件费',
-      socialInsuranceAgencyFee: '社保代理费',
-      statisticalReportFee: '统计局报表费',
-      changeFee: '变更收费',
-      administrativeLicenseFee: '行政许可收费',
-      otherBusinessFee: '其他业务收费'
-    };
+    
+    // 费用字段映射 - 包含名称、金额字段、开始日期字段和结束日期字段
+    const feeFieldsMap = [
+      { name: '办照费用', amountField: 'licenseFee' },
+      { name: '牌子费', amountField: 'brandFee' },
+      { name: '备案章费用', amountField: 'recordSealFee' },
+      { name: '一般刻章费用', amountField: 'generalSealFee' },
+      { 
+        name: '代理费', 
+        amountField: 'agencyFee',
+        startDateField: 'agencyStartDate',
+        endDateField: 'agencyEndDate'
+      },
+      { 
+        name: '记账软件费', 
+        amountField: 'accountingSoftwareFee',
+        startDateField: 'accountingSoftwareStartDate',
+        endDateField: 'accountingSoftwareEndDate'
+      },
+      { 
+        name: '地址费', 
+        amountField: 'addressFee',
+        startDateField: 'addressStartDate',
+        endDateField: 'addressEndDate'
+      },
+      { 
+        name: '开票软件费', 
+        amountField: 'invoiceSoftwareFee',
+        startDateField: 'invoiceSoftwareStartDate',
+        endDateField: 'invoiceSoftwareEndDate'
+      },
+      { 
+        name: '社保代理费', 
+        amountField: 'socialInsuranceAgencyFee',
+        startDateField: 'socialInsuranceStartDate',
+        endDateField: 'socialInsuranceEndDate'
+      },
+      { 
+        name: '公积金代理费', 
+        amountField: 'housingFundAgencyFee',
+        startDateField: 'housingFundStartDate',
+        endDateField: 'housingFundEndDate'
+      },
+      { 
+        name: '统计局报表费', 
+        amountField: 'statisticalReportFee',
+        startDateField: 'statisticalStartDate',
+        endDateField: 'statisticalEndDate'
+      },
+      { name: '变更收费', amountField: 'changeFee' },
+      { name: '行政许可收费', amountField: 'administrativeLicenseFee' },
+      { name: '其他业务收费', amountField: 'otherBusinessFee' }
+    ];
 
     // 遍历费用字段，找出非零正数的费用
-    for (const [field, name] of Object.entries(feeFieldsMap)) {
-      if (expense[field] && expense[field] > 0) {
-        feeItems.push({
-          name,
-          amount: expense[field]
-        });
+    for (const field of feeFieldsMap) {
+      if (expense[field.amountField] && expense[field.amountField] > 0) {
+        const feeItem: any = {
+          name: field.name,
+          amount: expense[field.amountField]
+        };
+        
+        // 如果存在日期字段，添加到返回数据中
+        if (field.startDateField && expense[field.startDateField]) {
+          feeItem.startDate = expense[field.startDateField];
+        }
+        
+        if (field.endDateField && expense[field.endDateField]) {
+          feeItem.endDate = expense[field.endDateField];
+        }
+        
+        feeItems.push(feeItem);
       }
     }
 
@@ -482,6 +531,11 @@ export class ExpenseService {
       socialInsuranceAgencyFee: '社保代理费',
       socialInsuranceStartDate: '社保开始日期',
       socialInsuranceEndDate: '社保结束日期',
+      hasHousingFund: '是否有公积金',
+      housingFundCount: '公积金人数',
+      housingFundAgencyFee: '公积金代理费',
+      housingFundStartDate: '公积金开始日期',
+      housingFundEndDate: '公积金结束日期',
       statisticalReportFee: '统计局报表费',
       statisticalStartDate: '统计开始日期',
       statisticalEndDate: '统计结束日期',

@@ -1,7 +1,7 @@
 // 创建客户时的数据结构
 import { IsString, IsOptional, IsNumber, IsDate, IsObject, IsEnum, IsBoolean, IsArray, ValidateNested } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { EnterpriseStatus, TaxRegistrationType, BusinessStatus } from '../enums/customer.enum';
+import { BusinessStatus } from '../enums/customer.enum';
 import { Type } from 'class-transformer';
 
 // 已实缴金额数据结构
@@ -389,12 +389,11 @@ export class CreateCustomerDto {
   sealStorageNumber?: string;
 
   @ApiPropertyOptional({ 
-    description: '企业当前的经营状态',
-    enum: EnterpriseStatus 
+    description: '企业当前的经营状态'
   })
-  @IsEnum(EnterpriseStatus)
+  @IsString()
   @IsOptional()
-  enterpriseStatus?: EnterpriseStatus;
+  enterpriseStatus?: string;
 
   @ApiPropertyOptional({ 
     description: '当前业务的状态',

@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsOptional, IsArray, IsDateString, IsInt, Min, Max } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsArray, IsDateString, IsInt, Min, Max, IsBoolean } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateExpenseDto {
@@ -117,10 +117,10 @@ export class CreateExpenseDto {
   @IsString()
   contractType?: string;
 
-  @ApiProperty({ description: '合同图片', required: false })
+  @ApiProperty({ description: '合同图片列表', required: false, type: [Object] })
   @IsOptional()
-  @IsString()
-  contractImage?: string;
+  @IsArray()
+  contractImage?: any[];
 
   // @ApiProperty({ description: '开票软件服务商', required: false })
   // @IsOptional()
@@ -167,6 +167,31 @@ export class CreateExpenseDto {
   @IsOptional()
   @IsString()
   socialInsuranceEndDate?: string;
+
+  @ApiProperty({ description: '是否有公积金', required: false, default: false })
+  @IsOptional()
+  @IsBoolean()
+  hasHousingFund?: boolean;
+  
+  @ApiProperty({ description: '公积金人数', required: false })
+  @IsOptional()
+  @IsNumber()
+  housingFundCount?: number;
+  
+  @ApiProperty({ description: '公积金代理费', required: false })
+  @IsOptional()
+  @IsNumber()
+  housingFundAgencyFee?: number;
+  
+  @ApiProperty({ description: '公积金开始日期', required: false })
+  @IsOptional()
+  @IsString()
+  housingFundStartDate?: string;
+  
+  @ApiProperty({ description: '公积金结束日期', required: false })
+  @IsOptional()
+  @IsString()
+  housingFundEndDate?: string;
 
   @ApiProperty({ description: '统计局报表费', required: false })
   @IsOptional()

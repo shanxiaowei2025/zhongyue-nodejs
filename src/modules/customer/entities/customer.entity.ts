@@ -5,7 +5,7 @@
 // 2. 设置字段类型和属性
 // 3. 定义表关系
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-import { EnterpriseStatus, TaxRegistrationType, BusinessStatus } from '../enums/customer.enum';
+import {  BusinessStatus } from '../enums/customer.enum';
 
 @Entity('sys_customer')
 export class Customer {
@@ -243,12 +243,12 @@ export class Customer {
 
   @Column({ 
     nullable: true,
-    type: 'enum', 
-    enum: EnterpriseStatus,
-    default: EnterpriseStatus.ACTIVE,
+    type: 'varchar',
+    length: 50,
+    default: 'active',
     comment: '企业当前的经营状态' 
   })
-  enterpriseStatus: EnterpriseStatus;
+  enterpriseStatus: string;
 
   @Column({ 
     nullable: true,

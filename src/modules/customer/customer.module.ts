@@ -14,13 +14,29 @@ import { Role } from '../roles/entities/role.entity';
 import { Permission } from '../permissions/entities/permission.entity';
 import { Department } from '../department/entities/department.entity';
 import { CustomerPermissionService } from './services/customer-permission.service';
+import { MulterModule } from '@nestjs/platform-express';
+import { join } from 'path';
+import * as fs from 'fs';
+import { diskStorage } from 'multer';
+import { memoryStorage } from 'multer';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Customer, User, Role, Permission, Department]),
+    MulterModule.register({
+      storage: memoryStorage(), // 使用内存存储而不是磁盘存储，确保file.buffer可用
+    }),
   ],
   controllers: [CustomerController],
   providers: [CustomerService, CustomerPermissionService],
   exports: [CustomerService],
 })
-export class CustomerModule {} 
+export class CustomerModule {
+  constructor() {
+    // 确保上传目录存在
+    const uploadPath = join(process.cwd(), 'uploads');
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+  }
+} 

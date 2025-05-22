@@ -8,6 +8,9 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 import { HttpExceptionFilter } from './common/filters/http-exception.filter'; // 这是处理错误的工具
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'; // 这是生成API文档的工具
 import { BulkDeleteDto } from './modules/department/dto/department.dto';
+import * as cookieParser from 'cookie-parser';
+import { join } from 'path';
+import * as express from 'express';
 
 // 启动应用
 async function bootstrap() {
@@ -67,6 +70,16 @@ async function bootstrap() {
     origin: configService.get('app.cors.origin'), // 允许访问的网站
     credentials: true, // 允许携带认证信息
   });
+
+  // 使用cookie解析
+  app.use(cookieParser());
+
+  // 配置静态文件服务
+  app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
+
+  // 配置文件上传大小限制
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
   // 只在开发环境下显示API文档
   if (configService.get('app.env') !== 'production') {

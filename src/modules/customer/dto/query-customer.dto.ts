@@ -1,7 +1,7 @@
 // 查询客户时的参数结构
 import { IsOptional, IsString, IsDate, IsNumber, IsEnum } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { EnterpriseStatus, TaxRegistrationType, BusinessStatus } from '../enums/customer.enum';
+import { BusinessStatus } from '../enums/customer.enum';
 
 export class QueryCustomerDto {
   @ApiPropertyOptional({ description: '企业名称关键词' })
@@ -41,8 +41,8 @@ export class QueryCustomerDto {
 
   @ApiPropertyOptional({ description: '企业当前的经营状态' })
   @IsOptional()
-  @IsEnum(EnterpriseStatus)
-  enterpriseStatus?: EnterpriseStatus;
+  @IsString()
+  enterpriseStatus?: string;
 
   @ApiPropertyOptional({ description: '当前业务的状态' })
   @IsOptional()

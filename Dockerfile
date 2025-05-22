@@ -1,6 +1,12 @@
-FROM node:20-alpine AS development
+FROM node:20-bullseye AS development
 
 WORKDIR /usr/src/app
+
+# 安装 Python 和 pip
+RUN apt update && \
+    apt install -y python3 python3-pip && \
+    pip3 install --no-cache-dir pandas sqlalchemy pymysql openpyxl && \
+    apt clean && rm -rf /var/lib/apt/lists/*
 
 # 设置npm和pnpm使用国内镜像
 RUN npm config set registry https://registry.npmmirror.com && \
@@ -15,12 +21,17 @@ COPY . .
 
 RUN pnpm run build
 
-FROM node:20-alpine AS production
+FROM node:20-fedora AS production
 
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
 
 WORKDIR /usr/src/app
+
+# 安装Python和必要依赖
+RUN dnf install -y python3 python3-pip && \
+    pip3 install --no-cache-dir pandas sqlalchemy pymysql openpyxl && \
+    dnf clean all
 
 # 设置国内镜像
 RUN npm config set registry https://registry.npmmirror.com && \
@@ -34,8 +45,7 @@ RUN pnpm install --prod && \
     pnpm store prune
 
 # 创建非root用户提高安全性
-RUN addgroup -S nodeapp && \
-    adduser -S -G nodeapp nodeapp
+RUN useradd -r -g 0 -d /usr/src/app nodeapp
 
 COPY --from=development /usr/src/app/dist ./dist
 

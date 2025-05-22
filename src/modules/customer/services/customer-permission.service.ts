@@ -71,6 +71,40 @@ export class CustomerPermissionService {
     );
   }
 
+  // 检查用户是否有导入客户数据的权限
+  async hasCustomerImportPermission(userId: number): Promise<boolean> {
+    const permissions = await this.getUserPermissions(userId);
+    
+    // 查看是否有导入权限，如果有专门的导入权限则使用，否则退化为检查创建权限
+    if (permissions.includes('customer_action_import')) {
+      return true;
+    }
+    
+    // 如果没有专门的导入权限，则检查是否有创建客户的权限
+    return permissions.includes('customer_action_create');
+  }
+
+  /**
+   * 用于批量操作的权限检查（如导入导出等），不关联特定客户ID
+   * 此方法仅检查用户是否有相应权限，不会构建查询条件
+   */
+  async checkBatchOperationPermission(userId: number, requiredPermission: string): Promise<boolean> {
+    const permissions = await this.getUserPermissions(userId);
+    
+    // 检查是否有请求的权限
+    if (permissions.includes(requiredPermission)) {
+      return true;
+    }
+    
+    // 如果没有特定权限，检查是否有管理员权限
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (user && user.roles && (user.roles.includes('admin') || user.roles.includes('super_admin'))) {
+      return true;
+    }
+    
+    return false;
+  }
+
   // 根据用户权限构建客户查询条件
   async buildCustomerQueryFilter(userId: number): Promise<any> {
     const user = await this.userRepository.findOne({
@@ -80,7 +114,7 @@ export class CustomerPermissionService {
 
     if (!user) {
       console.log('用户未找到:', userId);
-      return { id: -1 };
+      return {};
     }
 
     console.log('用户信息:', {
@@ -165,9 +199,9 @@ export class CustomerPermissionService {
       });
     }
 
-    // 如果没有任何权限条件，返回无权限
+    // 如果没有任何权限条件，返回空对象
     if (conditions.length === 0) {
-      return { id: -1 };
+      return {};
     }
 
     console.log('查询条件:', conditions);
