@@ -50,6 +50,13 @@ RUN useradd -r -g 0 -d /usr/src/app nodeapp
 
 COPY --from=development /usr/src/app/dist ./dist
 
+# 创建必要的目录
+RUN mkdir -p /usr/src/app/uploads && \
+    mkdir -p /usr/src/app/tmp
+
+# 设置适当的权限
+RUN chown -R nodeapp:nodeapp /usr/src/app/uploads /usr/src/app/tmp
+
 # 切换到非root用户
 USER nodeapp
 
