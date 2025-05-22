@@ -21,7 +21,7 @@ COPY . .
 
 RUN pnpm run build
 
-FROM node:20-fedora AS production
+FROM node:20-bullseye AS production
 
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}

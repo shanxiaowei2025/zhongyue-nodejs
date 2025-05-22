@@ -1,6 +1,6 @@
 // 定义枚举类型
 // 例如：
-// - 企业状态：active/inactive/pending
+// - 企业状态：active/inactive/pending 正常、已注销、待处理
 // - 业务状态有正常、已注销、注销中、已流失、等待转出：normal、logged_out、logging_out、lost、waiting_transfer
 // export enum EnterpriseStatus {
 //   ACTIVE = 'active',
