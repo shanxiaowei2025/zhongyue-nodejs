@@ -45,8 +45,9 @@ COPY package*.json pnpm-lock.yaml ./
 RUN pnpm install --prod && \
     pnpm store prune
 
-# 创建非root用户提高安全性
-RUN useradd -r -g 0 -d /usr/src/app nodeapp
+# 创建非root用户和组
+RUN groupadd -r nodeapp && \
+    useradd -r -g nodeapp -d /usr/src/app nodeapp
 
 COPY --from=development /usr/src/app/dist ./dist
 
