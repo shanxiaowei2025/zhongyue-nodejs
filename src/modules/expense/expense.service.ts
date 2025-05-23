@@ -376,7 +376,8 @@ export class ExpenseService {
         name: '社保代理费', 
         amountField: 'socialInsuranceAgencyFee',
         startDateField: 'socialInsuranceStartDate',
-        endDateField: 'socialInsuranceEndDate'
+        endDateField: 'socialInsuranceEndDate',
+        listField: 'insuranceTypes'
       },
       { 
         name: '公积金代理费', 
@@ -390,16 +391,36 @@ export class ExpenseService {
         startDateField: 'statisticalStartDate',
         endDateField: 'statisticalEndDate'
       },
-      { name: '变更收费', amountField: 'changeFee' },
-      { name: '行政许可收费', amountField: 'administrativeLicenseFee' },
-      { name: '其他业务收费', amountField: 'otherBusinessFee' }
+      // 特殊处理的三个字段，需要与数组内容合并显示
+      { 
+        name: '变更收费', 
+        amountField: 'changeFee',
+        listField: 'changeBusiness'
+      },
+      { 
+        name: '行政许可收费', 
+        amountField: 'administrativeLicenseFee',
+        listField: 'administrativeLicense'
+      },
+      { 
+        name: '其他业务收费', 
+        amountField: 'otherBusinessFee',
+        listField: 'otherBusiness'
+      }
     ];
 
     // 遍历费用字段，找出非零正数的费用
     for (const field of feeFieldsMap) {
       if (expense[field.amountField] && expense[field.amountField] > 0) {
+        let feeName = field.name;
+        
+        // 特殊处理三个业务字段，将数组内容合并到名称中
+        if (field.listField && expense[field.listField] && expense[field.listField].length > 0) {
+          feeName = `${field.name}(${expense[field.listField].join(', ')})`;
+        }
+        
         const feeItem: any = {
-          name: field.name,
+          name: feeName,
           amount: expense[field.amountField]
         };
         

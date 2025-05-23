@@ -21,31 +21,31 @@ export class Expense {
   @Column({ type: 'varchar', length: 100, nullable: true, comment: '办照类型' })
   licenseType: string;
 
-  @Column({ type: 'int', nullable: true, comment: '办照费用' })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '办照费用' })
   licenseFee: number;
 
   // @Column({ type: 'int', nullable: true, comment: '一次性地址费' })
   // oneTimeAddressFee: number;
 
-  @Column({ type: 'int', nullable: true, comment: '牌子费' })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '牌子费' })
   brandFee: number;
 
   // @Column({ type: 'int', nullable: true, comment: '刻章费' })
   // sealFee: number;
   
-  @Column({ type: 'int', nullable: true, comment: '备案章费用' })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '备案章费用' })
   recordSealFee: number;
   
-  @Column({ type: 'int', nullable: true, comment: '一般刻章费用' })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '一般刻章费用' })
   generalSealFee: number;
 
   @Column({ type: 'varchar', length: 100, nullable: true, comment: '代理类型' })
   agencyType: string;
 
-  @Column({ type: 'int', nullable: true, comment: '代理费' })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '代理费' })
   agencyFee: number;
 
-  @Column({ type: 'int', nullable: true, comment: '记账软件费' })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '记账软件费' })
   accountingSoftwareFee: number;
 
   @Column({ type: 'date', nullable: true, comment: '记账软件开始日期' })
@@ -54,7 +54,7 @@ export class Expense {
   @Column({ type: 'date', nullable: true, comment: '记账软件结束日期' })
   accountingSoftwareEndDate: string;
 
-  @Column({ type: 'int', nullable: true, comment: '地址费' })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '地址费' })
   addressFee: number;
 
   @Column({ type: 'date', nullable: true, comment: '地址费开始日期' })
@@ -81,7 +81,7 @@ export class Expense {
   // @Column({ type: 'varchar', length: 255, nullable: true, comment: '开票软件服务商' })
   // invoiceSoftwareProvider: string;
 
-  @Column({ type: 'int', nullable: true, comment: '开票软件费' })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '开票软件费' })
   invoiceSoftwareFee: number;
 
   @Column({ type: 'date', nullable: true, comment: '开票软件开始日期' })
@@ -96,7 +96,7 @@ export class Expense {
   @Column({ type: 'int', nullable: true, comment: '参保人数' })
   insuredCount: number;
 
-  @Column({ type: 'int', nullable: true, comment: '社保代理费' })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '社保代理费' })
   socialInsuranceAgencyFee: number;
 
   @Column({ type: 'date', nullable: true, comment: '社保开始日期' })
@@ -111,7 +111,7 @@ export class Expense {
   @Column({ type: 'int', nullable: true, comment: '公积金人数' })
   housingFundCount: number;
   
-  @Column({ type: 'int', nullable: true, comment: '公积金代理费' })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '公积金代理费' })
   housingFundAgencyFee: number;
   
   @Column({ type: 'date', nullable: true, comment: '公积金开始日期' })
@@ -120,7 +120,7 @@ export class Expense {
   @Column({ type: 'date', nullable: true, comment: '公积金结束日期' })
   housingFundEndDate: string;
 
-  @Column({ type: 'int', nullable: true, comment: '统计局报表费' })
+  @Column({ nullable: true, comment: '统计局报表费' })
   statisticalReportFee: number;
 
   @Column({ type: 'date', nullable: true, comment: '统计开始日期' })
@@ -132,25 +132,25 @@ export class Expense {
   @Column({ type: 'simple-array', nullable: true, comment: '变更业务' })
   changeBusiness: string[];
 
-  @Column({ type: 'int', nullable: true, comment: '变更收费' })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '变更收费' })
   changeFee: number;
 
   @Column({ type: 'simple-array', nullable: true, comment: '行政许可' })
   administrativeLicense: string[];
 
-  @Column({ type: 'int', nullable: true, comment: '行政许可收费' })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '行政许可收费' })
   administrativeLicenseFee: number;
 
   @Column({ type: 'simple-array', nullable: true, comment: '其他业务' })
   otherBusiness: string[];
 
-  @Column({ type: 'int', nullable: true, comment: '其他业务收费' })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '其他业务收费' })
   otherBusinessFee: number;
 
   @Column({ type: 'simple-json', nullable: true, comment: '收费凭证' })
   proofOfCharge: string[];
 
-  @Column({ type: 'int', nullable: true, comment: '总费用' })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '总费用' })
   totalFee: number;
 
   @Column({ type: 'varchar', length: 100, nullable: true, comment: '业务员' })

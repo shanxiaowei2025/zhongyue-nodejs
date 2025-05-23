@@ -38,4 +38,13 @@ export class ViewReceiptDto {
   
   @ApiProperty({ description: '费用明细列表', type: [FeeItem] })
   feeItems: FeeItem[];
+  
+  @ApiProperty({ description: '变更业务列表', type: [String], required: false })
+  changeBusiness: string[];
+  
+  @ApiProperty({ description: '行政许可列表', type: [String], required: false })
+  administrativeLicense: string[];
+  
+  @ApiProperty({ description: '其他业务列表', type: [String], required: false })
+  otherBusiness: string[];
 } 
