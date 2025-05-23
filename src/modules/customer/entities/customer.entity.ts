@@ -245,7 +245,6 @@ export class Customer {
     nullable: true,
     type: 'varchar',
     length: 50,
-    default: 'active',
     comment: '企业当前的经营状态' 
   })
   enterpriseStatus: string;

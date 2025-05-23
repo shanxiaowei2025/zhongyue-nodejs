@@ -15,7 +15,6 @@ import { RolesModule } from './modules/roles/roles.module'; // 新增
 import { PermissionsModule } from './modules/permissions/permissions.module'; // 新增
 import { DepartmentModule } from './modules/department/department.module';
 import { ExpenseModule } from './modules/expense/expense.module'; // 新增费用管理模块
-import { ContractModule } from './modules/contract/contract.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 
 // 导入各种配置文件
@@ -27,7 +26,7 @@ import * as Joi from 'joi'; // 用于验证配置的工具
 // 导入实体
 import { User } from './modules/users/entities/user.entity';
 import { Customer } from './modules/customer/entities/customer.entity';
-import { Contract } from './modules/contract/entities/contract.entity';
+
 import { Role } from './modules/roles/entities/role.entity'; // 路径已修改
 import { Permission } from './modules/permissions/entities/permission.entity'; // 路径已修改
 import { Department } from './modules/department/entities/department.entity';
@@ -78,7 +77,6 @@ import { Expense } from './modules/expense/entities/expense.entity'; // 新增�
         entities: [
           User,
           Customer,
-          Contract,
           Role,
           Permission,
           Department,
@@ -98,7 +96,6 @@ import { Expense } from './modules/expense/entities/expense.entity'; // 新增�
     CustomerModule, // 客户模块：处理客户相关的功能
     StorageModule,
     ExpenseModule, // 新增费用管理模块
-    ContractModule,
   ],
   controllers: [AppController], // 控制器：负责接收请求，像前台接待
   providers: [

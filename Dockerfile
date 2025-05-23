@@ -51,6 +51,7 @@ RUN groupadd -r nodeapp && \
 
 COPY --from=development /usr/src/app/dist ./dist
 
+COPY . .
 # 创建必要的目录
 RUN mkdir -p /usr/src/app/uploads && \
     mkdir -p /usr/src/app/tmp
