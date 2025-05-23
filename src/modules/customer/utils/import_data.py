@@ -10,6 +10,7 @@ import argparse
 import sys
 import traceback
 import json
+import urllib.parse
 
 # 设置调试模式
 DEBUG = True
@@ -28,11 +29,12 @@ def import_excel_data(file_path):
         
         # 配置数据库连接
         # 从环境变量获取数据库连接信息
-        DB_HOST = os.environ.get('DB_HOST', 'host.docker.internal')
-        DB_PORT = os.environ.get('DB_PORT', '3306')
-        DB_NAME = os.environ.get('DB_DATABASE', 'zhongyue_nodejs')
-        DB_USER = os.environ.get('DB_USERNAME', 'zhongyue')
-        DB_PASS = os.environ.get('DB_PASSWORD', 'zhongyue123')
+        DB_HOST = os.environ.get('DB_HOST', '')
+        DB_PORT = os.environ.get('DB_PORT', '')
+        DB_NAME = os.environ.get('DB_DATABASE', '')
+        DB_USER = os.environ.get('DB_USERNAME', '')
+        # 对密码进行 URL 编码，防止特殊字符（如 @）导致连接失败
+        DB_PASS = urllib.parse.quote_plus(os.environ.get('DB_PASSWORD', ''))
 
         # 输出数据库连接信息（不包含密码）
         debug_print(f"数据库连接信息: Host={DB_HOST}, Port={DB_PORT}, Name={DB_NAME}, User={DB_USER}")
