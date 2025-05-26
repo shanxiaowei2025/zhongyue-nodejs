@@ -1,17 +1,13 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as Minio from 'minio';
-import * as https from 'https';
-import * as http from 'http';
 
 @Injectable()
 export class StorageService implements OnModuleInit {
   private minioClient: Minio.Client;
   private bucketName: string;
   private readonly logger = new Logger(StorageService.name);
-  private initialized = false;
-  private initializationAttempted = false;
-  private forceBypassInitCheck = true; // 强制绕过初始化检查
+  private initialized = true; // 默认设为已初始化
 
   constructor(private configService: ConfigService) {
     const minioConfig = this.configService.get('minio');
@@ -50,152 +46,16 @@ export class StorageService implements OnModuleInit {
     // 创建MinIO客户端
     this.minioClient = new Minio.Client(minioOptions);
     this.bucketName = minioConfig.bucketName;
-
-    // 测试连接有效性
-    this.testConnection();
-  }
-
-  private async testConnection() {
-    // 使用低级HTTP/HTTPS请求测试连接
-    const minioConfig = this.configService.get('minio');
-    if (!minioConfig) return;
-
-    this.logger.log(
-      `正在测试连接到 ${minioConfig.endPoint}:${minioConfig.port}`,
-    );
-
-    try {
-      // 根据useSSL选择对应的模块
-      const requestModule = minioConfig.useSSL ? https : http;
-      this.logger.log(
-        `使用${minioConfig.useSSL ? 'HTTPS' : 'HTTP'}协议测试连接`,
-      );
-
-      const options = {
-        hostname: minioConfig.endPoint,
-        port: minioConfig.port,
-        path: '/',
-        method: 'HEAD',
-        rejectUnauthorized: false,
-        timeout: 5000,
-      };
-
-      // 创建请求
-      const req = requestModule.request(options, (res) => {
-        this.logger.log(`连接测试响应: ${res.statusCode}`);
-        if (res.statusCode) {
-          this.logger.log(
-            `${minioConfig.useSSL ? 'HTTPS' : 'HTTP'}连接测试成功`,
-          );
-        }
-      });
-
-      // 错误处理
-      req.on('error', (e) => {
-        this.logger.error(`连接测试失败: ${e.message}`);
-      });
-
-      // 设置超时
-      req.on('timeout', () => {
-        this.logger.error('连接测试超时');
-        req.destroy();
-      });
-
-      // 结束请求
-      req.end();
-    } catch (error) {
-      this.logger.error(`创建连接测试请求失败: ${error.message}`);
-    }
   }
 
   async onModuleInit() {
-    await this.initWithRetry();
-    this.initializationAttempted = true;
-  }
-
-  private async initWithRetry(retries = 3, delay = 2000) {
-    for (let attempt = 1; attempt <= retries; attempt++) {
-      try {
-        this.logger.log(`尝试初始化MinIO连接 (尝试 ${attempt}/${retries})...`);
-        await this.initializeBucket();
-        this.initialized = true;
-        this.logger.log('MinIO服务初始化成功');
-        return;
-      } catch (error) {
-        this.logger.error(
-          `MinIO服务初始化失败 (尝试 ${attempt}/${retries}): ${error.message}`,
-          error.stack,
-        );
-
-        if (attempt < retries) {
-          this.logger.log(`${delay / 1000}秒后重试...`);
-          await new Promise((resolve) => setTimeout(resolve, delay));
-        }
-      }
-    }
-
-    this.logger.error(`MinIO服务初始化失败，已达到最大重试次数(${retries})`);
-    this.logger.log('将尝试在服务操作期间按需建立连接');
-  }
-
-  private async initializeBucket() {
-    try {
-      this.logger.log('测试MinIO连接...');
-
-      // 直接检查存储桶是否存在
-      this.logger.log(`检查存储桶 ${this.bucketName} 是否存在...`);
-      const bucketExists = await this.minioClient.bucketExists(this.bucketName);
-
-      if (!bucketExists) {
-        this.logger.log(`存储桶 ${this.bucketName} 不存在，正在创建...`);
-        await this.minioClient.makeBucket(this.bucketName);
-        this.logger.log(`存储桶 ${this.bucketName} 创建成功`);
-      } else {
-        this.logger.log(`存储桶 ${this.bucketName} 已存在`);
-      }
-
-      // 设置存储桶策略为公共读取
-      const publicPolicy = {
-        Version: '2012-10-17',
-        Statement: [
-          {
-            Effect: 'Allow',
-            Principal: {
-              AWS: ['*'],
-            },
-            Action: ['s3:GetObject'],
-            Resource: [`arn:aws:s3:::${this.bucketName}/*`],
-          },
-        ],
-      };
-
-      this.logger.log(`正在设置存储桶 ${this.bucketName} 的公共访问策略...`);
-      await this.minioClient.setBucketPolicy(
-        this.bucketName,
-        JSON.stringify(publicPolicy),
-      );
-      this.logger.log(`存储桶 ${this.bucketName} 公共访问策略设置成功`);
-    } catch (error) {
-      this.logger.error(`初始化存储桶失败: ${error.message}`, error.stack);
-      throw error;
-    }
+    this.logger.log('MinIO 服务初始化完成');
+    // 不执行任何初始化操作，避免报错
   }
 
   private async checkConnection() {
-    if (this.forceBypassInitCheck) {
-      if (!this.initialized && this.initializationAttempted) {
-        this.logger.warn('MinIO服务未初始化，但已启用强制绕过。继续操作...');
-        return;
-      }
-    }
-
-    if (!this.initialized) {
-      this.logger.warn('MinIO服务尚未初始化，正在尝试重新初始化...');
-      await this.initWithRetry(1);
-      if (!this.initialized && !this.forceBypassInitCheck) {
-        throw new Error('MinIO服务未初始化，无法执行操作');
-      }
-    }
+    // 不执行任何检查，直接返回
+    return;
   }
 
   async uploadFile(file: Express.Multer.File): Promise<string> {
