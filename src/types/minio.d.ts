@@ -15,6 +15,7 @@ declare module 'minio' {
       objectName: string,
       stream: Buffer,
       size: number,
+      metaData?: Record<string, any>,
     ): Promise<void>;
     presignedGetObject(
       bucketName: string,
@@ -24,5 +25,14 @@ declare module 'minio' {
     removeObject(bucketName: string, objectName: string): Promise<void>;
     listObjects(bucketName: string, prefix?: string, recursive?: boolean): any;
     setBucketPolicy(bucketName: string, policy: string): Promise<void>;
+    statObject(
+      bucketName: string,
+      objectName: string,
+    ): Promise<{
+      size: number;
+      etag: string;
+      lastModified: Date;
+      metaData: Record<string, any>;
+    }>;
   }
 }

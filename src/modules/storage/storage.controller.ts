@@ -162,8 +162,27 @@ export class StorageController {
       this.logger.log(`接收到获取文件URL请求: ${fileName}`);
       const url = await this.storageService.getFileUrl(fileName);
       this.logger.log(`获取文件URL成功: ${fileName}`);
+      
+      // 尝试获取文件元数据以检查是否有原始文件名
+      let originalFileName = fileName;
+      try {
+        const metadata = await this.storageService.getFileMetadata(fileName);
+        if (metadata && metadata['X-Amz-Meta-Filename-Base64']) {
+          // 如果存在 Base64 编码的文件名，则解码
+          const encodedName = metadata['X-Amz-Meta-Filename-Base64'];
+          originalFileName = Buffer.from(encodedName, 'base64').toString(
+            'utf8',
+          );
+          this.logger.log(`解码后的原始文件名: ${originalFileName}`);
+        }
+      } catch (metaError) {
+        this.logger.warn(
+          `获取文件元数据失败，使用默认文件名: ${metaError.message}`,
+        );
+      }
+      
       return {
-        fileName,
+        fileName: originalFileName,
         url,
       };
     } catch (error) {

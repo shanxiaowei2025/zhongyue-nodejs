@@ -206,16 +206,39 @@ export class StorageService implements OnModuleInit {
     }
 
     try {
-      const fileName = `${Date.now()}-${file.originalname}`;
+      // 1. 从 Multer 获取的原始文件名进行解码处理
+      const decodedOriginalName = Buffer.from(
+        file.originalname,
+        'latin1',
+      ).toString('utf8');
+
+      // 2. 生成时间戳作为唯一标识符
+      const timestamp = Date.now();
+
+      // 3. 构建文件名，使用时间戳和解码后的原始文件名
+      const fileName = `${timestamp}-${decodedOriginalName}`;
+
       this.logger.log(
-        `正在上传文件: ${fileName}, 大小: ${file.size} 字节, 类型: ${file.mimetype}`,
+        `正在上传文件: ${fileName}, 原始名称: ${file.originalname}, 解码后: ${decodedOriginalName}, 大小: ${file.size} 字节, 类型: ${file.mimetype}`,
       );
+
+      // 4. 上传到 MinIO 服务器
+      // 对中文文件名进行 Base64 编码，避免 HTTP 头部中的无效字符问题
+      const encodedOriginalName = Buffer.from(decodedOriginalName).toString('base64');
+
+      const metadata = {
+        'Content-Type': file.mimetype,
+        'Cache-Control': 'max-age=31536000',
+        'X-Amz-Meta-Filename-Encoding': 'base64', // 标识使用了 base64 编码
+        'X-Amz-Meta-Filename-Base64': encodedOriginalName, // 使用 base64 编码存储文件名
+      };
 
       await this.minioClient.putObject(
         this.bucketName,
         fileName,
         file.buffer,
         file.size,
+        metadata,
       );
 
       this.logger.log(`文件上传成功: ${fileName}`);
@@ -360,6 +383,23 @@ export class StorageService implements OnModuleInit {
         exists: false,
         files: 0,
       };
+    }
+  }
+
+  async getFileMetadata(fileName: string): Promise<Record<string, any>> {
+    await this.checkConnection();
+
+    try {
+      this.logger.log(`正在获取文件元数据: ${fileName}`);
+
+      // 使用 statObject 获取文件信息，其中包含元数据
+      const stat = await this.minioClient.statObject(this.bucketName, fileName);
+
+      this.logger.log(`获取文件元数据成功: ${fileName}`);
+      return stat.metaData || {};
+    } catch (error) {
+      this.logger.error(`获取文件元数据失败: ${error.message}`, error.stack);
+      throw error;
     }
   }
 }
