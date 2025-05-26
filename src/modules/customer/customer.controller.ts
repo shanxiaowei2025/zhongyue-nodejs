@@ -24,6 +24,7 @@ import {
   Res,
   UseInterceptors,
   UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import { CustomerService } from './customer.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
@@ -38,6 +39,8 @@ import {
   ApiResponse,
   ApiConsumes,
   ApiBody,
+  ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Response } from 'express';
@@ -46,10 +49,14 @@ import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
 import { memoryStorage } from 'multer';
+import { RolesGuard } from '../auth/guards/roles.guard';
+// import { CustomerPermissionGuard } from './guards/customer-permission.guard';
+import { Customer } from './entities/customer.entity';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @ApiTags('客户管理')
 @ApiBearerAuth() // 需要登录才能访问
-@UseGuards(JwtAuthGuard) // 使用JWT认证
+@UseGuards(JwtAuthGuard, RolesGuard) // 使用JWT认证
 @Controller('customer')
 export class CustomerController {
   private readonly logger = new Logger(CustomerController.name);
@@ -213,6 +220,72 @@ export class CustomerController {
       return result;
     } catch (error) {
       this.logger.error(`用户 ${req.user.id} 导入失败: ${error.message}`);
+      throw error;
+    }
+  }
+
+  @Post('update-excel')
+  @UseInterceptors(FileInterceptor('file', {
+    // 配置使用内存存储，确保file.buffer可用
+    storage: memoryStorage()
+  }))
+  @ApiOperation({ summary: '批量更新客户数据' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: '客户数据Excel或CSV文件（使用统一社会信用代码匹配记录）',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: '更新成功' })
+  @ApiResponse({ status: 400, description: '请求参数错误' })
+  @ApiResponse({ status: 403, description: '没有权限执行此操作' })
+  async updateExcel(
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req,
+  ) {
+    if (!file) {
+      throw new ForbiddenException('未提供文件');
+    }
+
+    if (!req.user || !req.user.id) {
+      throw new ForbiddenException('未能获取有效的用户身份');
+    }
+
+    try {
+      // 记录文件信息以便调试
+      this.logger.log(`用户 ${req.user.id} 开始批量更新客户数据, 文件信息: ${JSON.stringify({
+        fieldname: file.fieldname,
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size,
+        hasBuffer: !!file.buffer
+      })}`);
+      
+      // 检查文件buffer是否存在
+      if (!file.buffer) {
+        throw new Error('文件内容为空，请检查上传的文件');
+      }
+      
+      // 检查文件类型
+      const fileExt = path.extname(file.originalname).toLowerCase();
+      if (fileExt !== '.xlsx' && fileExt !== '.xls' && fileExt !== '.csv') {
+        throw new BadRequestException('文件格式不支持，请上传Excel(.xlsx/.xls)或CSV(.csv)文件');
+      }
+      
+      // 调用customerService的updateCustomers方法进行批量更新
+      const result = await this.customerService.updateCustomers(file, req.user.id);
+      
+      this.logger.log(`用户 ${req.user.id} 批量更新完成: ${result.message}`);
+      return result;
+    } catch (error) {
+      this.logger.error(`用户 ${req.user.id} 批量更新失败: ${error.message}`);
       throw error;
     }
   }

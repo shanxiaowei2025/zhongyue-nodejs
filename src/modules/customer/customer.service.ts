@@ -986,4 +986,297 @@ export class CustomerService {
       throw error;
     }
   }
+
+  /**
+   * 执行Python更新脚本的工具方法
+   * 此方法不进行任何权限检查，只负责执行脚本并返回结果
+   */
+  async executeUpdateScript(scriptPath: string, filePath: string): Promise<{ stdout: string; stderr: string }> {
+    this.logger.log('开始执行Python批量更新脚本');
+    try {
+      // 使用相对命令，让系统在PATH中查找Python
+      this.logger.log('尝试执行Python脚本');
+      
+      // 从配置服务获取数据库连接信息
+      const dbConfig = {
+        DB_HOST: this.configService.get('DB_HOST') || 'host.docker.internal',
+        DB_PORT: this.configService.get('DB_PORT') || '3306',
+        DB_DATABASE: this.configService.get('DB_DATABASE'),
+        DB_USERNAME: this.configService.get('DB_USERNAME'),
+        DB_PASSWORD: this.configService.get('DB_PASSWORD')
+      };
+      
+      this.logger.log(`数据库连接配置: Host=${dbConfig.DB_HOST}, Port=${dbConfig.DB_PORT}, Name=${dbConfig.DB_DATABASE}, User=${dbConfig.DB_USERNAME}`);
+      
+      // 构建环境变量对象，供Python脚本使用
+      const env = { 
+        ...process.env, 
+        ...dbConfig,
+        PYTHONUNBUFFERED: '1' // 确保Python输出不被缓冲
+      };
+      
+      // 验证脚本是否存在
+      if (!fs.existsSync(scriptPath)) {
+        throw new Error(`Python脚本文件不存在: ${scriptPath}`);
+      }
+
+      // 验证输入文件是否存在
+      if (!fs.existsSync(filePath)) {
+        throw new Error(`文件不存在: ${filePath}`);
+      }
+
+      // 打印脚本路径与文件路径
+      this.logger.log(`脚本路径: ${scriptPath}`);
+      this.logger.log(`文件路径: ${filePath}`);
+      this.logger.log(`环境变量DB_HOST: ${env.DB_HOST}`);
+      this.logger.log(`环境变量DB_PORT: ${env.DB_PORT}`);
+      this.logger.log(`环境变量DB_DATABASE: ${env.DB_DATABASE}`);
+      this.logger.log(`环境变量DB_USERNAME: ${env.DB_USERNAME}`);
+      this.logger.log(`环境变量DB_PASSWORD长度: ${env.DB_PASSWORD ? env.DB_PASSWORD.length : 0}`);
+
+      // 使用spawn代替exec，可以更好地处理输出
+      const { spawn } = require('child_process');
+      
+      return new Promise((resolve, reject) => {
+        // 使用spawn执行Python脚本
+        const pythonProcess = spawn('python3', [scriptPath, '--file', filePath], { 
+          env,
+          shell: true // 在shell中执行，可能有助于解决一些路径问题
+        });
+        
+        let stdout = '';
+        let stderr = '';
+        
+        // 收集标准输出
+        pythonProcess.stdout.on('data', (data) => {
+          const output = data.toString();
+          stdout += output;
+          this.logger.debug(`Python输出: ${output}`);
+        });
+        
+        // 收集错误输出
+        pythonProcess.stderr.on('data', (data) => {
+          const error = data.toString();
+          stderr += error;
+          this.logger.error(`Python错误: ${error}`);
+        });
+        
+        // 处理完成事件
+        pythonProcess.on('close', (code) => {
+          this.logger.log(`Python进程退出，退出码: ${code}`);
+          
+          if (code === 0) {
+            resolve({ stdout, stderr });
+          } else {
+            if (stderr) {
+              this.logger.error(`Python脚本执行失败，错误信息: ${stderr}`);
+            }
+            if (stdout) {
+              this.logger.log(`Python脚本标准输出: ${stdout}`);
+            }
+            reject(new Error(`Python脚本执行失败，退出码: ${code}\n${stderr}`));
+          }
+        });
+        
+        // 处理错误事件
+        pythonProcess.on('error', (err) => {
+          this.logger.error(`启动Python进程失败: ${err.message}`);
+          reject(err);
+        });
+      });
+    } catch (error) {
+      this.logger.error(`执行Python脚本失败: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  // 批量更新客户数据
+  async updateCustomers(file: Express.Multer.File, userId: number): Promise<{ 
+    success: boolean; 
+    message: string; 
+    count?: number; 
+    failedRecords?: Array<{
+      row: number;
+      companyName: string;
+      unifiedSocialCreditCode: string;
+      reason: string;
+    }>;
+  }> {
+    try {
+      this.logger.log(`开始执行批量更新操作，用户ID: ${userId}`);
+      
+      // 使用批量操作权限检查方法，检查是否有更新权限
+      const hasPermission = await this.customerPermissionService.checkBatchOperationPermission(
+        userId, 
+        'customer_action_update'
+      );
+      
+      this.logger.log(`权限检查结果: ${hasPermission}`);
+      
+      if (!hasPermission) {
+        throw new ForbiddenException('没有批量更新客户数据的权限');
+      }
+
+      // 创建临时目录路径
+      const tempDir = path.join(os.tmpdir(), 'zhongyue-update');
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+
+      // 保存上传的文件到临时目录
+      const timestamp = Date.now();
+      const fileExt = path.extname(file.originalname).toLowerCase();
+      const fileName = `update-${timestamp}${fileExt}`;
+      const filePath = path.join(tempDir, fileName);
+
+      this.logger.log(`保存更新文件到: ${filePath}`);
+      fs.writeFileSync(filePath, file.buffer);
+
+      // 尝试安装Python所需依赖（如果必要）
+      try {
+        // 使用完整路径
+        const pythonPath = '/usr/bin/python3';
+        const pipPath = '/usr/bin/pip3';
+        
+        // 尝试安装必要的Python依赖
+        this.logger.log('检查Python环境...');
+        try {
+          // 检查Python版本
+          const { stdout: pythonVersion } = await execPromise(`${pythonPath} --version`);
+          this.logger.log(`找到Python版本: ${pythonVersion.trim()}`);
+          
+          // 列出已安装的包
+          this.logger.log('列出已安装的Python包...');
+          const { stdout: installedPackages } = await execPromise(`${pipPath} list`);
+          this.logger.debug(`已安装的包: ${installedPackages}`);
+          
+          // 检查是否需要安装缺少的包
+          const requiredPackages = ['pandas', 'sqlalchemy', 'pymysql', 'openpyxl'];
+          const missingPackages = [];
+          
+          for (const pkg of requiredPackages) {
+            if (!installedPackages.includes(pkg)) {
+              missingPackages.push(pkg);
+            }
+          }
+          
+          if (missingPackages.length > 0) {
+            // 尝试安装依赖包
+            this.logger.log(`尝试安装缺少的Python依赖: ${missingPackages.join(', ')}...`);
+            await execPromise(`${pipPath} install ${missingPackages.join(' ')} --no-cache-dir`);
+            this.logger.log('Python依赖安装成功');
+          } else {
+            this.logger.log('所有必要的Python依赖已安装');
+          }
+        } catch (error) {
+          this.logger.warn(`安装Python依赖失败: ${error.message}，将继续尝试执行脚本`);
+        }
+      } catch (error) {
+        this.logger.warn(`Python环境检查失败: ${error.message}，将继续尝试执行脚本`);
+      }
+
+      // 调用Python脚本处理数据更新
+      const scriptPath = path.join(process.cwd(), 'src/modules/customer/utils/update_data.py');
+      
+      // 执行Python脚本，传递文件路径参数
+      this.logger.log('开始执行Python更新脚本');
+      const { stdout, stderr } = await this.executeUpdateScript(scriptPath, filePath);
+      
+      this.logger.log(`Python脚本执行完成`);
+      this.logger.debug(`Python脚本输出: ${stdout}`);
+      if (stderr) {
+        this.logger.error(`Python脚本错误: ${stderr}`);
+      }
+
+      // 更新完成后删除临时文件
+      try {
+        fs.unlinkSync(filePath);
+        this.logger.log('临时文件已删除');
+      } catch (error) {
+        this.logger.warn(`删除临时文件失败: ${error.message}`);
+      }
+
+      // 尝试从标准输出中解析JSON结果
+      let updateResult: any = null;
+      try {
+        // 查找并解析更新结果JSON
+        const updateResultMatch = stdout.match(/UPDATE_RESULT_JSON: (\{.*\})/);
+        if (updateResultMatch && updateResultMatch[1]) {
+          updateResult = JSON.parse(updateResultMatch[1]);
+          this.logger.log(`成功解析更新结果: ${JSON.stringify(updateResult)}`);
+        }
+      } catch (error) {
+        this.logger.error(`解析更新结果JSON失败: ${error.message}`);
+      }
+
+      // 如果找到了解析结果，使用它
+      if (updateResult) {
+        const { success, updated_count, failed_count, failed_records, error_message } = updateResult;
+        
+        // 记录更新结果
+        this.logger.log(`更新结果: 成功=${success}, 更新=${updated_count}, 失败=${failed_count}`);
+        
+        // 构造返回消息
+        let message = '';
+        
+        if (success) {
+          message = `成功更新${updated_count}条客户记录`;
+          if (failed_count > 0) {
+            message += `，${failed_count}条记录更新失败`;
+          }
+        } else {
+          message = error_message || '更新失败，未能更新任何记录';
+          if (failed_count > 0) {
+            message += `，${failed_count}条记录有错误`;
+          }
+        }
+        
+        // 返回结果
+        return {
+          success,
+          message,
+          count: updated_count > 0 ? updated_count : undefined,
+          failedRecords: failed_records && failed_records.length > 0 ? failed_records : undefined
+        };
+      }
+
+      // 尝试从错误信息中解析JSON
+      try {
+        // 查找并解析错误信息JSON
+        const errorInfoMatch = stdout.match(/ERROR_INFO_JSON: (\{.*\})/);
+        if (errorInfoMatch && errorInfoMatch[1]) {
+          const errorInfo = JSON.parse(errorInfoMatch[1]);
+          this.logger.log(`解析到错误信息: ${JSON.stringify(errorInfo)}`);
+          
+          return {
+            success: false,
+            message: errorInfo.error_message || '更新失败',
+            failedRecords: errorInfo.failed_records
+          };
+        }
+      } catch (error) {
+        this.logger.error(`解析错误信息JSON失败: ${error.message}`);
+      }
+
+      // 如果没有找到JSON结果，尝试使用老方法解析
+      // 获取更新记录数
+      const updateCount = stdout.match(/成功更新 (\d+) 条记录/);
+      const count = updateCount ? parseInt(updateCount[1], 10) : 0;
+
+      this.logger.log(`更新完成，共更新${count}条记录`);
+      
+      // 简单返回结果
+      return {
+        success: count > 0,
+        message: count > 0 ? `成功更新${count}条客户记录` : '更新失败，未能更新任何记录',
+        count: count > 0 ? count : undefined
+      };
+    } catch (error) {
+      this.logger.error(`更新客户数据失败: ${error.message}`, error.stack);
+      return {
+        success: false,
+        message: `更新客户数据失败: ${error.message}`
+      };
+    }
+  }
 }
