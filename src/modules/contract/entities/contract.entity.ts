@@ -176,8 +176,8 @@ export class Contract {
   @Column({ nullable: true, comment: '合同状态' })
   contractStatus: string;
   
-  @Column({ type: 'boolean', nullable: true, comment: '是否签署' })
-  isSigned: boolean;
+  @Column({ type: 'text', nullable: true, comment: '合同签署签名' })
+  contractSignature: string;
   
   @CreateDateColumn({ nullable: true, comment: '创建时间' })
   createTime: Date;
@@ -190,4 +190,7 @@ export class Contract {
 
   @Column({ type: 'text', nullable: true, comment: '备注信息' })
   remarks: string;
+  
+  // @Column({ nullable: true, comment: '所属区域' })
+  // location: string;
 }

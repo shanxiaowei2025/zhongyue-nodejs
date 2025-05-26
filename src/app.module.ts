@@ -15,6 +15,7 @@ import { RolesModule } from './modules/roles/roles.module'; // 新增
 import { PermissionsModule } from './modules/permissions/permissions.module'; // 新增
 import { DepartmentModule } from './modules/department/department.module';
 import { ExpenseModule } from './modules/expense/expense.module'; // 新增费用管理模块
+import { ContractModule } from './modules/contract/contract.module'; // 新增合同管理模块
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 
 // 导入各种配置文件
@@ -31,7 +32,7 @@ import { Role } from './modules/roles/entities/role.entity'; // 路径已修改
 import { Permission } from './modules/permissions/entities/permission.entity'; // 路径已修改
 import { Department } from './modules/department/entities/department.entity';
 import { Expense } from './modules/expense/entities/expense.entity'; // 新增费用实体
-
+import { Contract } from './modules/contract/entities/contract.entity'; // 新增合同实体
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -81,6 +82,7 @@ import { Expense } from './modules/expense/entities/expense.entity'; // 新增�
           Permission,
           Department,
           Expense,
+          Contract,
         ],
         synchronize: configService.get('DB_SYNCHRONIZE', 'false') === 'true',
         logging: configService.get('DB_LOGGING', 'false') === 'true',
@@ -88,14 +90,15 @@ import { Expense } from './modules/expense/entities/expense.entity'; // 新增�
     }),
     // 导入各个功能模块
     DatabaseModule, // 数据库模块：负责连接和操作数据库
-    DepartmentModule,
-    RolesModule, // 新增
+    DepartmentModule, // 部门模块：处理部门相关的功能
+    RolesModule, // 角色模块：处理角色相关的功能
     UsersModule, // 用户模块：处理用户相关的功能
-    PermissionsModule, // 新增
+    PermissionsModule, // 权限模块：处理权限相关的功能
     AuthModule, // 认证模块：处理登录、注册、权限
     CustomerModule, // 客户模块：处理客户相关的功能
-    StorageModule,
-    ExpenseModule, // 新增费用管理模块
+    StorageModule, // 存储模块：处理文件存储相关的功能
+    ExpenseModule, // 费用管理模块：处理费用相关的功能
+    ContractModule, // 合同管理模块：处理合同相关的功能
   ],
   controllers: [AppController], // 控制器：负责接收请求，像前台接待
   providers: [
