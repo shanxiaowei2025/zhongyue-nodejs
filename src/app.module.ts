@@ -86,6 +86,7 @@ import { Contract } from './modules/contract/entities/contract.entity'; // 新�
         ],
         synchronize: configService.get('DB_SYNCHRONIZE', 'false') === 'true',
         logging: configService.get('DB_LOGGING', 'false') === 'true',
+        timezone: 'Z', // 设置时区为 UTC
       }),
     }),
     // 导入各个功能模块

@@ -335,10 +335,6 @@ export class ExpenseService {
       throw new BadRequestException('没有权限查看收据');
     }
 
-    if (expense.status !== 1) {
-      throw new BadRequestException('只能查看已审核通过的费用记录的收据');
-    }
-
     // 收集所有非零费用字段
     const feeItems = [];
     
@@ -441,7 +437,8 @@ export class ExpenseService {
       id: expense.id,
       companyName: expense.companyName,
       chargeDate: expense.chargeDate,
-      receiptNo: expense.receiptNo,
+      // 根据审核状态决定是否返回收据编号
+      receiptNo: expense.status === 1 ? expense.receiptNo : '',
       totalFee: expense.totalFee,
       chargeMethod: expense.chargeMethod,
       remarks: expense.receiptRemarks,

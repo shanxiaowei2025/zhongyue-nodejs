@@ -258,10 +258,20 @@ export class Customer {
   })
   businessStatus: BusinessStatus;
 
-  @CreateDateColumn({ nullable: true, comment: '记录的创建时间' })
+  @CreateDateColumn({ 
+    nullable: true, 
+    comment: '记录的创建时间',
+    type: 'timestamp',
+    precision: 0
+  })
   createTime: Date;
 
-  @UpdateDateColumn({ nullable: true, comment: '记录的最后更新时间' })
+  @UpdateDateColumn({ 
+    nullable: true, 
+    comment: '记录的最后更新时间',
+    type: 'timestamp',
+    precision: 0
+  })
   updateTime: Date;
 
   @Column({ nullable: true, comment: '创建或最后修改该记录的用户' })

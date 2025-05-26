@@ -148,11 +148,19 @@ export class Expense {
   salesperson: string;
 
   @ApiProperty({ description: '创建时间' })
-  @CreateDateColumn({ comment: '创建时间' })
+  @CreateDateColumn({ 
+    comment: '创建时间',
+    type: 'timestamp',
+    precision: 0
+  })
   createdAt: Date;
 
   @ApiProperty({ description: '更新时间' })
-  @UpdateDateColumn({ comment: '更新时间' })
+  @UpdateDateColumn({ 
+    comment: '更新时间',
+    type: 'timestamp',
+    precision: 0
+  })
   updatedAt: Date;
 
   @Column({ type: 'date', nullable: true, comment: '收费日期' })
