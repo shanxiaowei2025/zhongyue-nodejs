@@ -86,8 +86,8 @@ export class Contract {
   @Column({ nullable: true, comment: '工商-备注' })
   businessRemark: string;
   
-  @Column({ nullable: true, comment: '工商-服务费' })
-  businessServiceFee: string;
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '工商-服务费' })
+  businessServiceFee: number;
   
   @Column({ type: 'json', nullable: true, comment: '税务' })
   taxMatters: Array<Record<string, any>>;
@@ -95,8 +95,8 @@ export class Contract {
   @Column({ nullable: true, comment: '税务-备注' })
   taxRemark: string;
   
-  @Column({ nullable: true, comment: '税务-服务费' })
-  taxServiceFee: string;
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '税务-服务费' })
+  taxServiceFee: number;
   
   @Column({ type: 'json', nullable: true, comment: '银行' })
   bankMatters: Array<Record<string, any>>;
@@ -104,8 +104,8 @@ export class Contract {
   @Column({ nullable: true, comment: '银行-备注' })
   bankRemark: string;
   
-  @Column({ nullable: true, comment: '银行-服务费' })
-  bankServiceFee: string;
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '银行-服务费' })
+  bankServiceFee: number;
   
   @Column({ type: 'json', nullable: true, comment: '社保' })
   socialSecurity: Array<Record<string, any>>;
@@ -113,8 +113,8 @@ export class Contract {
   @Column({ nullable: true, comment: '社保-备注' })
   socialSecurityRemark: string;
   
-  @Column({ nullable: true, comment: '社保-服务费' })
-  socialSecurityServiceFee: string;
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '社保-服务费' })
+  socialSecurityServiceFee: number;
   
   @Column({ type: 'json', nullable: true, comment: '许可业务' })
   licenseBusiness: Array<Record<string, any>>;
@@ -122,16 +122,16 @@ export class Contract {
   @Column({ nullable: true, comment: '许可-备注' })
   licenseRemark: string;
   
-  @Column({ nullable: true, comment: '许可-服务费' })
-  licenseServiceFee: string;
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '许可-服务费' })
+  licenseServiceFee: number;
   
   @Column({ nullable: true, comment: '其他-备注' })
   otherRemark: string;
   
-  @Column({ nullable: true, comment: '其他-服务费' })
-  otherServiceFee: string;
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '其他-服务费' })
+  otherServiceFee: number;
   
-  @Column({ nullable: true, comment: '费用总计' })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '费用总计' })
   totalCost: number;
   
   @Column({ nullable: true, comment: '甲方盖章图片' })
@@ -155,19 +155,19 @@ export class Contract {
   @Column({ nullable: true, comment: '其他业务' })
   otherBusiness: string;
   
-  @Column({ nullable: true, comment: '代理记账总费用' })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '代理记账总费用' })
   totalAgencyAccountingFee: number;
   
-  @Column({ nullable: true, comment: '代理记账费' })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '代理记账费' })
   agencyAccountingFee: number;
   
-  @Column({ nullable: true, comment: '记账软件费' })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '记账软件费' })
   accountingSoftwareFee: number;
   
-  @Column({ nullable: true, comment: '开票软件费' })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '开票软件费' })
   invoicingSoftwareFee: number;
   
-  @Column({ nullable: true, comment: '账簿费' })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '账簿费' })
   accountBookFee: number;
   
   @Column({ nullable: true, comment: '支付方式' })
