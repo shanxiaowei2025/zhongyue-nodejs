@@ -280,4 +280,10 @@ export class CreateExpenseDto {
   @IsOptional()
   @IsString()
   internalRemarks?: string;
+  
+  @ApiProperty({ description: '关联合同', required: false })
+  @IsOptional()
+  @IsString()
+  relatedContract?: string;
+// ALTER TABLE sys_expense ADD COLUMN relatedContract VARCHAR(255) COMMENT '关联合同';
 } 

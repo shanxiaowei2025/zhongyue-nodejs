@@ -574,7 +574,8 @@ export class ExpenseService {
       auditDate: '审核日期',
       rejectReason: '退回原因',
       receiptRemarks: '收据备注',
-      internalRemarks: '内部备注'
+      internalRemarks: '内部备注',
+      relatedContract: '关联合同'
     };
 
     // 处理导出数据

@@ -189,4 +189,7 @@ export class Expense {
   
   @Column({ type: 'text', nullable: true, comment: '内部备注' })
   internalRemarks: string;
+  
+  @Column({ type: 'varchar', length: 255, nullable: true, comment: '关联合同' })
+  relatedContract: string;
 } 
