@@ -1,7 +1,22 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsOptional, IsDateString } from 'class-validator';
+import { IsString, IsOptional, IsDateString, IsNumber, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class QueryContractDto {
+  @ApiProperty({ description: '页码', default: 1 })
+  @Type(() => Number)
+  @IsNumber()
+  @IsOptional()
+  @Min(1)
+  page?: number;
+
+  @ApiProperty({ description: '每页数量', default: 10 })
+  @Type(() => Number)
+  @IsNumber()
+  @IsOptional()
+  @Min(1)
+  pageSize?: number;
+
   @ApiProperty({ description: '合同编号', required: false })
   @IsString()
   @IsOptional()

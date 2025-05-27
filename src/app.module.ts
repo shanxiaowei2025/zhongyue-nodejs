@@ -72,9 +72,9 @@ import { Contract } from './modules/contract/entities/contract.entity'; // æ–°å¢
         type: 'mysql',
         host: configService.get('DB_HOST', 'localhost'),
         port: configService.get('DB_PORT', 3306),
-        username: configService.get('DB_USERNAME', 'root'),
+        username: configService.get('DB_USERNAME', 'zhongyue'),
         password: configService.get('DB_PASSWORD', ''),
-        database: configService.get('DB_DATABASE', 'zhongyue'),
+        database: configService.get('DB_DATABASE', 'zhongyue_nodejs'),
         entities: [
           User,
           Customer,

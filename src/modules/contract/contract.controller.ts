@@ -56,14 +56,16 @@ export class ContractController {
   @ApiResponse({ status: 200, description: '获取合同列表成功' })
   findAll(
     @Query() query: QueryContractDto,
-    @Query() pagination: PaginationDto,
     @Request() req
   ) {
     if (!req.user || !req.user.id) {
       throw new ForbiddenException('未能获取有效的用户身份');
     }
     
-    return this.contractService.findAll(query, pagination, req.user.id);
+    const { page = 1, pageSize = 10, ...filters } = query;
+    const pagination = { page, pageSize };
+    
+    return this.contractService.findAll(filters, pagination, req.user.id);
   }
 
   @Get(':id')
