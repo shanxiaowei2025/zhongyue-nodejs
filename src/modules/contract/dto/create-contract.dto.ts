@@ -90,6 +90,7 @@ export class CreateContractDto {
   
   @ApiProperty({ description: '工商-设立', required: false, type: 'array' })
   @IsArray()
+  @Type(() => Object)
   @IsOptional()
   businessEstablishment?: Array<Record<string, any>>;
   
@@ -100,21 +101,25 @@ export class CreateContractDto {
   
   @ApiProperty({ description: '工商-变更', required: false, type: 'array' })
   @IsArray()
+  @Type(() => Object)
   @IsOptional()
   businessChange?: Array<Record<string, any>>;
   
   @ApiProperty({ description: '工商-注销', required: false, type: 'array' })
   @IsArray()
+  @Type(() => Object)
   @IsOptional()
   businessCancellation?: Array<Record<string, any>>;
   
   @ApiProperty({ description: '工商-其他', required: false, type: 'array' })
   @IsArray()
+  @Type(() => Object)
   @IsOptional()
   businessOther?: Array<Record<string, any>>;
   
   @ApiProperty({ description: '工商-物料', required: false, type: 'array' })
   @IsArray()
+  @Type(() => Object)
   @IsOptional()
   businessMaterials?: Array<Record<string, any>>;
   
@@ -130,6 +135,7 @@ export class CreateContractDto {
   
   @ApiProperty({ description: '税务', required: false, type: 'array' })
   @IsArray()
+  @Type(() => Object)
   @IsOptional()
   taxMatters?: Array<Record<string, any>>;
   
@@ -145,6 +151,7 @@ export class CreateContractDto {
   
   @ApiProperty({ description: '银行', required: false, type: 'array' })
   @IsArray()
+  @Type(() => Object)
   @IsOptional()
   bankMatters?: Array<Record<string, any>>;
   
@@ -160,6 +167,7 @@ export class CreateContractDto {
   
   @ApiProperty({ description: '社保', required: false, type: 'array' })
   @IsArray()
+  @Type(() => Object)
   @IsOptional()
   socialSecurity?: Array<Record<string, any>>;
   
@@ -175,6 +183,7 @@ export class CreateContractDto {
   
   @ApiProperty({ description: '许可业务', required: false, type: 'array' })
   @IsArray()
+  @Type(() => Object)
   @IsOptional()
   licenseBusiness?: Array<Record<string, any>>;
   
@@ -234,6 +243,7 @@ export class CreateContractDto {
   
   @ApiProperty({ description: '申报服务', required: false, type: 'array' })
   @IsArray()
+  @Type(() => Object)
   @IsOptional()
   declarationService?: Array<Record<string, any>>;
   
