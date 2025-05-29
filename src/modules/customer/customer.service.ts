@@ -129,6 +129,7 @@ export class CustomerService {
       industryCategory,
       enterpriseStatus,
       businessStatus,
+      customerLevel,
       location,
       startDate,
       endDate,
@@ -196,6 +197,12 @@ export class CustomerService {
     if (enterpriseStatus) {
       queryBuilder.andWhere('customer.enterpriseStatus = :enterpriseStatus', {
         enterpriseStatus,
+      });
+    }
+
+    if (customerLevel) {
+      queryBuilder.andWhere('customer.customerLevel = :customerLevel', {
+        customerLevel,
       });
     }
 
@@ -529,6 +536,12 @@ export class CustomerService {
         });
       }
 
+      if (query.customerLevel) {
+        queryBuilder.andWhere('customer.customerLevel = :customerLevel', {
+          customerLevel: query.customerLevel,
+        });
+      }
+
       if (query.location) {
         queryBuilder.andWhere('customer.location LIKE :location', {
           location: `%${query.location}%`,
@@ -620,7 +633,8 @@ export class CustomerService {
         enterpriseType: '企业类型',
         unifiedSocialCreditCode: '统一社会信用代码',
         taxBureau: '所属分局',
-        enterpriseStatus: '企业状态'
+        enterpriseStatus: '企业状态',
+        customerLevel: '客户分级'
       };
       
       // 处理导出数据，确保JSON字段正确转换

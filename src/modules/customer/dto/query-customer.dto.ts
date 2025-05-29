@@ -44,6 +44,11 @@ export class QueryCustomerDto {
   @IsString()
   enterpriseStatus?: string;
 
+  @ApiPropertyOptional({ description: '客户分级' })
+  @IsOptional()
+  @IsString()
+  customerLevel?: string;
+
   @ApiPropertyOptional({ description: '当前业务的状态' })
   @IsOptional()
   @IsEnum(BusinessStatus)

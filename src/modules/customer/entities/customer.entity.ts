@@ -251,6 +251,14 @@ export class Customer {
 
   @Column({ 
     nullable: true,
+    type: 'varchar',
+    length: 50,
+    comment: '客户分级' 
+  })
+  customerLevel: string;
+
+  @Column({ 
+    nullable: true,
     type: 'enum', 
     enum: BusinessStatus,
     default: BusinessStatus.NORMAL,

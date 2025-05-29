@@ -181,6 +181,7 @@ def update_excel_data(file_path):
                 '企业信息表编号': 'enterpriseInfoSheetNumber',
                 '章存放编号': 'sealStorageNumber',
                 '企业状态': 'enterpriseStatus',
+                '客户分级': 'customerLevel',
                 '业务状态': 'businessStatus',
                 '备注信息': 'remarks'
             }

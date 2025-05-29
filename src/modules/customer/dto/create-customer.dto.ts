@@ -396,6 +396,13 @@ export class CreateCustomerDto {
   enterpriseStatus?: string;
 
   @ApiPropertyOptional({ 
+    description: '客户分级'
+  })
+  @IsString()
+  @IsOptional()
+  customerLevel?: string;
+
+  @ApiPropertyOptional({ 
     description: '当前业务的状态',
     enum: BusinessStatus 
   })

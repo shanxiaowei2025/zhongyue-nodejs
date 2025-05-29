@@ -43,6 +43,11 @@ export class ExportCustomerDto {
   @IsString()
   enterpriseStatus?: string;
 
+  @ApiProperty({ description: '客户分级', required: false })
+  @IsOptional()
+  @IsString()
+  customerLevel?: string;
+
   @ApiProperty({ description: '开始日期', required: false })
   @IsOptional()
   @Type(() => Date)
