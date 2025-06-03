@@ -179,6 +179,9 @@ export class Contract {
   @Column({ type: 'text', nullable: true, comment: '合同签署签名' })
   contractSignature: string;
   
+  @Column({ nullable: true, comment: '合同图片' })
+  contractImage: string;
+  
   @CreateDateColumn({ nullable: true, comment: '创建时间' })
   createTime: Date;
 

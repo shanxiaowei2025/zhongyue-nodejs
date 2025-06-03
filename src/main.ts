@@ -8,6 +8,7 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 import { HttpExceptionFilter } from './common/filters/http-exception.filter'; // 这是处理错误的工具
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'; // 这是生成API文档的工具
 import { BulkDeleteDto } from './modules/department/dto/department.dto';
+import { SaveSignatureDto } from './modules/contract/dto/save-signature.dto';
 import * as cookieParser from 'cookie-parser';
 import { join } from 'path';
 import * as express from 'express';
@@ -108,7 +109,7 @@ async function bootstrap() {
       .build();
     const document = SwaggerModule.createDocument(app, config, {
       deepScanRoutes: true, // 确保深度扫描所有路由
-      extraModels: [BulkDeleteDto] // 确保包含额外模型
+      extraModels: [BulkDeleteDto, SaveSignatureDto] // 确保包含额外模型
     });
 
     // 设置文档访问路径为 /api/docs
@@ -120,6 +121,13 @@ async function bootstrap() {
   // 配置文件上传大小限制
   app.use('/api/storage/upload', (req, res, next) => {
     logger.log('文件上传请求拦截');
+    
+    // 检查query参数中是否有token，如果有就添加到headers中方便守卫获取
+    if (req.query && req.query.token) {
+      logger.debug(`在请求query中找到token: ${req.query.token}, 将其添加到headers中`);
+      req.headers['contract-token'] = req.query.token as string;
+    }
+    
     next();
   });
 

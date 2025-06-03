@@ -4,6 +4,7 @@ import { Module } from '@nestjs/common'; // 这是用来声明模块的装饰器
 import { ConfigModule, ConfigService } from '@nestjs/config'; // 这是用来管理配置的模块
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { APP_GUARD } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule'; // 导入定时任务模块
 import { AppController } from './app.controller'; // 主控制器
 import { AppService } from './app.service'; // 主服务
 import { DatabaseModule } from './database/database.module'; // 数据库模块
@@ -16,7 +17,7 @@ import { PermissionsModule } from './modules/permissions/permissions.module'; //
 import { DepartmentModule } from './modules/department/department.module';
 import { ExpenseModule } from './modules/expense/expense.module'; // 新增费用管理模块
 import { ContractModule } from './modules/contract/contract.module'; // 新增合同管理模块
-import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
+import { CombinedAuthGuard } from './modules/auth/guards/combined-auth.guard';
 
 // 导入各种配置文件
 import appConfig from './config/app.config'; // 应用配置
@@ -33,6 +34,8 @@ import { Permission } from './modules/permissions/entities/permission.entity'; /
 import { Department } from './modules/department/entities/department.entity';
 import { Expense } from './modules/expense/entities/expense.entity'; // 新增费用实体
 import { Contract } from './modules/contract/entities/contract.entity'; // 新增合同实体
+import { Token } from './modules/contract/entities/token.entity'; // 合同令牌实体
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -65,6 +68,7 @@ import { Contract } from './modules/contract/entities/contract.entity'; // 新�
         CORS_ORIGIN: Joi.string().default('*'), // 允许访问的域名，默认允许所有
       }),
     }),
+    ScheduleModule.forRoot(), // 注册定时任务模块
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -83,6 +87,7 @@ import { Contract } from './modules/contract/entities/contract.entity'; // 新�
           Department,
           Expense,
           Contract,
+          Token,
         ],
         synchronize: configService.get('DB_SYNCHRONIZE', 'false') === 'true',
         logging: configService.get('DB_LOGGING', 'false') === 'true',
@@ -106,7 +111,7 @@ import { Contract } from './modules/contract/entities/contract.entity'; // 新�
     AppService,
     {
       provide: APP_GUARD,
-      useClass: JwtAuthGuard,
+      useClass: CombinedAuthGuard,
     },
   ], // 服务：负责具体业务逻辑，像后台工作人员
 })

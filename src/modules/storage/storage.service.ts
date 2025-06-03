@@ -66,31 +66,43 @@ export class StorageService implements OnModuleInit {
     }
 
     try {
-      // 1. 从 Multer 获取的原始文件名进行解码处理
-      const decodedOriginalName = Buffer.from(
-        file.originalname,
-        'latin1',
-      ).toString('utf8');
+      // 1. 正确处理原始文件名，Multer在某些情况下可能会使用latin1编码
+      let originalName = file.originalname;
+
+      // 检查originalName是否包含乱码字符
+      if (/\uFFFD/.test(originalName)) {
+        this.logger.debug(`检测到可能的编码问题，尝试修复文件名: ${originalName}`);
+        try {
+          // 尝试从latin1到utf8的转换
+          originalName = Buffer.from(originalName, 'latin1').toString('utf8');
+        } catch (e) {
+          this.logger.warn(`文件名编码转换失败: ${e.message}`);
+        }
+      }
+
+      // 清理文件名，移除特殊字符
+      const cleanedName = originalName.replace(/[^\w\u4e00-\u9fa5\.\-]/g, '_');
 
       // 2. 生成时间戳作为唯一标识符
       const timestamp = Date.now();
 
-      // 3. 构建文件名，使用时间戳和解码后的原始文件名
-      const fileName = `${timestamp}-${decodedOriginalName}`;
+      // 3. 构建文件名，使用时间戳和清理后的原始文件名，用下划线连接
+      const fileName = `${timestamp}_${cleanedName}`;
 
       this.logger.log(
-        `正在上传文件: ${fileName}, 原始名称: ${file.originalname}, 解码后: ${decodedOriginalName}, 大小: ${file.size} 字节, 类型: ${file.mimetype}`,
+        `正在上传文件: ${fileName}, 原始名称: ${file.originalname}, 处理后: ${cleanedName}, 大小: ${file.size} 字节, 类型: ${file.mimetype}`,
       );
 
       // 4. 上传到 MinIO 服务器
       // 对中文文件名进行 Base64 编码，避免 HTTP 头部中的无效字符问题
-      const encodedOriginalName = Buffer.from(decodedOriginalName).toString('base64');
+      const encodedOriginalName = Buffer.from(originalName).toString('base64');
 
       const metadata = {
         'Content-Type': file.mimetype,
         'Cache-Control': 'max-age=31536000',
-        'X-Amz-Meta-Filename-Encoding': 'base64', // 标识使用了 base64 编码
-        'X-Amz-Meta-Filename-Base64': encodedOriginalName, // 使用 base64 编码存储文件名
+        'X-Amz-Meta-Filename-Encoding': 'base64',
+        'X-Amz-Meta-Filename-Base64': encodedOriginalName,
+        'X-Amz-Meta-Original-Filename': originalName
       };
 
       await this.minioClient.putObject(

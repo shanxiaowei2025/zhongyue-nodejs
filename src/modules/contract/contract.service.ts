@@ -8,6 +8,7 @@ import { QueryContractDto } from './dto/query-contract.dto';
 import { SignContractDto } from './dto/sign-contract.dto';
 import { ContractPermissionService } from './services/contract-permission.service';
 import { PaginationDto } from '../../common/dto/pagination.dto';
+import { TokenService } from './services/token.service';
 
 @Injectable()
 export class ContractService {
@@ -17,6 +18,7 @@ export class ContractService {
     @InjectRepository(Contract)
     private readonly contractRepository: Repository<Contract>,
     private readonly contractPermissionService: ContractPermissionService,
+    private readonly tokenService: TokenService,
   ) {}
 
   // 创建合同
@@ -413,7 +415,60 @@ export class ContractService {
       contractStatus: '1', // 更新为已签署状态
     });
     
+    // 签署完成后，删除该合同的所有token
+    try {
+      await this.tokenService.deleteContractTokens(id);
+      this.logger.debug(`合同 #${id} 签署完成，已删除所有相关令牌`);
+    } catch (error) {
+      this.logger.error(`删除合同 #${id} 的令牌失败: ${error.message}`, error.stack);
+      // 不影响主流程，继续返回
+    }
+    
     // 返回更新后的合同
     return this.contractRepository.findOne({ where: { id } });
+  }
+
+  /**
+   * 保存合同签名图片（不受权限限制，通过token验证）
+   * @param contractId 合同ID
+   * @param signatureUrl 签名图片链接
+   */
+  async saveContractSignature(contractId: number, signatureUrl: string): Promise<boolean> {
+    try {
+      // 验证合同是否存在
+      const contract = await this.contractRepository.findOne({ where: { id: contractId } });
+      if (!contract) {
+        this.logger.warn(`保存签名失败: 合同 #${contractId} 不存在`);
+        return false;
+      }
+
+      // 验证合同状态
+      if (contract.contractStatus === '2') {
+        this.logger.warn(`保存签名失败: 合同 #${contractId} 已终止`);
+        return false;
+      }
+      
+      // 更新合同签名和状态
+      await this.contractRepository.update(contractId, {
+        contractSignature: signatureUrl,
+        contractStatus: '1', // 更新为已签署状态
+      });
+      
+      this.logger.debug(`合同 #${contractId} 签名已更新，状态已设置为已签署`);
+      
+      // 签署完成后，删除该合同的所有token
+      try {
+        await this.tokenService.deleteContractTokens(contractId);
+        this.logger.debug(`合同 #${contractId} 签署完成，已删除所有相关令牌`);
+      } catch (error) {
+        this.logger.error(`删除合同 #${contractId} 的令牌失败: ${error.message}`, error.stack);
+        // 不影响主流程，继续返回
+      }
+      
+      return true;
+    } catch (error) {
+      this.logger.error(`保存合同签名失败: ${error.message}`, error.stack);
+      return false;
+    }
   }
 } 

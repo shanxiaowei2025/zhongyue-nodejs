@@ -281,9 +281,9 @@ export class CreateExpenseDto {
   @IsString()
   internalRemarks?: string;
   
-  @ApiProperty({ description: '关联合同', required: false })
+  @ApiProperty({ description: '关联合同', required: false, type: [Object] })
   @IsOptional()
-  @IsString()
-  relatedContract?: string;
+  @IsArray()
+  relatedContract?: any[];
 // ALTER TABLE sys_expense ADD COLUMN relatedContract VARCHAR(255) COMMENT '关联合同';
 } 

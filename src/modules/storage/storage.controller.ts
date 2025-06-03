@@ -10,6 +10,8 @@ import {
   InternalServerErrorException,
   BadRequestException,
   UseGuards,
+  Query,
+  Body,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StorageService } from './storage.service';
@@ -20,12 +22,13 @@ import {
   ApiConsumes,
   ApiBody,
   ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CombinedAuthGuard } from '../auth/guards/combined-auth.guard';
 
 @ApiTags('文件存储')
 @ApiBearerAuth() // 需要登录才能访问
-@UseGuards(JwtAuthGuard) // 使用JWT认证
+@UseGuards(CombinedAuthGuard) // 使用组合认证，支持JWT和合同令牌
 @Controller('storage')
 export class StorageController {
   private readonly logger = new Logger(StorageController.name);
@@ -56,7 +59,7 @@ export class StorageController {
 
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
-  @ApiOperation({ summary: '上传文件', description: '上传文件到MinIO存储' })
+  @ApiOperation({ summary: '上传文件', description: '上传文件到MinIO存储，支持JWT认证或合同令牌认证' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -66,21 +69,44 @@ export class StorageController {
           type: 'string',
           format: 'binary',
         },
+        token: {
+          type: 'string',
+          description: '合同令牌(可选)，如果提供则使用合同令牌认证，否则使用JWT认证',
+        },
       },
     },
   })
+  @ApiQuery({
+    name: 'token',
+    required: false,
+    description: '合同令牌(可选)，如果提供则使用合同令牌认证，否则使用JWT认证',
+  })
   @ApiResponse({ status: 201, description: '文件上传成功' })
   @ApiResponse({ status: 400, description: '请求参数错误' })
-  async uploadFile(@UploadedFile() file: Express.Multer.File) {
+  @ApiResponse({ status: 401, description: '未授权，令牌无效' })
+  async uploadFile(
+    @UploadedFile() file: Express.Multer.File,
+    @Query('token') queryToken?: string,
+    @Body('token') bodyToken?: string,
+  ) {
     if (!file) {
       this.logger.error('上传文件失败: 未提供文件');
       throw new BadRequestException('未提供文件');
     }
 
+    // 优先使用查询参数中的token，其次使用请求体中的token
+    const token = queryToken || bodyToken;
+    
+    // 记录认证信息
+    this.logger.log(
+      `接收到文件上传请求: ${file.originalname}, 大小: ${file.size} 字节, 认证方式: ${token ? '合同令牌' : 'JWT认证'}`
+    );
+    
+    if (token) {
+      this.logger.debug(`使用合同令牌认证，token: ${token.substring(0, 10)}...`);
+    }
+
     try {
-      this.logger.log(
-        `接收到文件上传请求: ${file.originalname}, 大小: ${file.size} 字节`,
-      );
       const fileName = await this.storageService.uploadFile(file);
       const url = await this.storageService.getFileUrl(fileName);
 

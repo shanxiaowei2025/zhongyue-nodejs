@@ -287,6 +287,16 @@ export class CreateContractDto {
   @IsOptional()
   contractStatus?: string;
   
+  @ApiProperty({ description: '合同签署签名', required: false })
+  @IsString()
+  @IsOptional()
+  contractSignature?: string;
+  
+  @ApiProperty({ description: '合同图片', required: false })
+  @IsString()
+  @IsOptional()
+  contractImage?: string;
+  
   @ApiProperty({ description: '备注信息', required: false })
   @IsString()
   @IsOptional()

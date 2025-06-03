@@ -107,3 +107,134 @@ MinIO服务配置了以下特性：
 ## 许可证
 
 [MIT License](LICENSE)
+
+## 功能模块
+
+### 用户和认证模块
+- 用户管理：创建、查询、更新和删除用户
+- 认证功能：登录、注册、JWT令牌认证
+- 角色和权限：基于RBAC的权限控制
+
+### 客户管理模块
+- 客户信息管理：添加、查询、更新和删除客户信息
+- 客户分类和标签
+
+### 部门管理模块
+- 部门信息管理：添加、查询、更新和删除部门信息
+- 组织架构管理
+
+### 费用管理模块
+- 费用记录：创建、查询、更新和删除费用记录
+- 费用统计和报表
+
+### 合同管理模块
+- 合同信息管理：添加、查询、更新和删除合同信息
+- 合同状态跟踪
+- 合同签署功能
+- 合同令牌系统：生成临时访问令牌用于未登录用户访问合同
+
+### 文件存储模块
+- 文件上传和下载
+- MinIO对象存储集成
+- 支持JWT认证和合同令牌认证
+
+## API说明
+
+### 合同令牌认证
+
+系统支持两种认证方式：
+1. JWT认证：用户登录后获取的令牌
+2. 合同令牌认证：通过合同系统生成的临时令牌
+
+#### 获取合同令牌
+
+```
+GET /api/contract-token?id=1234
+```
+
+返回结果：
+```json
+{
+  "token": "a1b2c3d4...",
+  "contractId": 1234,
+  "expiredAt": "2023-05-01T12:34:56Z"
+}
+```
+
+#### 使用合同令牌上传文件
+
+合同令牌可以用于在未登录状态下上传文件，有以下几种使用方式：
+
+1. 通过URL查询参数：
+```
+POST /api/storage/upload?token=a1b2c3d4...
+```
+
+2. 通过请求体：
+```
+POST /api/storage/upload
+Content-Type: multipart/form-data
+...
+file: (二进制文件数据)
+token: a1b2c3d4...
+```
+
+3. 通过请求头：
+```
+POST /api/storage/upload
+Content-Type: multipart/form-data
+contract-token: a1b2c3d4...
+...
+file: (二进制文件数据)
+```
+
+#### 令牌有效期
+
+临时合同令牌的默认有效期为30分钟，系统会自动清理过期的令牌。
+
+### 合同签名上传
+
+系统提供了两种方式保存合同签名：
+
+#### 1. 使用已有图片URL
+
+```
+POST /api/contract-token/signature
+Content-Type: application/json
+
+{
+  "contractId": 1234,
+  "token": "a1b2c3d4...",
+  "signatureUrl": "https://example.com/signature.png"
+}
+```
+
+#### 2. 直接上传签名图片文件
+
+```
+POST /api/contract-token/upload-signature
+Content-Type: multipart/form-data
+
+file: (二进制图片文件)
+contractId: 1234
+token: a1b2c3d4...
+```
+
+此接口会：
+1. 上传图片到MinIO存储
+2. 获取永久有效的图片URL
+3. 将URL保存到合同的contractSignature字段
+4. 更新合同状态为"已签署"
+5. 删除合同相关的所有临时令牌
+
+#### 签名上传后的结果
+
+合同签名上传成功后，系统会：
+1. 更新合同状态为"已签署"（contractStatus = '1'）
+2. 删除所有与该合同相关的令牌，防止重复签署
+3. 返回签名图片的永久访问URL
+
+## 环境配置
+- 开发环境: 支持热更新的Docker配置
+- 生产环境: 优化的Docker生产配置
+- 数据库: MySQL（已在Docker中部署）
