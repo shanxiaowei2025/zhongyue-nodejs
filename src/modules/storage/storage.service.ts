@@ -101,8 +101,7 @@ export class StorageService implements OnModuleInit {
         'Content-Type': file.mimetype,
         'Cache-Control': 'max-age=31536000',
         'X-Amz-Meta-Filename-Encoding': 'base64',
-        'X-Amz-Meta-Filename-Base64': encodedOriginalName,
-        'X-Amz-Meta-Original-Filename': originalName
+        'X-Amz-Meta-Filename-Base64': encodedOriginalName
       };
 
       await this.minioClient.putObject(
