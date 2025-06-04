@@ -190,6 +190,6 @@ export class Expense {
   @Column({ type: 'text', nullable: true, comment: '内部备注' })
   internalRemarks: string;
   
-  @Column({ type: 'simple-json', nullable: true, comment: '关联合同' })
+  @Column({ type: 'json', nullable: true, comment: '关联合同' })
   relatedContract: any[];
 } 

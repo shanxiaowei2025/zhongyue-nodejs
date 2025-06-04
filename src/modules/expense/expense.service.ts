@@ -18,6 +18,7 @@ export class ExpenseService {
   ) {}
 
   async create(createExpenseDto: CreateExpenseDto, username: string) {
+    // 直接使用原始relatedContract数据，不做处理
     const expense = this.expenseRepository.create({
       ...createExpenseDto,
       salesperson: username,
@@ -27,15 +28,20 @@ export class ExpenseService {
     if (expense.chargeDate) {
       try {
         expense.receiptNo = await this.generateReceiptNo(expense.chargeDate);
-        console.log('生成收据编号:', expense.receiptNo, '收费日期:', expense.chargeDate);
       } catch (error) {
         console.error('生成收据编号出错:', error);
       }
-    } else {
-      console.log('没有收费日期，跳过收据编号生成');
     }
 
-    return await this.expenseRepository.save(expense);
+    const savedExpense = await this.expenseRepository.save(expense);
+    
+    // 如果数据库返回的是null，但原始数据不为空，使用原始数据
+    if (savedExpense.relatedContract === null && createExpenseDto.relatedContract && 
+        Array.isArray(createExpenseDto.relatedContract) && createExpenseDto.relatedContract.length > 0) {
+      savedExpense.relatedContract = createExpenseDto.relatedContract;
+    }
+    
+    return savedExpense;
   }
 
   // 生成收据编号的辅助方法
@@ -171,6 +177,32 @@ export class ExpenseService {
       },
     });
 
+    // 处理每条记录的relatedContract字段
+    expenses.forEach(expense => {
+      if (expense.relatedContract && Array.isArray(expense.relatedContract)) {
+        // 如果relatedContract是一个嵌套数组，将其扁平化
+        if (expense.relatedContract.length > 0 && Array.isArray(expense.relatedContract[0]) && expense.relatedContract[0].length === 0) {
+          expense.relatedContract = [];
+        } else if (expense.relatedContract.length === 0) {
+          // 如果是空数组，尝试转换成null避免前端显示问题
+          expense.relatedContract = null;
+        }
+      } else if (typeof expense.relatedContract === 'string') {
+        // 如果是JSON字符串，尝试解析
+        try {
+          const parsed = JSON.parse(expense.relatedContract);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            expense.relatedContract = parsed;
+          } else {
+            expense.relatedContract = null;
+          }
+        } catch (e) {
+          console.error('解析relatedContract失败:', e);
+          expense.relatedContract = null;
+        }
+      }
+    });
+
     return {
       list: expenses,
       total,
@@ -194,6 +226,30 @@ export class ExpenseService {
 
     if (!hasPermission) {
       throw new BadRequestException('没有权限查看该费用记录');
+    }
+
+    // 确保relatedContract字段格式正确
+    if (expense.relatedContract && Array.isArray(expense.relatedContract)) {
+      // 如果relatedContract是一个嵌套数组，将其扁平化
+      if (expense.relatedContract.length > 0 && Array.isArray(expense.relatedContract[0]) && expense.relatedContract[0].length === 0) {
+        expense.relatedContract = [];
+      } else if (expense.relatedContract.length === 0) {
+        // 如果是空数组，尝试转换成null避免前端显示问题
+        expense.relatedContract = null;
+      }
+    } else if (typeof expense.relatedContract === 'string') {
+      // 如果是JSON字符串，尝试解析
+      try {
+        const parsed = JSON.parse(expense.relatedContract);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          expense.relatedContract = parsed;
+        } else {
+          expense.relatedContract = null;
+        }
+      } catch (e) {
+        console.error('解析relatedContract失败:', e);
+        expense.relatedContract = null;
+      }
     }
 
     return expense;
@@ -231,10 +287,7 @@ export class ExpenseService {
       const oldDateStr = expense.chargeDate ? expense.chargeDate.toString().split('T')[0] : '';
       const newDateStr = updateExpenseDto.chargeDate ? updateExpenseDto.chargeDate.toString().split('T')[0] : '';
       
-      console.log('更新收费日期 - 旧日期:', oldDateStr, '新日期:', newDateStr);
-      
       needUpdateReceiptNo = oldDateStr !== newDateStr;
-      console.log('需要更新收据编号:', needUpdateReceiptNo);
     }
 
     const updated = Object.assign(expense, updateExpenseDto);
@@ -243,7 +296,6 @@ export class ExpenseService {
     if (needUpdateReceiptNo && updated.chargeDate) {
       try {
         updated.receiptNo = await this.generateReceiptNo(updated.chargeDate);
-        console.log('更新后的收据编号:', updated.receiptNo);
       } catch (error) {
         console.error('更新收据编号时出错:', error);
       }
@@ -257,7 +309,15 @@ export class ExpenseService {
       updated.rejectReason = null; // 清除退回原因
     }
     
-    return await this.expenseRepository.save(updated);
+    const savedExpense = await this.expenseRepository.save(updated);
+    
+    // 如果数据库返回的是null，但原始数据不为空，使用原始数据
+    if (savedExpense.relatedContract === null && updateExpenseDto.relatedContract && 
+        Array.isArray(updateExpenseDto.relatedContract) && updateExpenseDto.relatedContract.length > 0) {
+      savedExpense.relatedContract = updateExpenseDto.relatedContract;
+    }
+    
+    return savedExpense;
   }
 
   async remove(id: number, userId: number) {

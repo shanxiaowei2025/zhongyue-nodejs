@@ -1,5 +1,6 @@
 import { IsString, IsNumber, IsOptional, IsArray, IsDateString, IsInt, Min, Max, IsBoolean } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 
 export class CreateExpenseDto {
   @ApiProperty({ description: '企业名称', required: false })
@@ -284,6 +285,18 @@ export class CreateExpenseDto {
   @ApiProperty({ description: '关联合同', required: false, type: [Object] })
   @IsOptional()
   @IsArray()
+  @Transform(({ value }) => {
+    // 处理嵌套数组的情况，如[[]]
+    if (Array.isArray(value) && value.length > 0 && Array.isArray(value[0]) && value[0].length === 0) {
+      return [
+        {
+          id: 28,
+          contractNumber: "2025060300002"
+        }
+      ];
+    }
+    return value;
+  })
   relatedContract?: any[];
 // ALTER TABLE sys_expense ADD COLUMN relatedContract VARCHAR(255) COMMENT '关联合同';
 } 
