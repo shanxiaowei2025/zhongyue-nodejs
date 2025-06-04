@@ -68,6 +68,7 @@ export class StorageService implements OnModuleInit {
     try {
       // 1. 正确处理原始文件名，Multer在某些情况下可能会使用latin1编码
       let originalName = file.originalname;
+      this.logger.debug(`原始文件名编码前: ${originalName}, Buffer表示: ${Buffer.from(originalName).toString('hex')}`);
 
       // 检查originalName是否包含乱码字符
       if (/\uFFFD/.test(originalName)) {
@@ -75,13 +76,24 @@ export class StorageService implements OnModuleInit {
         try {
           // 尝试从latin1到utf8的转换
           originalName = Buffer.from(originalName, 'latin1').toString('utf8');
+          this.logger.debug(`转换后的文件名: ${originalName}`);
         } catch (e) {
           this.logger.warn(`文件名编码转换失败: ${e.message}`);
         }
       }
 
-      // 清理文件名，移除特殊字符
-      const cleanedName = originalName.replace(/[^\w\u4e00-\u9fa5\.\-]/g, '_');
+      // 确保文件名是UTF-8编码
+      try {
+        const decodedName = decodeURIComponent(escape(originalName));
+        this.logger.debug(`解码后的文件名: ${decodedName}`);
+        originalName = decodedName;
+      } catch (e) {
+        this.logger.warn(`文件名UTF-8解码失败，保持原样: ${e.message}`);
+      }
+
+      // 不替换中文字符，仅处理特殊字符
+      const cleanedName = originalName.replace(/[\/:*?"<>|]/g, '_'); // 只替换文件系统不允许的字符
+      this.logger.debug(`清理后的文件名: ${cleanedName}`);
 
       // 2. 生成时间戳作为唯一标识符
       const timestamp = Date.now();
@@ -96,6 +108,7 @@ export class StorageService implements OnModuleInit {
       // 4. 上传到 MinIO 服务器
       // 对中文文件名进行 Base64 编码，避免 HTTP 头部中的无效字符问题
       const encodedOriginalName = Buffer.from(originalName).toString('base64');
+      this.logger.debug(`Base64编码后的文件名: ${encodedOriginalName}`);
 
       const metadata = {
         'Content-Type': file.mimetype,

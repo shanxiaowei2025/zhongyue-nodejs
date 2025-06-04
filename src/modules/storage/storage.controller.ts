@@ -12,6 +12,7 @@ import {
   UseGuards,
   Query,
   Body,
+  Res,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StorageService } from './storage.service';
@@ -88,7 +89,13 @@ export class StorageController {
     @UploadedFile() file: Express.Multer.File,
     @Query('token') queryToken?: string,
     @Body('token') bodyToken?: string,
+    @Res({ passthrough: true }) response?: any,
   ) {
+    // 设置响应编码为UTF-8
+    if (response) {
+      response.header('Content-Type', 'application/json; charset=utf-8');
+    }
+
     if (!file) {
       this.logger.error('上传文件失败: 未提供文件');
       throw new BadRequestException('未提供文件');
@@ -110,9 +117,12 @@ export class StorageController {
       const fileName = await this.storageService.uploadFile(file);
       const url = await this.storageService.getFileUrl(fileName);
 
-      this.logger.log(`文件上传成功: ${fileName}, URL: ${url}`);
+      // 获取原始文件名
+      const originalName = file.originalname;
+      
+      this.logger.log(`文件上传成功: ${fileName}, URL: ${url}, 原始文件名: ${originalName}`);
       return {
-        fileName,
+        fileName, // 直接返回存储的文件名（timestamp_中文名.png格式）
         url,
       };
     } catch (error) {
