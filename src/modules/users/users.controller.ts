@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseIntPipe,
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { QueryUserDto } from './dto/query-user.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -27,6 +28,14 @@ export class UsersController {
   @Roles('super_admin', 'admin')
   findAll(@Query('page') page = 1, @Query('limit') limit = 10, @Request() req) {
     return this.usersService.findAll(page, limit, req.user);
+  }
+
+  @Get('search')
+  @ApiOperation({ summary: '搜索用户', description: '支持按用户名模糊查询' })
+  @ApiResponse({ status: 200, description: '搜索成功' })
+  @Roles('super_admin', 'admin')
+  searchUsers(@Query() queryUserDto: QueryUserDto, @Request() req) {
+    return this.usersService.searchUsers(queryUserDto, req.user);
   }
 
   @Get(':id')

@@ -82,6 +82,7 @@ def import_excel_data(file_path):
             return False
 
         # 读取Excel文件
+        print(f"开始读取文件: {file_path}")
         debug_print(f"尝试读取文件: {file_path}")
         debug_print(f"文件是否存在: {os.path.exists(file_path)}")
         debug_print(f"文件大小: {os.path.getsize(file_path) if os.path.exists(file_path) else '文件不存在'}")
@@ -100,10 +101,24 @@ def import_excel_data(file_path):
             return False
 
         try:
-            # 读取Excel文件
-            print(f"开始读取Excel文件...")
-            df = pd.read_excel(file_path, engine='openpyxl')
-            print(f"成功读取Excel文件，包含 {len(df)} 行数据")
+            # 根据文件扩展名选择不同的读取方式
+            file_ext = os.path.splitext(file_path)[1].lower()
+            print(f"文件扩展名: {file_ext}")
+            
+            if file_ext == '.csv':
+                # 读取CSV文件
+                print(f"检测到CSV文件，使用pandas.read_csv读取")
+                df = pd.read_csv(file_path, encoding='utf-8')
+                # 尝试不同的编码方式（如果UTF-8失败）
+                if df.empty or len(df.columns) == 0:
+                    print("尝试使用GBK编码读取CSV文件")
+                    df = pd.read_csv(file_path, encoding='gbk')
+            else:
+                # 读取Excel文件
+                print(f"检测到Excel文件，使用pandas.read_excel读取")
+                df = pd.read_excel(file_path, engine='openpyxl')
+            
+            print(f"成功读取文件，包含 {len(df)} 行数据")
             
             # 显示前几行数据以检查
             print("数据预览:")

@@ -4,6 +4,7 @@ import { Repository, DataSource } from 'typeorm';
 import { Role } from '../entities/role.entity';
 import { Permission } from '../../permissions/entities/permission.entity';
 import { CreateRoleDto, UpdateRoleDto, UpdateRolePermissionDto } from '../dto/role.dto';
+import { User } from '../../users/entities/user.entity';
 
 @Injectable()
 export class RoleService {
@@ -190,8 +191,36 @@ export class RoleService {
   async remove(id: number): Promise<void> {
     const role = await this.findOne(id);
     
-    // 删除角色（由于设置了级联删除，权限也会自动删除）
-    await this.roleRepository.remove(role);
+    // 使用事务确保数据一致性
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    
+    try {
+      // 查找所有包含此角色代码的用户
+      const userRepository = this.dataSource.getRepository(User);
+      const users = await userRepository
+        .createQueryBuilder('user')
+        .where(`JSON_CONTAINS(user.roles, :roleCode)`)
+        .setParameter('roleCode', JSON.stringify(role.code))
+        .getMany();
+      
+      // 从每个用户的角色列表中移除该角色代码
+      for (const user of users) {
+        user.roles = user.roles.filter(roleCode => roleCode !== role.code);
+        await queryRunner.manager.save(user);
+      }
+      
+      // 删除角色（由于设置了级联删除，权限也会自动删除）
+      await queryRunner.manager.remove(role);
+      
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   // 为系统添加新权限时，需要将该权限添加到所有角色

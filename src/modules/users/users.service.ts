@@ -121,6 +121,57 @@ export class UsersService {
     };
   }
 
+  // 搜索用户（支持用户名模糊查询）
+  async searchUsers(query: { username?: string; page?: number; limit?: number }, currentUser: User) {
+    const page = query.page || 1;
+    const limit = query.limit || 10;
+    
+    // 创建查询构建器
+    let queryBuilder = this.userRepository.createQueryBuilder('user');
+    
+    // 根据当前用户角色过滤可见用户
+    if (currentUser.roles.includes('super_admin')) {
+      // 超级管理员可以看到除超级管理员外的所有用户
+      queryBuilder = queryBuilder.where(
+        `NOT JSON_CONTAINS(user.roles, '"super_admin"', '$')`,
+      );
+    } else if (currentUser.roles.includes('admin')) {
+      // 管理员只能看到普通用户
+      queryBuilder = queryBuilder.where(
+        `NOT JSON_CONTAINS(user.roles, '"super_admin"', '$') AND NOT JSON_CONTAINS(user.roles, '"admin"', '$')`,
+      );
+    } else {
+      // 普通用户不能看到任何用户列表
+      throw new ForbiddenException('没有权限查看用户列表');
+    }
+    
+    // 添加用户名模糊查询条件
+    if (query.username) {
+      queryBuilder = queryBuilder.andWhere('user.username LIKE :username', {
+        username: `%${query.username}%`
+      });
+    }
+    
+    // 计算总数
+    const total = await queryBuilder.getCount();
+    
+    // 添加排序和分页
+    const users = await queryBuilder
+      .orderBy('user.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
+    
+    return {
+      items: users,
+      meta: {
+        total,
+        page,
+        limit,
+      },
+    };
+  }
+
   // 根据ID获取用户详情，添加权限检查
   async findOne(id: number, currentUser: User): Promise<User> {
     const user = await this.userRepository.findOne({ where: { id } });

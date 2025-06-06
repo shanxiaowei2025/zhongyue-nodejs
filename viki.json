@@ -1,1 +1,121 @@
- 
+{
+    "name": "中岳信息管理系统后端",
+    "version": "1.0.0",
+    "description": "基于NestJS的中岳信息管理系统后端API文档",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/shanxiaowei2025/zhongyue-nodejs"
+    },
+    "navigation": [
+      {
+        "text": "项目概述",
+        "link": "docs/README.md"
+      },
+      {
+        "text": "开发指南",
+        "link": "docs/development/README.md",
+        "items": [
+          {
+            "text": "环境配置",
+            "link": "docs/development/environment.md"
+          },
+          {
+            "text": "代码规范",
+            "link": "docs/development/coding-standards.md"
+          },
+          {
+            "text": "开发流程",
+            "link": "docs/development/workflow.md"
+          }
+        ]
+      },
+      {
+        "text": "API文档",
+        "link": "docs/api/README.md",
+        "items": [
+          {
+            "text": "认证模块",
+            "link": "docs/api/auth.md"
+          },
+          {
+            "text": "用户模块",
+            "link": "docs/api/users.md"
+          },
+          {
+            "text": "部门模块",
+            "link": "docs/api/departments.md"
+          },
+          {
+            "text": "客户模块",
+            "link": "docs/api/customers.md"
+          },
+          {
+            "text": "合同模块",
+            "link": "docs/api/contracts.md"
+          },
+          {
+            "text": "费用模块",
+            "link": "docs/api/expenses.md"
+          },
+          {
+            "text": "存储模块",
+            "link": "docs/api/storage.md"
+          },
+          {
+            "text": "角色与权限",
+            "link": "docs/api/roles-permissions.md"
+          }
+        ]
+      },
+      {
+        "text": "数据库设计",
+        "link": "docs/database/README.md"
+      },
+      {
+        "text": "部署指南",
+        "link": "docs/deployment/README.md",
+        "items": [
+          {
+            "text": "开发环境",
+            "link": "docs/deployment/development.md"
+          },
+          {
+            "text": "生产环境",
+            "link": "docs/deployment/production.md"
+          },
+          {
+            "text": "Docker部署",
+            "link": "docs/deployment/docker.md"
+          }
+        ]
+      }
+    ],
+    "theme": {
+      "name": "default",
+      "options": {
+        "nav": {
+          "position": "left",
+          "width": "250px"
+        },
+        "colors": {
+          "primary": "#007bff",
+          "secondary": "#6c757d"
+        }
+      }
+    },
+    "plugins": [
+      {
+        "name": "search",
+        "enabled": true
+      },
+      {
+        "name": "github",
+        "enabled": true,
+        "options": {
+          "repo": "shanxiaowei2025/zhongyue-nodejs",
+          "branch": "main",
+          "editLinkText": "在GitHub上编辑此页"
+        }
+      }
+    ]
+  }

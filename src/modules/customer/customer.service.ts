@@ -723,7 +723,8 @@ export class CustomerService {
 
       // 保存上传的文件到临时目录
       const timestamp = Date.now();
-      const fileName = `import-${timestamp}.xlsx`;
+      const fileExt = path.extname(file.originalname).toLowerCase();
+      const fileName = `import-${timestamp}${fileExt}`;
       const filePath = path.join(tempDir, fileName);
 
       this.logger.log(`保存导入文件到: ${filePath}`);
@@ -775,8 +776,8 @@ export class CustomerService {
       // 调用Python脚本处理数据导入
       const scriptPath = path.join(process.cwd(), 'src/modules/customer/utils/import_data.py');
       
-      // 执行Python脚本，传递文件路径参数
-      this.logger.log('开始执行Python导入脚本');
+      // 执行Python脚本，传递文件路径参数和文件类型参数
+      this.logger.log(`开始执行Python导入脚本，文件类型: ${fileExt}`);
       const { stdout, stderr } = await this.executeImportScript(scriptPath, filePath);
       
       this.logger.log(`Python脚本执行完成`);
@@ -931,14 +932,18 @@ export class CustomerService {
         throw new Error(`Python脚本文件不存在: ${scriptPath}`);
       }
 
-      // 验证输入Excel文件是否存在
+      // 验证输入文件是否存在
       if (!fs.existsSync(filePath)) {
-        throw new Error(`Excel文件不存在: ${filePath}`);
+        throw new Error(`导入文件不存在: ${filePath}`);
       }
+
+      // 获取文件类型
+      const fileExt = path.extname(filePath).toLowerCase();
+      this.logger.log(`导入文件类型: ${fileExt}`);
 
       // 打印脚本路径与文件路径
       this.logger.log(`脚本路径: ${scriptPath}`);
-      this.logger.log(`Excel文件路径: ${filePath}`);
+      this.logger.log(`文件路径: ${filePath}`);
       this.logger.log(`环境变量DB_HOST: ${env.DB_HOST}`);
       this.logger.log(`环境变量DB_PORT: ${env.DB_PORT}`);
       this.logger.log(`环境变量DB_DATABASE: ${env.DB_DATABASE}`);
@@ -1119,7 +1124,7 @@ export class CustomerService {
     try {
       this.logger.log(`开始执行批量更新操作，用户ID: ${userId}`);
       
-      // 使用批量操作权限检查方法，检查是否有更新权限
+      // 使用批量操作权限检查方法，避免触发ID查询
       const hasPermission = await this.customerPermissionService.checkBatchOperationPermission(
         userId, 
         'customer_action_update'
@@ -1146,54 +1151,11 @@ export class CustomerService {
       this.logger.log(`保存更新文件到: ${filePath}`);
       fs.writeFileSync(filePath, file.buffer);
 
-      // 尝试安装Python所需依赖（如果必要）
-      try {
-        // 使用完整路径
-        const pythonPath = '/usr/bin/python3';
-        const pipPath = '/usr/bin/pip3';
-        
-        // 尝试安装必要的Python依赖
-        this.logger.log('检查Python环境...');
-        try {
-          // 检查Python版本
-          const { stdout: pythonVersion } = await execPromise(`${pythonPath} --version`);
-          this.logger.log(`找到Python版本: ${pythonVersion.trim()}`);
-          
-          // 列出已安装的包
-          this.logger.log('列出已安装的Python包...');
-          const { stdout: installedPackages } = await execPromise(`${pipPath} list`);
-          this.logger.debug(`已安装的包: ${installedPackages}`);
-          
-          // 检查是否需要安装缺少的包
-          const requiredPackages = ['pandas', 'sqlalchemy', 'pymysql', 'openpyxl'];
-          const missingPackages = [];
-          
-          for (const pkg of requiredPackages) {
-            if (!installedPackages.includes(pkg)) {
-              missingPackages.push(pkg);
-            }
-          }
-          
-          if (missingPackages.length > 0) {
-            // 尝试安装依赖包
-            this.logger.log(`尝试安装缺少的Python依赖: ${missingPackages.join(', ')}...`);
-            await execPromise(`${pipPath} install ${missingPackages.join(' ')} --no-cache-dir`);
-            this.logger.log('Python依赖安装成功');
-          } else {
-            this.logger.log('所有必要的Python依赖已安装');
-          }
-        } catch (error) {
-          this.logger.warn(`安装Python依赖失败: ${error.message}，将继续尝试执行脚本`);
-        }
-      } catch (error) {
-        this.logger.warn(`Python环境检查失败: ${error.message}，将继续尝试执行脚本`);
-      }
-
       // 调用Python脚本处理数据更新
       const scriptPath = path.join(process.cwd(), 'src/modules/customer/utils/update_data.py');
       
       // 执行Python脚本，传递文件路径参数
-      this.logger.log('开始执行Python更新脚本');
+      this.logger.log(`开始执行Python更新脚本，文件类型: ${fileExt}`);
       const { stdout, stderr } = await this.executeUpdateScript(scriptPath, filePath);
       
       this.logger.log(`Python脚本执行完成`);
@@ -1272,24 +1234,16 @@ export class CustomerService {
         this.logger.error(`解析错误信息JSON失败: ${error.message}`);
       }
 
-      // 如果没有找到JSON结果，尝试使用老方法解析
-      // 获取更新记录数
-      const updateCount = stdout.match(/成功更新 (\d+) 条记录/);
-      const count = updateCount ? parseInt(updateCount[1], 10) : 0;
-
-      this.logger.log(`更新完成，共更新${count}条记录`);
-      
       // 简单返回结果
       return {
-        success: count > 0,
-        message: count > 0 ? `成功更新${count}条客户记录` : '更新失败，未能更新任何记录',
-        count: count > 0 ? count : undefined
+        success: false,
+        message: '更新失败，无法获取详细结果'
       };
     } catch (error) {
-      this.logger.error(`更新客户数据失败: ${error.message}`, error.stack);
+      this.logger.error(`批量更新客户数据失败: ${error.message}`, error.stack);
       return {
         success: false,
-        message: `更新客户数据失败: ${error.message}`
+        message: `批量更新客户数据失败: ${error.message}`
       };
     }
   }

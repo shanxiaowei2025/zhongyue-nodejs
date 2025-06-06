@@ -178,7 +178,7 @@ export class CustomerController {
         file: {
           type: 'string',
           format: 'binary',
-          description: '客户数据Excel文件',
+          description: '客户数据Excel(.xlsx)或CSV(.csv)文件',
         },
       },
     },
@@ -211,6 +211,12 @@ export class CustomerController {
       // 检查文件buffer是否存在
       if (!file.buffer) {
         throw new Error('文件内容为空，请检查上传的文件');
+      }
+      
+      // 检查文件类型
+      const fileExt = path.extname(file.originalname).toLowerCase();
+      if (fileExt !== '.xlsx' && fileExt !== '.xls' && fileExt !== '.csv') {
+        throw new BadRequestException('文件格式不支持，请上传Excel(.xlsx/.xls)或CSV(.csv)文件');
       }
       
       // 调用customerService的importCustomers方法进行导入

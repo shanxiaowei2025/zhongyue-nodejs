@@ -220,6 +220,15 @@ export class DepartmentService {
       throw new BadRequestException('该部门下有子部门，无法删除');
     }
     
+    // 检查部门下是否存在用户
+    const userCount = await this.userRepository.count({
+      where: { dept_id: id }
+    });
+    
+    if (userCount > 0) {
+      throw new BadRequestException('当前部门存在用户，无法删除');
+    }
+    
     await this.departmentRepository.remove(department);
   }
 
@@ -256,6 +265,42 @@ export class DepartmentService {
       select: ['id', 'username', 'email', 'phone', 'isActive', 'roles', 'createdAt', 'updatedAt'] // 排除敏感信息
     });
     
-    return users;
+    // 准备返回结果
+    const result = [];
+    
+    // 如果有用户且用户有角色信息，则查询角色名称
+    if (users.length > 0) {
+      // 收集所有角色代码
+      const roleCodes = Array.from(new Set(users.flatMap(user => user.roles || [])));
+      
+      // 角色代码到名称的映射
+      const roleMap = new Map<string, string>();
+      
+      if (roleCodes.length > 0) {
+        // 查询这些角色代码对应的角色名称
+        const roleEntities = await this.departmentRepository.manager
+          .createQueryBuilder()
+          .select(['code', 'name'])
+          .from('sys_role', 'role')
+          .where('role.code IN (:...codes)', { codes: roleCodes })
+          .getRawMany();
+        
+        // 创建角色代码到名称的映射
+        roleEntities.forEach(role => {
+          roleMap.set(role.code, role.name);
+        });
+      }
+      
+      // 构建返回结果
+      for (const user of users) {
+        const userDto = {
+          ...user,
+          roleNames: (user.roles || []).map(roleCode => roleMap.get(roleCode) || roleCode)
+        };
+        result.push(userDto);
+      }
+    }
+    
+    return result;
   }
 }
