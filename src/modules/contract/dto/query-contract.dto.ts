@@ -66,4 +66,44 @@ export class QueryContractDto {
   @IsDateString()
   @IsOptional()
   createTimeEnd?: string;
+
+  @ApiProperty({ description: '合同金额', required: false })
+  @IsString()
+  @IsOptional()
+  contractAmount?: string;
+
+  @ApiProperty({ description: '甲方法定代表人', required: false })
+  @IsString()
+  @IsOptional()
+  partyALegalRepresentative?: string;
+
+  @ApiProperty({ description: '甲方联系人', required: false })
+  @IsString()
+  @IsOptional()
+  partyAContact?: string;
+
+  @ApiProperty({ description: '甲方联系电话', required: false })
+  @IsString()
+  @IsOptional()
+  partyAPhone?: string;
+
+  @ApiProperty({ description: '甲方地址', required: false })
+  @IsString()
+  @IsOptional()
+  partyAAddress?: string;
+
+  @ApiProperty({ description: '乙方签订人', required: false })
+  @IsString()
+  @IsOptional()
+  partyBSigner?: string;
+
+  @ApiProperty({ description: '委托开始日期', required: false })
+  @IsDateString()
+  @IsOptional()
+  entrustmentStartDate?: string;
+
+  @ApiProperty({ description: '委托结束日期', required: false })
+  @IsDateString()
+  @IsOptional()
+  entrustmentEndDate?: string;
 } 

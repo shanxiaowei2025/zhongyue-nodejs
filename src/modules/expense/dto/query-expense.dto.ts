@@ -34,6 +34,51 @@ export class QueryExpenseDto {
   @IsDateString()
   chargeDateEnd?: string;
 
+  @ApiProperty({ description: '企业类型', required: false })
+  @IsOptional()
+  @IsString()
+  companyType?: string;
+
+  @ApiProperty({ description: '企业所在地', required: false })
+  @IsOptional()
+  @IsString()
+  companyLocation?: string;
+
+  @ApiProperty({ description: '业务类型', required: false })
+  @IsOptional()
+  @IsString()
+  businessType?: string;
+
+  @ApiProperty({ description: '支付方式', required: false })
+  @IsOptional()
+  @IsString()
+  paymentMethod?: string;
+
+  @ApiProperty({ description: '备注', required: false })
+  @IsOptional()
+  @IsString()
+  remarks?: string;
+
+  @ApiProperty({ description: '服务期限', required: false })
+  @IsOptional()
+  @IsString()
+  servicePeriod?: string;
+
+  @ApiProperty({ description: '收据编号', required: false })
+  @IsOptional()
+  @IsString()
+  receiptNo?: string;
+
+  @ApiProperty({ description: '审核人', required: false })
+  @IsOptional()
+  @IsString()
+  auditor?: string;
+
+  @ApiProperty({ description: '收款人', required: false })
+  @IsOptional()
+  @IsString()
+  payee?: string;
+
   // 保留原有的分页参数
   @ApiProperty({ description: '页码', required: false, default: 1 })
   @IsOptional()

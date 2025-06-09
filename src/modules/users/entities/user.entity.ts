@@ -3,7 +3,7 @@ import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateCol
 import { Exclude } from 'class-transformer';
 import * as bcrypt from 'bcryptjs';
 import { ApiProperty, ApiHideProperty } from '../../../common/swagger';
-import { Department } from 'src/modules/department/entities/department.entity';
+import { Department } from '../../department/entities/department.entity';
 
 @Entity({ name: 'sys_user' }) // 数据库表名为 sys_user
 export class User {

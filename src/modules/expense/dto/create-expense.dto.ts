@@ -123,6 +123,19 @@ export class CreateExpenseDto {
   @IsArray()
   contractImage?: any[];
 
+  @ApiProperty({ 
+    description: '关联合同', 
+    required: false, 
+    type: 'array',
+    example: [
+      { id: 4, contractNumber: '2025052600003' },
+      { id: 5, contractNumber: '2025052600006' }
+    ]
+  })
+  @IsOptional()
+  @IsArray()
+  relatedContract?: Array<{ id: number, contractNumber: string }>;
+
   // @ApiProperty({ description: '开票软件服务商', required: false })
   // @IsOptional()
   // @IsString()
@@ -281,22 +294,4 @@ export class CreateExpenseDto {
   @IsOptional()
   @IsString()
   internalRemarks?: string;
-  
-  @ApiProperty({ description: '关联合同', required: false, type: [Object] })
-  @IsOptional()
-  @IsArray()
-  @Transform(({ value }) => {
-    // 处理嵌套数组的情况，如[[]]
-    if (Array.isArray(value) && value.length > 0 && Array.isArray(value[0]) && value[0].length === 0) {
-      return [
-        {
-          id: 28,
-          contractNumber: "2025060300002"
-        }
-      ];
-    }
-    return value;
-  })
-  relatedContract?: any[];
-// ALTER TABLE sys_expense ADD COLUMN relatedContract VARCHAR(255) COMMENT '关联合同';
 } 

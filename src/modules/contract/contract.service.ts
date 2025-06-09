@@ -9,17 +9,30 @@ import { SignContractDto } from './dto/sign-contract.dto';
 import { ContractPermissionService } from './services/contract-permission.service';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { TokenService } from './services/token.service';
+import { ConfigService } from '@nestjs/config';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class ContractService {
   private readonly logger = new Logger(ContractService.name);
+  private readonly contractSalt: string;
 
   constructor(
     @InjectRepository(Contract)
     private readonly contractRepository: Repository<Contract>,
     private readonly contractPermissionService: ContractPermissionService,
     private readonly tokenService: TokenService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    // 从环境变量中获取合同盐值
+    this.contractSalt = this.configService.get<string>('CONTRACT_SALT');
+    if (!this.contractSalt) {
+      const errorMessage = '环境变量CONTRACT_SALT未设置，无法初始化合同服务';
+      this.logger.error(errorMessage);
+      throw new Error(errorMessage);
+    }
+    this.logger.log('已加载CONTRACT_SALT环境变量');
+  }
 
   // 创建合同
   async create(createContractDto: CreateContractDto, userId: number, username: string): Promise<Contract> {
@@ -194,6 +207,7 @@ export class ContractService {
 
     // 处理查询条件
     const addConditions = (conditions: any) => {
+      // 对所有字符串字段使用模糊查询
       if (query.contractNumber) {
         conditions.contractNumber = Like(`%${query.contractNumber}%`);
       }
@@ -204,13 +218,33 @@ export class ContractService {
         conditions.partyACreditCode = Like(`%${query.partyACreditCode}%`);
       }
       if (query.contractType) {
-        conditions.contractType = query.contractType;
+        conditions.contractType = Like(`%${query.contractType}%`);
       }
       if (query.signatory) {
-        conditions.signatory = query.signatory;
+        conditions.signatory = Like(`%${query.signatory}%`);
       }
       if (query.contractStatus) {
-        conditions.contractStatus = query.contractStatus;
+        conditions.contractStatus = Like(`%${query.contractStatus}%`);
+      }
+      
+      // 添加新增字段的模糊查询
+      if (query.contractAmount) {
+        conditions.contractAmount = Like(`%${query.contractAmount}%`);
+      }
+      if (query.partyALegalRepresentative) {
+        conditions.partyALegalRepresentative = Like(`%${query.partyALegalRepresentative}%`);
+      }
+      if (query.partyAContact) {
+        conditions.partyAContact = Like(`%${query.partyAContact}%`);
+      }
+      if (query.partyAPhone) {
+        conditions.partyAPhone = Like(`%${query.partyAPhone}%`);
+      }
+      if (query.partyAAddress) {
+        conditions.partyAAddress = Like(`%${query.partyAAddress}%`);
+      }
+      if (query.partyBSigner) {
+        conditions.partyBSigner = Like(`%${query.partyBSigner}%`);
       }
       
       // 甲方签订日期范围查询
@@ -223,6 +257,14 @@ export class ContractService {
         conditions.partyASignDate = MoreThanOrEqual(new Date(query.partyASignDateStart));
       } else if (query.partyASignDateEnd) {
         conditions.partyASignDate = LessThanOrEqual(new Date(query.partyASignDateEnd));
+      }
+      
+      // 委托日期范围查询
+      if (query.entrustmentStartDate) {
+        conditions.entrustmentStartDate = MoreThanOrEqual(new Date(query.entrustmentStartDate));
+      }
+      if (query.entrustmentEndDate) {
+        conditions.entrustmentEndDate = LessThanOrEqual(new Date(query.entrustmentEndDate));
       }
       
       // 创建时间范围查询
@@ -409,10 +451,14 @@ export class ContractService {
       }
     }
 
-    // 更新合同签名和状态
+    // 生成加密编号
+    const encryptedCode = this.generateEncryptedCode(contract.contractNumber, id);
+
+    // 更新合同签名、状态和加密编号
     await this.contractRepository.update(id, {
       contractSignature: signContractDto.signature,
       contractStatus: '1', // 更新为已签署状态
+      encryptedCode: encryptedCode // 添加加密编号
     });
     
     // 签署完成后，删除该合同的所有token
@@ -426,6 +472,25 @@ export class ContractService {
     
     // 返回更新后的合同
     return this.contractRepository.findOne({ where: { id } });
+  }
+
+  /**
+   * 生成加密编号
+   * @param contractNumber 合同编号
+   * @param id 合同ID
+   * @returns 加密后的字符串
+   */
+  private generateEncryptedCode(contractNumber: string, id: number): string {
+    // 使用环境变量中的盐值进行加密
+    const rawData = `${contractNumber || ''}${id}`;
+    
+    // 使用SHA-256算法进行加密
+    const hash = crypto.createHmac('sha256', this.contractSalt)
+                      .update(rawData)
+                      .digest('hex');
+    
+    // 取前16位，使结果更短且易于使用
+    return hash.substring(0, 16).toUpperCase();
   }
 
   /**
@@ -448,10 +513,14 @@ export class ContractService {
         return false;
       }
       
-      // 更新合同签名和状态
+      // 生成加密编号
+      const encryptedCode = this.generateEncryptedCode(contract.contractNumber, contractId);
+      
+      // 更新合同签名、状态和加密编号
       await this.contractRepository.update(contractId, {
         contractSignature: signatureUrl,
         contractStatus: '1', // 更新为已签署状态
+        encryptedCode: encryptedCode // 添加加密编号
       });
       
       this.logger.debug(`合同 #${contractId} 签名已更新，状态已设置为已签署`);

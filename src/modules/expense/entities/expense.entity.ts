@@ -72,6 +72,9 @@ export class Expense {
   @Column({ type: 'simple-json', nullable: true, comment: '合同图片列表' })
   contractImage: any[];
 
+  @Column({ type: 'simple-json', nullable: true, comment: '关联合同' })
+  relatedContract: Array<{ id: number, contractNumber: string }>;
+
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '开票软件费' })
   invoiceSoftwareFee: number;
 
@@ -189,7 +192,4 @@ export class Expense {
   
   @Column({ type: 'text', nullable: true, comment: '内部备注' })
   internalRemarks: string;
-  
-  @Column({ type: 'json', nullable: true, comment: '关联合同' })
-  relatedContract: any[];
 } 

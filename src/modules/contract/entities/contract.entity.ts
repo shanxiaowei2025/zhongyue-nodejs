@@ -14,6 +14,9 @@ export class Contract {
   @Column({ nullable: true, comment: '合同编号' })
   contractNumber: string;
   
+  @Column({ nullable: true, comment: '加密编号' })
+  encryptedCode: string;
+  
   @Column({ nullable: true, comment: '签署方' })
   signatory: string;
   

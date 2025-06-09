@@ -18,7 +18,32 @@ export class ExpenseService {
   ) {}
 
   async create(createExpenseDto: CreateExpenseDto, username: string) {
-    // 直接使用原始relatedContract数据，不做处理
+    // 添加调试信息
+    console.log('收到的relatedContract数据:', JSON.stringify(createExpenseDto.relatedContract));
+    
+    // 确保relatedContract是正确的格式
+    if (createExpenseDto.relatedContract) {
+      // 确保数据是数组格式
+      if (!Array.isArray(createExpenseDto.relatedContract)) {
+        console.error('relatedContract不是数组格式');
+        createExpenseDto.relatedContract = [];
+      } else {
+        // 确保每个元素都是正确的对象格式
+        createExpenseDto.relatedContract = createExpenseDto.relatedContract.map(item => {
+          if (typeof item === 'object' && item !== null) {
+            return {
+              id: item.id,
+              contractNumber: item.contractNumber
+            };
+          } else {
+            console.error('无效的relatedContract项:', item);
+            return null;
+          }
+        }).filter(item => item !== null);
+      }
+      console.log('处理后的relatedContract数据:', JSON.stringify(createExpenseDto.relatedContract));
+    }
+
     const expense = this.expenseRepository.create({
       ...createExpenseDto,
       salesperson: username,
@@ -35,11 +60,8 @@ export class ExpenseService {
 
     const savedExpense = await this.expenseRepository.save(expense);
     
-    // 如果数据库返回的是null，但原始数据不为空，使用原始数据
-    if (savedExpense.relatedContract === null && createExpenseDto.relatedContract && 
-        Array.isArray(createExpenseDto.relatedContract) && createExpenseDto.relatedContract.length > 0) {
-      savedExpense.relatedContract = createExpenseDto.relatedContract;
-    }
+    // 添加调试信息
+    console.log('保存后的relatedContract数据:', JSON.stringify(savedExpense.relatedContract));
     
     return savedExpense;
   }
@@ -128,6 +150,7 @@ export class ExpenseService {
 
     // 处理查询条件
     const addConditions = (conditions: any) => {
+      // 对所有字符串字段使用模糊查询
       if (query.companyName) {
         conditions.companyName = Like(`%${query.companyName}%`);
       }
@@ -135,20 +158,40 @@ export class ExpenseService {
         conditions.unifiedSocialCreditCode = Like(`%${query.unifiedSocialCreditCode}%`);
       }
       if (query.companyType) {
-        conditions.companyType = query.companyType;
+        conditions.companyType = Like(`%${query.companyType}%`);
       }
       if (query.companyLocation) {
-        conditions.companyLocation = query.companyLocation;
+        conditions.companyLocation = Like(`%${query.companyLocation}%`);
       }
       if (query.businessType) {
-        conditions.businessType = query.businessType;
+        conditions.businessType = Like(`%${query.businessType}%`);
       }
       if (query.status !== undefined) {
         conditions.status = query.status;
       }
       if (query.salesperson) {
-        conditions.salesperson = query.salesperson;
+        conditions.salesperson = Like(`%${query.salesperson}%`);
       }
+      // 添加对其他可能的字符串字段的模糊查询
+      if (query.paymentMethod) {
+        conditions.paymentMethod = Like(`%${query.paymentMethod}%`);
+      }
+      if (query.remarks) {
+        conditions.remarks = Like(`%${query.remarks}%`);
+      }
+      if (query.servicePeriod) {
+        conditions.servicePeriod = Like(`%${query.servicePeriod}%`);
+      }
+      if (query.receiptNo) {
+        conditions.receiptNo = Like(`%${query.receiptNo}%`);
+      }
+      if (query.auditor) {
+        conditions.auditor = Like(`%${query.auditor}%`);
+      }
+      if (query.payee) {
+        conditions.payee = Like(`%${query.payee}%`);
+      }
+      
       if (query.chargeDateStart && query.chargeDateEnd) {
         conditions.chargeDate = Between(query.chargeDateStart, query.chargeDateEnd);
       } else if (query.chargeDateStart) {
@@ -177,32 +220,6 @@ export class ExpenseService {
       },
     });
 
-    // 处理每条记录的relatedContract字段
-    expenses.forEach(expense => {
-      if (expense.relatedContract && Array.isArray(expense.relatedContract)) {
-        // 如果relatedContract是一个嵌套数组，将其扁平化
-        if (expense.relatedContract.length > 0 && Array.isArray(expense.relatedContract[0]) && expense.relatedContract[0].length === 0) {
-          expense.relatedContract = [];
-        } else if (expense.relatedContract.length === 0) {
-          // 如果是空数组，尝试转换成null避免前端显示问题
-          expense.relatedContract = null;
-        }
-      } else if (typeof expense.relatedContract === 'string') {
-        // 如果是JSON字符串，尝试解析
-        try {
-          const parsed = JSON.parse(expense.relatedContract);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            expense.relatedContract = parsed;
-          } else {
-            expense.relatedContract = null;
-          }
-        } catch (e) {
-          console.error('解析relatedContract失败:', e);
-          expense.relatedContract = null;
-        }
-      }
-    });
-
     return {
       list: expenses,
       total,
@@ -226,30 +243,6 @@ export class ExpenseService {
 
     if (!hasPermission) {
       throw new BadRequestException('没有权限查看该费用记录');
-    }
-
-    // 确保relatedContract字段格式正确
-    if (expense.relatedContract && Array.isArray(expense.relatedContract)) {
-      // 如果relatedContract是一个嵌套数组，将其扁平化
-      if (expense.relatedContract.length > 0 && Array.isArray(expense.relatedContract[0]) && expense.relatedContract[0].length === 0) {
-        expense.relatedContract = [];
-      } else if (expense.relatedContract.length === 0) {
-        // 如果是空数组，尝试转换成null避免前端显示问题
-        expense.relatedContract = null;
-      }
-    } else if (typeof expense.relatedContract === 'string') {
-      // 如果是JSON字符串，尝试解析
-      try {
-        const parsed = JSON.parse(expense.relatedContract);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          expense.relatedContract = parsed;
-        } else {
-          expense.relatedContract = null;
-        }
-      } catch (e) {
-        console.error('解析relatedContract失败:', e);
-        expense.relatedContract = null;
-      }
     }
 
     return expense;
@@ -277,6 +270,33 @@ export class ExpenseService {
     
     if (!hasEditPermission) {
       throw new BadRequestException('没有权限编辑费用记录');
+    }
+
+    // 添加调试信息
+    console.log('更新前的relatedContract数据:', JSON.stringify(expense.relatedContract));
+    console.log('更新请求中的relatedContract数据:', JSON.stringify(updateExpenseDto.relatedContract));
+    
+    // 确保relatedContract是正确的格式
+    if (updateExpenseDto.relatedContract) {
+      // 确保数据是数组格式
+      if (!Array.isArray(updateExpenseDto.relatedContract)) {
+        console.error('relatedContract不是数组格式');
+        updateExpenseDto.relatedContract = [];
+      } else {
+        // 确保每个元素都是正确的对象格式
+        updateExpenseDto.relatedContract = updateExpenseDto.relatedContract.map(item => {
+          if (typeof item === 'object' && item !== null) {
+            return {
+              id: item.id,
+              contractNumber: item.contractNumber
+            };
+          } else {
+            console.error('无效的relatedContract项:', item);
+            return null;
+          }
+        }).filter(item => item !== null);
+      }
+      console.log('处理后的relatedContract数据:', JSON.stringify(updateExpenseDto.relatedContract));
     }
 
     // 检查收费日期是否有变更
@@ -311,11 +331,8 @@ export class ExpenseService {
     
     const savedExpense = await this.expenseRepository.save(updated);
     
-    // 如果数据库返回的是null，但原始数据不为空，使用原始数据
-    if (savedExpense.relatedContract === null && updateExpenseDto.relatedContract && 
-        Array.isArray(updateExpenseDto.relatedContract) && updateExpenseDto.relatedContract.length > 0) {
-      savedExpense.relatedContract = updateExpenseDto.relatedContract;
-    }
+    // 添加调试信息
+    console.log('更新后的relatedContract数据:', JSON.stringify(savedExpense.relatedContract));
     
     return savedExpense;
   }
@@ -634,8 +651,7 @@ export class ExpenseService {
       auditDate: '审核日期',
       rejectReason: '退回原因',
       receiptRemarks: '收据备注',
-      internalRemarks: '内部备注',
-      relatedContract: '关联合同'
+      internalRemarks: '内部备注'
     };
 
     // 处理导出数据

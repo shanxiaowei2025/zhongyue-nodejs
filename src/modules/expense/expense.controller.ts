@@ -37,22 +37,6 @@ export class ExpenseController {
   @ApiOperation({ summary: '创建费用记录' })
   @ApiResponse({ status: 201, description: '创建成功' })
   create(@Body() createExpenseDto: CreateExpenseDto, @Req() req) {
-    // 修复relatedContract字段
-    if (createExpenseDto.relatedContract && Array.isArray(createExpenseDto.relatedContract)) {
-      // 检测嵌套数组的情况，如[[]]
-      if (createExpenseDto.relatedContract.length > 0 && 
-          Array.isArray(createExpenseDto.relatedContract[0]) && 
-          createExpenseDto.relatedContract[0].length === 0) {
-        // 替换为预设合同数据
-        createExpenseDto.relatedContract = [
-          {
-            id: 28,
-            contractNumber: "2025060300002"
-          }
-        ];
-      }
-    }
-    
     return this.expenseService.create(createExpenseDto, req.user.username);
   }
 
@@ -82,22 +66,6 @@ export class ExpenseController {
   ) {
     if (!req.user || !req.user.id) {
       throw new ForbiddenException('未能获取有效的用户身份');
-    }
-    
-    // 修复relatedContract字段
-    if (updateExpenseDto.relatedContract && Array.isArray(updateExpenseDto.relatedContract)) {
-      // 检测嵌套数组的情况，如[[]]
-      if (updateExpenseDto.relatedContract.length > 0 && 
-          Array.isArray(updateExpenseDto.relatedContract[0]) && 
-          updateExpenseDto.relatedContract[0].length === 0) {
-        // 替换为预设合同数据
-        updateExpenseDto.relatedContract = [
-          {
-            id: 28,
-            contractNumber: "2025060300002"
-          }
-        ];
-      }
     }
     
     return this.expenseService.update(
