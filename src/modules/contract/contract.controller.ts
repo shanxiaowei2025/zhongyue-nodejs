@@ -31,6 +31,40 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { Public } from '../auth/decorators/public.decorator';
 
+/**
+ * 从合同对象或合同数组中移除敏感字段
+ * @param data 合同对象或合同数组
+ * @returns 处理后的数据
+ */
+function removeEncryptedCode(data: any): any {
+  // 处理数组
+  if (Array.isArray(data)) {
+    return data.map(item => removeEncryptedCode(item));
+  }
+  
+  // 处理对象
+  if (data && typeof data === 'object') {
+    // 如果是合同对象且有encryptedCode字段
+    if ('encryptedCode' in data) {
+      const { encryptedCode, ...rest } = data;
+      return rest;
+    }
+    
+    // 处理嵌套对象
+    const result = { ...data };
+    Object.keys(result).forEach(key => {
+      if (typeof result[key] === 'object' && result[key] !== null) {
+        result[key] = removeEncryptedCode(result[key]);
+      }
+    });
+    
+    return result;
+  }
+  
+  // 原始类型直接返回
+  return data;
+}
+
 @ApiTags('合同管理')
 @Controller('contract')
 export class ContractController {
@@ -44,7 +78,7 @@ export class ContractController {
   @ApiOperation({ summary: '创建合同' })
   @ApiResponse({ status: 201, description: '合同创建成功' })
   @ApiResponse({ status: 403, description: '没有创建合同的权限' })
-  create(@Body() createContractDto: CreateContractDto, @Request() req) {
+  async create(@Body() createContractDto: CreateContractDto, @Request() req) {
     this.logger.debug(`用户请求创建合同，用户信息: ${JSON.stringify(req.user)}`);
     
     // 检查用户ID是否存在
@@ -52,7 +86,8 @@ export class ContractController {
       throw new ForbiddenException('未能获取有效的用户身份');
     }
     
-    return this.contractService.create(createContractDto, req.user.id, req.user.username);
+    const result = await this.contractService.create(createContractDto, req.user.id, req.user.username);
+    return removeEncryptedCode(result);
   }
 
   @Get()
@@ -60,7 +95,7 @@ export class ContractController {
   @UseGuards(JwtAuthGuard, RolesGuard) // 使用JWT认证和角色守卫
   @ApiOperation({ summary: '获取合同列表' })
   @ApiResponse({ status: 200, description: '获取合同列表成功' })
-  findAll(
+  async findAll(
     @Query() query: QueryContractDto,
     @Request() req
   ) {
@@ -71,7 +106,14 @@ export class ContractController {
     const { page = 1, pageSize = 10, ...filters } = query;
     const pagination = { page, pageSize };
     
-    return this.contractService.findAll(filters, pagination, req.user.id);
+    const result = await this.contractService.findAll(filters, pagination, req.user.id);
+    
+    // 移除列表中每个合同对象的encryptedCode字段
+    if (result && result.list) {
+      result.list = removeEncryptedCode(result.list);
+    }
+    
+    return result;
   }
 
   @Get(':id')
@@ -79,12 +121,13 @@ export class ContractController {
   @UseGuards(JwtAuthGuard, RolesGuard) // 使用JWT认证和角色守卫
   @ApiOperation({ summary: '获取合同详情' })
   @ApiResponse({ status: 200, description: '获取合同详情成功' })
-  findOne(@Param('id') id: string, @Request() req) {
+  async findOne(@Param('id') id: string, @Request() req) {
     if (!req.user || !req.user.id) {
       throw new ForbiddenException('未能获取有效的用户身份');
     }
     
-    return this.contractService.findOne(+id, req.user.id);
+    const result = await this.contractService.findOne(+id, req.user.id);
+    return removeEncryptedCode(result);
   }
 
   @Patch(':id')
@@ -93,7 +136,7 @@ export class ContractController {
   @ApiOperation({ summary: '更新合同信息' })
   @ApiResponse({ status: 200, description: '合同信息更新成功' })
   @ApiResponse({ status: 403, description: '没有更新合同的权限' })
-  update(
+  async update(
     @Param('id') id: string,
     @Body() updateContractDto: UpdateContractDto,
     @Request() req
@@ -102,7 +145,8 @@ export class ContractController {
       throw new ForbiddenException('未能获取有效的用户身份');
     }
     
-    return this.contractService.update(+id, updateContractDto, req.user.id);
+    const result = await this.contractService.update(+id, updateContractDto, req.user.id);
+    return removeEncryptedCode(result);
   }
 
   @Delete(':id')
@@ -125,7 +169,7 @@ export class ContractController {
   @ApiResponse({ status: 200, description: '合同签署成功' })
   @ApiResponse({ status: 400, description: '合同已签署或已终止' })
   @ApiResponse({ status: 404, description: '合同不存在' })
-  signContract(
+  async signContract(
     @Param('id') id: string,
     @Body() signContractDto: SignContractDto,
     @Request() req
@@ -134,7 +178,8 @@ export class ContractController {
       throw new ForbiddenException('未能获取有效的用户身份');
     }
     
-    return this.contractService.signContract(+id, signContractDto, req.user.id, req.user.username);
+    const result = await this.contractService.signContract(+id, signContractDto, req.user.id, req.user.username);
+    return removeEncryptedCode(result);
   }
   
   @Post('get-image')
