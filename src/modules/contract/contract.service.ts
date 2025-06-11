@@ -583,4 +583,31 @@ export class ContractService {
       return null;
     }
   }
+
+  /**
+   * 更新合同图片
+   * @param contractId 合同ID
+   * @param contractImage 合同图片文件名
+   * @returns 更新是否成功
+   */
+  async updateContractImage(contractId: number, contractImage: string): Promise<boolean> {
+    try {
+      // 验证合同是否存在
+      const contract = await this.contractRepository.findOne({ where: { id: contractId } });
+      if (!contract) {
+        this.logger.warn(`更新合同图片失败: 合同 #${contractId} 不存在`);
+        return false;
+      }
+
+      // 更新合同图片
+      await this.contractRepository.update(contractId, { contractImage });
+      
+      this.logger.debug(`合同 #${contractId} 图片已更新为: ${contractImage}`);
+      
+      return true;
+    } catch (error) {
+      this.logger.error(`更新合同图片失败: ${error.message}`, error.stack);
+      return false;
+    }
+  }
 } 

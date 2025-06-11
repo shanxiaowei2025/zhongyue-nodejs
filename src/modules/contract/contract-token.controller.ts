@@ -361,14 +361,20 @@ export class ContractTokenController {
       // 上传到MinIO
       this.logger.log(`上传合成图片到MinIO: ${mergedImageName}`);
       const uploadedFileName = await this.storageService.uploadFile(file as any);
-      const uploadedFileUrl = await this.storageService.getFileUrl(uploadedFileName);
-      console.log(`合成图片已上传，URL: ${uploadedFileUrl}`);
+      console.log(`合成图片已上传，文件名: ${uploadedFileName}`);
       
-      // 保存原始签名URL到数据库，而不是合成后的图片URL
+      // 保存原始签名URL到数据库
       this.logger.log(`保存签名URL到数据库: ${signatureUrl}`);
       const success = await this.contractService.saveContractSignature(contractId, signatureUrl);
       if (!success) {
         throw new BadRequestException('保存签名失败，请确认合同存在且未终止');
+      }
+      
+      // 将合成后的图片文件名保存到合同表的contractImage字段
+      this.logger.log(`更新合同图片字段为: ${uploadedFileName}`);
+      const updateSuccess = await this.contractService.updateContractImage(contractId, uploadedFileName);
+      if (!updateSuccess) {
+        this.logger.warn(`更新合同图片字段失败，但签名已保存`);
       }
       
       // 签名保存成功后，获取合同的加密编号
@@ -387,7 +393,6 @@ export class ContractTokenController {
         success: true,
         message: '签名保存成功',
         contractId,
-        compositeSignatureUrl: uploadedFileUrl, // 返回合成图片的URL，但不保存在数据库中
         encryptedCode: encryptedCode // 返回合同的加密编号
       };
     } catch (error) {
