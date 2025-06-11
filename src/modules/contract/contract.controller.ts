@@ -19,12 +19,12 @@ import { CreateContractDto } from './dto/create-contract.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
 import { QueryContractDto } from './dto/query-contract.dto';
 import { SignContractDto } from './dto/sign-contract.dto';
-import { GetContractImageDto } from './dto/get-contract-image.dto';
 import {
   ApiBearerAuth,
   ApiTags,
   ApiOperation,
   ApiResponse,
+  ApiParam,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -182,14 +182,14 @@ export class ContractController {
     return removeEncryptedCode(result);
   }
   
-  @Post('get-image')
+  @Get('get-image/:encryptedCode')
   @Public() // 标记为公开接口，无需身份验证
-  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '通过加密编号获取合同图片' })
   @ApiResponse({ status: 200, description: '获取合同图片成功' })
   @ApiResponse({ status: 404, description: '未找到该加密编号对应的合同' })
-  getContractImage(@Body() getContractImageDto: GetContractImageDto) {
-    this.logger.debug(`请求通过加密编号获取合同图片: ${getContractImageDto.encryptedCode}`);
-    return this.contractService.getContractImageByEncryptedCode(getContractImageDto.encryptedCode);
+  @ApiParam({ name: 'encryptedCode', description: '合同加密编号', example: 'AB12CD34EF56GH78' })
+  getContractImage(@Param('encryptedCode') encryptedCode: string) {
+    this.logger.debug(`请求通过加密编号获取合同图片: ${encryptedCode}`);
+    return this.contractService.getContractImageByEncryptedCode(encryptedCode);
   }
 } 
