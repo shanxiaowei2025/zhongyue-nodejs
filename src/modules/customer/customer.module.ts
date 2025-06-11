@@ -19,6 +19,9 @@ import { join } from 'path';
 import * as fs from 'fs';
 import { diskStorage } from 'multer';
 import { memoryStorage } from 'multer';
+import { PermissionsModule } from '../permissions/permissions.module';
+import { StorageModule } from '../storage/storage.module';
+import { ServiceHistoryModule } from '../enterprise-service/service-history/service-history.module';
 
 @Module({
   imports: [
@@ -26,6 +29,9 @@ import { memoryStorage } from 'multer';
     MulterModule.register({
       storage: memoryStorage(), // 使用内存存储而不是磁盘存储，确保file.buffer可用
     }),
+    PermissionsModule,
+    StorageModule,
+    ServiceHistoryModule,
   ],
   controllers: [CustomerController],
   providers: [CustomerService, CustomerPermissionService],

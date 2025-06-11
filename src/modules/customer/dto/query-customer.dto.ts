@@ -9,10 +9,10 @@ export class QueryCustomerDto {
   @IsString()
   keyword?: string;
 
-  @ApiPropertyOptional({ description: '税号' })
+  @ApiPropertyOptional({ description: '统一社会信用代码' })
   @IsOptional()
   @IsString()
-  taxNumber?: string;
+  unifiedSocialCreditCode?: string;
 
   @ApiPropertyOptional({ description: '顾问会计' })
   @IsOptional()

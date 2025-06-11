@@ -28,6 +28,7 @@ import { promisify } from 'util';
 import { ExportCustomerDto } from './dto/export-customer.dto';
 import * as os from 'os';
 import { ConfigService } from '@nestjs/config';
+import { ServiceHistoryService } from '../enterprise-service/service-history/service-history.service';
 
 const execPromise = promisify(exec);
 
@@ -44,6 +45,7 @@ export class CustomerService {
     @InjectRepository(Department)
     private departmentRepository: Repository<Department>,
     private configService: ConfigService,
+    private serviceHistoryService: ServiceHistoryService,
   ) {}
 
   // 创建客户
@@ -114,14 +116,25 @@ export class CustomerService {
     }
 
     // 保存客户信息
-    return await this.customerRepository.save(customer);
+    const savedCustomer = await this.customerRepository.save(customer);
+    
+    try {
+      // 创建服务历程记录
+      await this.serviceHistoryService.createFromCustomer(savedCustomer);
+      this.logger.log(`已为客户 ${savedCustomer.companyName} 创建服务历程记录`);
+    } catch (error) {
+      this.logger.error(`创建服务历程记录失败: ${error.message}`, error.stack);
+      // 不阻止客户创建的主流程，即使服务历程创建失败
+    }
+
+    return savedCustomer;
   }
 
   // 查询客户列表
   async findAll(query: QueryCustomerDto, userId: number) {
     const {
       keyword,
-      taxNumber,
+      unifiedSocialCreditCode,
       consultantAccountant,
       bookkeepingAccountant,
       taxBureau,
@@ -149,9 +162,9 @@ export class CustomerService {
       });
     }
 
-    if (taxNumber) {
-      queryBuilder.andWhere('customer.taxNumber LIKE :taxNumber', {
-        taxNumber: `%${taxNumber}%`,
+    if (unifiedSocialCreditCode) {
+      queryBuilder.andWhere('customer.unifiedSocialCreditCode LIKE :unifiedSocialCreditCode', {
+        unifiedSocialCreditCode: `%${unifiedSocialCreditCode}%`,
       });
     }
 
@@ -409,11 +422,33 @@ export class CustomerService {
       }
     }
 
+    // 检查关键字段是否有变化，以决定是否需要创建服务历程记录
+    const needCreateServiceHistory = 
+      updateCustomerDto.consultantAccountant !== undefined && updateCustomerDto.consultantAccountant !== existingCustomer.consultantAccountant ||
+      updateCustomerDto.bookkeepingAccountant !== undefined && updateCustomerDto.bookkeepingAccountant !== existingCustomer.bookkeepingAccountant ||
+      updateCustomerDto.invoiceOfficer !== undefined && updateCustomerDto.invoiceOfficer !== existingCustomer.invoiceOfficer ||
+      updateCustomerDto.enterpriseStatus !== undefined && updateCustomerDto.enterpriseStatus !== existingCustomer.enterpriseStatus ||
+      updateCustomerDto.businessStatus !== undefined && updateCustomerDto.businessStatus !== existingCustomer.businessStatus;
+
     // 更新客户信息
     await this.customerRepository.update(id, updateCustomerDto);
 
+    // 获取更新后的客户信息
+    const updatedCustomer = await this.findOne(id, userId);
+    
+    // 如果关键字段有变化，创建服务历程记录
+    if (needCreateServiceHistory) {
+      try {
+        await this.serviceHistoryService.createFromCustomer(updatedCustomer);
+        this.logger.log(`已为客户 ${updatedCustomer.companyName} 创建服务历程记录`);
+      } catch (error) {
+        this.logger.error(`创建服务历程记录失败: ${error.message}`, error.stack);
+        // 不阻止更新主流程，即使服务历程创建失败
+      }
+    }
+
     // 返回更新后的客户信息
-    return this.findOne(id, userId);
+    return updatedCustomer;
   }
 
   // 删除客户
@@ -453,6 +488,11 @@ export class CustomerService {
 
     const { personnelType, originalName, replacementName } = replacePersonnelDto;
 
+    // 查找所有将被更新的客户
+    const customersToUpdate = await this.customerRepository.find({
+      where: { [personnelType]: originalName }
+    });
+
     // 构建更新条件和数据
     const updateResult = await this.customerRepository
       .createQueryBuilder()
@@ -460,6 +500,24 @@ export class CustomerService {
       .set({ [personnelType]: replacementName })
       .where(`${personnelType} = :originalName`, { originalName })
       .execute();
+
+    // 为每个更新的客户创建服务历程记录
+    if (customersToUpdate.length > 0) {
+      const serviceHistoryPromises = customersToUpdate.map(async (customer) => {
+        try {
+          // 更新客户对象的相应字段
+          customer[personnelType] = replacementName;
+          await this.serviceHistoryService.createFromCustomer(customer);
+          return true;
+        } catch (error) {
+          this.logger.error(`为客户 ${customer.companyName} 创建服务历程记录失败: ${error.message}`, error.stack);
+          return false;
+        }
+      });
+
+      // 等待所有服务历程创建完成
+      await Promise.all(serviceHistoryPromises);
+    }
 
     return {
       success: true,

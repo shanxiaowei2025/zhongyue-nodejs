@@ -18,6 +18,7 @@ import { DepartmentModule } from './modules/department/department.module';
 import { ExpenseModule } from './modules/expense/expense.module'; // 新增费用管理模块
 import { ContractModule } from './modules/contract/contract.module'; // 新增合同管理模块
 import { CombinedAuthGuard } from './modules/auth/guards/combined-auth.guard';
+import { EnterpriseServiceModule } from './modules/enterprise-service/enterprise-service.module'; // 新增企业服务模块
 
 // 导入各种配置文件
 import appConfig from './config/app.config'; // 应用配置
@@ -35,6 +36,10 @@ import { Department } from './modules/department/entities/department.entity';
 import { Expense } from './modules/expense/entities/expense.entity'; // 新增费用实体
 import { Contract } from './modules/contract/entities/contract.entity'; // 新增合同实体
 import { Token } from './modules/contract/entities/token.entity'; // 合同令牌实体
+import { ServiceHistory } from './modules/enterprise-service/service-history/entities/service-history.entity'; // 服务历程实体
+import { ChangeHistory } from './modules/enterprise-service/change-history/entities/change-history.entity'; // 变更历史实体
+import { FinancialSelfInspection } from './modules/enterprise-service/financial-self-inspection/entities/financial-self-inspection.entity'; // 财务自检实体
+import { TaxVerification } from './modules/enterprise-service/tax-verification/entities/tax-verification.entity'; // 税务核验实体
 
 @Module({
   imports: [
@@ -88,6 +93,10 @@ import { Token } from './modules/contract/entities/token.entity'; // 合同令�
           Expense,
           Contract,
           Token,
+          ServiceHistory,
+          ChangeHistory,
+          FinancialSelfInspection,
+          TaxVerification,
         ],
         synchronize: configService.get('DB_SYNCHRONIZE', 'false') === 'true',
         logging: configService.get('DB_LOGGING', 'false') === 'true',
@@ -105,6 +114,7 @@ import { Token } from './modules/contract/entities/token.entity'; // 合同令�
     StorageModule, // 存储模块：处理文件存储相关的功能
     ExpenseModule, // 费用管理模块：处理费用相关的功能
     ContractModule, // 合同管理模块：处理合同相关的功能
+    EnterpriseServiceModule, // 企业服务模块：处理企业服务相关的功能
   ],
   controllers: [AppController], // 控制器：负责接收请求，像前台接待
   providers: [

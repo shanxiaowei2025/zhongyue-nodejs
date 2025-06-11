@@ -158,14 +158,15 @@ export class TokenService {
   }
 
   /**
-   * 获取令牌关联的合同图片
+   * 获取令牌关联的合同图片和合同类型
    * @param token 令牌值
+   * @returns 包含合同图片URL和合同类型的对象，如果合同不存在则返回null
    */
-  async getContractImageByToken(token: string): Promise<string | null> {
+  async getContractImageByToken(token: string): Promise<{ contractImage: string, contractType: string } | null> {
     try {
-      // 直接查询数据库获取token关联的合同图片
+      // 直接查询数据库获取token关联的合同图片和合同类型
       const query = `
-        SELECT c.contractImage 
+        SELECT c.contractImage, c.contractType 
         FROM sys_token t
         JOIN sys_contract c ON t.contractId = c.id
         WHERE t.token = ?
@@ -173,13 +174,16 @@ export class TokenService {
       
       const result = await this.tokenRepository.query(query, [token]);
       
-      if (result && result.length > 0 && result[0].contractImage) {
-        return result[0].contractImage;
+      if (result && result.length > 0) {
+        return {
+          contractImage: result[0].contractImage || null,
+          contractType: result[0].contractType || null
+        };
       }
       
       return null;
     } catch (error) {
-      this.logger.error(`获取令牌关联的合同图片失败: ${error.message}`, error.stack);
+      this.logger.error(`获取令牌关联的合同信息失败: ${error.message}`, error.stack);
       return null;
     }
   }

@@ -11,12 +11,15 @@ import {
   Request,
   ForbiddenException,
   Logger,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ContractService } from './contract.service';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
 import { QueryContractDto } from './dto/query-contract.dto';
 import { SignContractDto } from './dto/sign-contract.dto';
+import { GetContractImageDto } from './dto/get-contract-image.dto';
 import {
   ApiBearerAuth,
   ApiTags,
@@ -26,10 +29,9 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { PaginationDto } from '../../common/dto/pagination.dto';
+import { Public } from '../auth/decorators/public.decorator';
 
 @ApiTags('合同管理')
-@ApiBearerAuth() // 需要登录才能访问
-@UseGuards(JwtAuthGuard, RolesGuard) // 使用JWT认证和角色守卫
 @Controller('contract')
 export class ContractController {
   private readonly logger = new Logger(ContractController.name);
@@ -37,6 +39,8 @@ export class ContractController {
   constructor(private readonly contractService: ContractService) {}
 
   @Post()
+  @ApiBearerAuth() // 需要登录才能访问
+  @UseGuards(JwtAuthGuard, RolesGuard) // 使用JWT认证和角色守卫
   @ApiOperation({ summary: '创建合同' })
   @ApiResponse({ status: 201, description: '合同创建成功' })
   @ApiResponse({ status: 403, description: '没有创建合同的权限' })
@@ -52,6 +56,8 @@ export class ContractController {
   }
 
   @Get()
+  @ApiBearerAuth() // 需要登录才能访问
+  @UseGuards(JwtAuthGuard, RolesGuard) // 使用JWT认证和角色守卫
   @ApiOperation({ summary: '获取合同列表' })
   @ApiResponse({ status: 200, description: '获取合同列表成功' })
   findAll(
@@ -69,6 +75,8 @@ export class ContractController {
   }
 
   @Get(':id')
+  @ApiBearerAuth() // 需要登录才能访问
+  @UseGuards(JwtAuthGuard, RolesGuard) // 使用JWT认证和角色守卫
   @ApiOperation({ summary: '获取合同详情' })
   @ApiResponse({ status: 200, description: '获取合同详情成功' })
   findOne(@Param('id') id: string, @Request() req) {
@@ -80,6 +88,8 @@ export class ContractController {
   }
 
   @Patch(':id')
+  @ApiBearerAuth() // 需要登录才能访问
+  @UseGuards(JwtAuthGuard, RolesGuard) // 使用JWT认证和角色守卫
   @ApiOperation({ summary: '更新合同信息' })
   @ApiResponse({ status: 200, description: '合同信息更新成功' })
   @ApiResponse({ status: 403, description: '没有更新合同的权限' })
@@ -96,6 +106,8 @@ export class ContractController {
   }
 
   @Delete(':id')
+  @ApiBearerAuth() // 需要登录才能访问
+  @UseGuards(JwtAuthGuard, RolesGuard) // 使用JWT认证和角色守卫
   @ApiOperation({ summary: '删除合同' })
   @ApiResponse({ status: 200, description: '合同删除成功' })
   remove(@Param('id') id: string, @Request() req) {
@@ -107,6 +119,8 @@ export class ContractController {
   }
 
   @Post(':id/sign')
+  @ApiBearerAuth() // 需要登录才能访问
+  @UseGuards(JwtAuthGuard, RolesGuard) // 使用JWT认证和角色守卫
   @ApiOperation({ summary: '签署合同' })
   @ApiResponse({ status: 200, description: '合同签署成功' })
   @ApiResponse({ status: 400, description: '合同已签署或已终止' })
@@ -121,5 +135,16 @@ export class ContractController {
     }
     
     return this.contractService.signContract(+id, signContractDto, req.user.id, req.user.username);
+  }
+  
+  @Post('get-image')
+  @Public() // 标记为公开接口，无需身份验证
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '通过加密编号获取合同图片' })
+  @ApiResponse({ status: 200, description: '获取合同图片成功' })
+  @ApiResponse({ status: 404, description: '未找到该加密编号对应的合同' })
+  getContractImage(@Body() getContractImageDto: GetContractImageDto) {
+    this.logger.debug(`请求通过加密编号获取合同图片: ${getContractImageDto.encryptedCode}`);
+    return this.contractService.getContractImageByEncryptedCode(getContractImageDto.encryptedCode);
   }
 } 

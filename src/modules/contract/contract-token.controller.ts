@@ -120,10 +120,10 @@ export class ContractTokenController {
     }
     
     try {
-      // 验证令牌有效性并直接获取合同图片
-      const contractImage = await this.tokenService.getContractImageByToken(token);
+      // 验证令牌有效性并获取合同图片和合同类型
+      const contractInfo = await this.tokenService.getContractImageByToken(token);
       
-      if (!contractImage) {
+      if (!contractInfo) {
         // 检查token是否存在
         const tokenExists = await this.tokenService.validateToken(token);
         if (!tokenExists) {
@@ -133,12 +133,18 @@ export class ContractTokenController {
         throw new NotFoundException('合同没有图片');
       }
       
+      // 如果合同图片不存在
+      if (!contractInfo.contractImage) {
+        throw new NotFoundException('合同没有图片');
+      }
+      
       // 尝试获取token实体以获取合同ID
       const tokenEntity = await this.tokenService.validateToken(token);
       const contractId = tokenEntity ? tokenEntity.contractId : null;
       
       return {
-        contractImage,
+        contractImage: contractInfo.contractImage,
+        contractType: contractInfo.contractType,
         contractId
       };
     } catch (error) {

@@ -353,6 +353,33 @@ def import_excel_data(file_path):
                     print("开始导入数据到数据库...")
                     filtered_data.to_sql('sys_customer', engine, if_exists='append', index=False)
                     print("数据导入成功!")
+                    
+                    # 为新导入的客户创建服务历程记录
+                    print("开始创建服务历程记录...")
+                    
+                    # 提取服务历程需要的字段
+                    service_history_fields = [
+                        'companyName', 'unifiedSocialCreditCode', 
+                        'consultantAccountant', 'bookkeepingAccountant', 
+                        'invoiceOfficer', 'enterpriseStatus', 'businessStatus'
+                    ]
+                    
+                    # 创建服务历程数据
+                    service_history_data = filtered_data[
+                        [col for col in service_history_fields if col in filtered_data.columns]
+                    ].copy()
+                    
+                    # 添加创建和更新时间
+                    service_history_data['createdAt'] = current_time
+                    service_history_data['updatedAt'] = current_time
+                    
+                    # 导入服务历程记录
+                    try:
+                        service_history_data.to_sql('sys_service_history', engine, if_exists='append', index=False)
+                        print(f"成功创建 {len(service_history_data)} 条服务历程记录!")
+                    except Exception as sh_error:
+                        print(f"创建服务历程记录失败: {str(sh_error)}")
+                        # 不影响主流程，继续执行
                 except Exception as e:
                     success = False
                     error_message = str(e)

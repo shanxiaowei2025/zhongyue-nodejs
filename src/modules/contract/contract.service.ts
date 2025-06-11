@@ -540,4 +540,28 @@ export class ContractService {
       return false;
     }
   }
+
+  /**
+   * 根据加密编号获取合同图片
+   * @param encryptedCode 合同加密编号
+   * @returns 合同图片URL或null
+   */
+  async getContractImageByEncryptedCode(encryptedCode: string): Promise<{ contractImage: string }> {
+    this.logger.debug(`通过加密编号查询合同: ${encryptedCode}`);
+    
+    // 查询合同
+    const contract = await this.contractRepository.findOne({ 
+      where: { encryptedCode },
+      select: ['id', 'contractImage', 'contractNumber'] 
+    });
+    
+    if (!contract) {
+      throw new NotFoundException(`未找到该加密编号对应的合同`);
+    }
+    
+    this.logger.debug(`找到合同 #${contract.id}, 合同编号: ${contract.contractNumber}`);
+    
+    // 返回合同图片URL
+    return { contractImage: contract.contractImage };
+  }
 } 

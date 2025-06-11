@@ -365,6 +365,57 @@ def update_excel_data(file_path):
                     
                     print(f"成功更新 {updated_count} 条记录!")
                     
+                    # 为更新的客户创建服务历程记录
+                    if updated_count > 0:
+                        print("开始创建服务历程记录...")
+                        
+                        try:
+                            with engine.connect() as conn:
+                                # 逐一处理每条更新记录
+                                for record in records_to_update:
+                                    # 提取需要的字段
+                                    service_history_fields = {
+                                        'companyName': record.get('companyName'),
+                                        'unifiedSocialCreditCode': record.get('unifiedSocialCreditCode'),
+                                        'consultantAccountant': record.get('consultantAccountant'),
+                                        'bookkeepingAccountant': record.get('bookkeepingAccountant'),
+                                        'invoiceOfficer': record.get('invoiceOfficer'),
+                                        'enterpriseStatus': record.get('enterpriseStatus'),
+                                        'businessStatus': record.get('businessStatus'),
+                                        'createdAt': current_time,
+                                        'updatedAt': current_time
+                                    }
+                                    
+                                    # 移除None值
+                                    service_history_fields = {k: v for k, v in service_history_fields.items() if v is not None}
+                                    
+                                    # 检查是否有关键字段发生变化
+                                    has_key_field = any(key in service_history_fields for key in [
+                                        'consultantAccountant', 'bookkeepingAccountant', 
+                                        'invoiceOfficer', 'enterpriseStatus', 'businessStatus'
+                                    ])
+                                    
+                                    # 只有在包含必要字段且有关键字段更新时才创建记录
+                                    if ('companyName' in service_history_fields or 'unifiedSocialCreditCode' in service_history_fields) and has_key_field:
+                                        # 构建INSERT SQL
+                                        fields = ', '.join(service_history_fields.keys())
+                                        placeholders = ', '.join([f":{key}" for key in service_history_fields.keys()])
+                                        insert_sql = f"INSERT INTO sys_service_history ({fields}) VALUES ({placeholders})"
+                                        
+                                        # 执行插入
+                                        try:
+                                            conn.execute(text(insert_sql), service_history_fields)
+                                        except Exception as e:
+                                            print(f"插入服务历程记录时出错: {str(e)}")
+                                
+                                # 提交事务
+                                conn.commit()
+                                
+                            print("服务历程记录创建完成")
+                        except Exception as sh_error:
+                            print(f"创建服务历程记录失败: {str(sh_error)}")
+                            # 不影响主流程，继续执行
+                    
                 except Exception as e:
                     success = False
                     error_message = str(e)
