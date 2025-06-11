@@ -564,4 +564,23 @@ export class ContractService {
     // 返回合同图片URL
     return { contractImage: contract.contractImage };
   }
+
+  /**
+   * 获取合同的加密编号
+   * @param contractId 合同ID
+   * @returns 合同的加密编号或null
+   */
+  async getContractEncryptedCode(contractId: number): Promise<string | null> {
+    try {
+      const contract = await this.contractRepository.findOne({ 
+        where: { id: contractId },
+        select: ['encryptedCode']
+      });
+      
+      return contract ? contract.encryptedCode : null;
+    } catch (error) {
+      this.logger.error(`获取合同加密编号失败: ${error.message}`, error.stack);
+      return null;
+    }
+  }
 } 
