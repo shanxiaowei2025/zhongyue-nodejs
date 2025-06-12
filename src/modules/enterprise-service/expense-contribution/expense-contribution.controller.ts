@@ -23,6 +23,15 @@ export class ExpenseContributionController {
     type: ExpenseSummaryDto
   })
   async findCompanyExpenses(@Query() findExpensesDto: FindExpensesDto): Promise<ExpenseSummaryDto> {
+    // 处理查询参数中的数值类型，跳过统一社会信用代码字段，避免大数字精度问题
+    for (const key in findExpensesDto) {
+      if (key !== 'unifiedSocialCreditCode' && 
+          typeof findExpensesDto[key] === 'string' && 
+          !isNaN(Number(findExpensesDto[key]))) {
+        findExpensesDto[key] = Number(findExpensesDto[key]);
+      }
+    }
+    
     return this.expenseContributionService.findExpensesByCompany(
       findExpensesDto.companyName,
       findExpensesDto.unifiedSocialCreditCode
