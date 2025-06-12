@@ -46,6 +46,26 @@ export class FinancialSelfInspectionController {
     return this.financialSelfInspectionService.findMyResponsible(username, queryDto, isAdmin);
   }
 
+  @Get('my-submitted/:id')
+  @ApiOperation({ summary: '查看我提交的记录详情' })
+  @ApiParam({ name: 'id', description: '记录ID' })
+  findMySubmittedDetail(@Param('id') id: string, @Request() req) {
+    const username = req.user.username;
+    const roles = req.user.roles || [];
+    const isAdmin = roles.includes('admin') || roles.includes('super_admin');
+    return this.financialSelfInspectionService.findMySubmittedOne(+id, username, isAdmin);
+  }
+
+  @Get('my-responsible/:id')
+  @ApiOperation({ summary: '查看我负责的记录详情' })
+  @ApiParam({ name: 'id', description: '记录ID' })
+  findMyResponsibleDetail(@Param('id') id: string, @Request() req) {
+    const username = req.user.username;
+    const roles = req.user.roles || [];
+    const isAdmin = roles.includes('admin') || roles.includes('super_admin');
+    return this.financialSelfInspectionService.findMyResponsibleOne(+id, username, isAdmin);
+  }
+
   @Patch(':id/rectification-completion')
   @ApiOperation({ summary: '更新整改完成日期和整改结果' })
   @ApiParam({ name: 'id', description: '记录ID' })

@@ -90,6 +90,51 @@ export class FinancialSelfInspectionService {
   }
 
   /**
+   * 根据ID查找单个记录
+   */
+  async findOne(id: number): Promise<FinancialSelfInspection> {
+    const record = await this.financialSelfInspectionRepository.findOne({ where: { id } });
+    if (!record) {
+      throw new NotFoundException(`ID为${id}的账务自查记录不存在`);
+    }
+    return record;
+  }
+
+  /**
+   * 根据ID查找我提交的单个记录（带权限检查）
+   */
+  async findMySubmittedOne(id: number, username: string, isAdmin: boolean = false): Promise<FinancialSelfInspection> {
+    const record = await this.financialSelfInspectionRepository.findOne({ where: { id } });
+    if (!record) {
+      throw new NotFoundException(`ID为${id}的账务自查记录不存在`);
+    }
+    
+    // 权限检查：非管理员只能查看自己提交的记录
+    if (!isAdmin && record.inspector !== username) {
+      throw new NotFoundException(`未找到ID为${id}的记录或您没有权限查看此记录`);
+    }
+    
+    return record;
+  }
+
+  /**
+   * 根据ID查找我负责的单个记录（带权限检查）
+   */
+  async findMyResponsibleOne(id: number, username: string, isAdmin: boolean = false): Promise<FinancialSelfInspection> {
+    const record = await this.financialSelfInspectionRepository.findOne({ where: { id } });
+    if (!record) {
+      throw new NotFoundException(`ID为${id}的账务自查记录不存在`);
+    }
+    
+    // 权限检查：非管理员只能查看自己负责的记录
+    if (!isAdmin && record.bookkeepingAccountant !== username && record.consultantAccountant !== username) {
+      throw new NotFoundException(`未找到ID为${id}的记录或您没有权限查看此记录`);
+    }
+    
+    return record;
+  }
+
+  /**
    * 查询我提交的记录（抽查人是当前用户）
    * 如果用户是管理员或超级管理员，则查看所有记录
    */
@@ -116,13 +161,18 @@ export class FinancialSelfInspectionService {
     if (!isAdmin) {
       queryBuilder.where('record.inspector = :username', { username });
       hasWhereCondition = true;
-    } else if (inspector) {
-      // 管理员查看全部，但如果提供了inspector参数，仍然可以按inspector过滤
-      queryBuilder.where('record.inspector = :inspector', { inspector });
-      hasWhereCondition = true;
+    }
+    
+    // 添加可选过滤条件，确保每个字段的过滤条件只作用于该字段
+    if (inspector && isAdmin) {
+      if (hasWhereCondition) {
+        queryBuilder.andWhere('record.inspector LIKE :inspector', { inspector: `%${inspector}%` });
+      } else {
+        queryBuilder.where('record.inspector LIKE :inspector', { inspector: `%${inspector}%` });
+        hasWhereCondition = true;
+      }
     }
 
-    // 添加可选过滤条件
     if (companyName) {
       if (hasWhereCondition) {
         queryBuilder.andWhere('record.companyName LIKE :companyName', { companyName: `%${companyName}%` });
@@ -157,13 +207,6 @@ export class FinancialSelfInspectionService {
         queryBuilder.where('record.consultantAccountant LIKE :consultant', { consultant: `%${consultantAccountant}%` });
         hasWhereCondition = true;
       }
-    }
-
-    // 非管理员模式下，已经添加了inspector条件
-    // 但管理员模式下，如果提供了inspector参数并且不是作为主条件，也需要添加过滤
-    if (isAdmin && inspector && !hasWhereCondition) {
-      queryBuilder.where('record.inspector LIKE :inspector', { inspector: `%${inspector}%` });
-      hasWhereCondition = true;
     }
 
     // 日期范围查询
@@ -239,20 +282,11 @@ export class FinancialSelfInspectionService {
     
     // 如果不是管理员，则添加固定条件：记账会计或顾问会计是当前用户
     if (!isAdmin) {
-      queryBuilder.where('record.bookkeepingAccountant = :username OR record.consultantAccountant = :username', { username });
+      queryBuilder.where('(record.bookkeepingAccountant = :username OR record.consultantAccountant = :username)', { username });
       hasWhereCondition = true;
-    } else {
-      // 管理员查看全部，但如果提供了bookkeepingAccountant或consultantAccountant参数，仍然可以按这些字段过滤
-      if (bookkeepingAccountant) {
-        queryBuilder.where('record.bookkeepingAccountant = :bookkeepingAccountant', { bookkeepingAccountant });
-        hasWhereCondition = true;
-      } else if (consultantAccountant) {
-        queryBuilder.where('record.consultantAccountant = :consultantAccountant', { consultantAccountant });
-        hasWhereCondition = true;
-      }
     }
-
-    // 添加可选过滤条件
+    
+    // 添加可选过滤条件，确保每个字段的过滤条件只作用于该字段
     if (companyName) {
       if (hasWhereCondition) {
         queryBuilder.andWhere('record.companyName LIKE :companyName', { companyName: `%${companyName}%` });
@@ -261,7 +295,8 @@ export class FinancialSelfInspectionService {
         hasWhereCondition = true;
       }
     }
-
+    
+    // 其他字段的过滤条件
     if (unifiedSocialCreditCode) {
       if (hasWhereCondition) {
         queryBuilder.andWhere('record.unifiedSocialCreditCode LIKE :code', { code: `%${unifiedSocialCreditCode}%` });
@@ -270,7 +305,7 @@ export class FinancialSelfInspectionService {
         hasWhereCondition = true;
       }
     }
-
+    
     if (inspector) {
       if (hasWhereCondition) {
         queryBuilder.andWhere('record.inspector LIKE :inspector', { inspector: `%${inspector}%` });
@@ -279,21 +314,22 @@ export class FinancialSelfInspectionService {
         hasWhereCondition = true;
       }
     }
-
-    // 管理员模式下，如果提供了bookkeepingAccountant或consultantAccountant参数但未作为主条件，也需要添加过滤
-    if (isAdmin) {
-      if (bookkeepingAccountant && !hasWhereCondition) {
+    
+    if (bookkeepingAccountant) {
+      if (hasWhereCondition) {
+        queryBuilder.andWhere('record.bookkeepingAccountant LIKE :accountant', { accountant: `%${bookkeepingAccountant}%` });
+      } else {
         queryBuilder.where('record.bookkeepingAccountant LIKE :accountant', { accountant: `%${bookkeepingAccountant}%` });
         hasWhereCondition = true;
-      } else if (bookkeepingAccountant && hasWhereCondition) {
-        queryBuilder.andWhere('record.bookkeepingAccountant LIKE :accountant', { accountant: `%${bookkeepingAccountant}%` });
       }
-      
-      if (consultantAccountant && !hasWhereCondition) {
+    }
+    
+    if (consultantAccountant) {
+      if (hasWhereCondition) {
+        queryBuilder.andWhere('record.consultantAccountant LIKE :consultant', { consultant: `%${consultantAccountant}%` });
+      } else {
         queryBuilder.where('record.consultantAccountant LIKE :consultant', { consultant: `%${consultantAccountant}%` });
         hasWhereCondition = true;
-      } else if (consultantAccountant && hasWhereCondition) {
-        queryBuilder.andWhere('record.consultantAccountant LIKE :consultant', { consultant: `%${consultantAccountant}%` });
       }
     }
 
