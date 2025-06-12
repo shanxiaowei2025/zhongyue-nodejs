@@ -7,9 +7,11 @@ import { ExpenseContributionModule } from './expense-contribution/expense-contri
 import { FinancialSelfInspectionModule } from './financial-self-inspection/financial-self-inspection.module';
 import { TaxVerificationModule } from './tax-verification/tax-verification.module';
 import { ChangeHistoryModule } from './change-history/change-history.module';
+import { Customer } from '../customer/entities/customer.entity';
 
 @Module({
   imports: [
+    TypeOrmModule.forFeature([Customer]),
     ServiceHistoryModule,
     ExpenseContributionModule,
     FinancialSelfInspectionModule,

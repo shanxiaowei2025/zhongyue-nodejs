@@ -129,17 +129,23 @@ export class ExpenseController {
     @Body() auditDto: { status: number, reason?: string },
     @Request() req
   ) {
+    console.log(`收到审核请求 - ID: ${id}, 状态: ${auditDto.status}, 原因: ${auditDto.reason || '无'}`);
+    console.log(`用户信息 - ID: ${req.user.id}, 用户名: ${req.user.username}`);
+    
     if (auditDto.status === 2 && !auditDto.reason) {
       throw new BadRequestException('退回时必须提供退回原因');
     }
     
-    return this.expenseService.audit(
+    const result = await this.expenseService.audit(
       +id,
       req.user.id,
       req.user.username,
       auditDto.status,
       auditDto.reason
     );
+    
+    console.log(`审核完成 - 结果:`, JSON.stringify(result));
+    return result;
   }
 
   @Post(':id/cancel-audit')

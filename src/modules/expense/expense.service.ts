@@ -8,6 +8,7 @@ import { PaginationDto } from '../../common/dto/pagination.dto';
 import { ExpensePermissionService } from './services/expense-permission.service';
 import { Parser } from 'json2csv';
 import { ExportExpenseDto } from './dto/export-expense.dto';
+import { Customer } from '../customer/entities/customer.entity';
 
 @Injectable()
 export class ExpenseService {
@@ -15,6 +16,8 @@ export class ExpenseService {
     @InjectRepository(Expense)
     private readonly expenseRepository: Repository<Expense>,
     private readonly expensePermissionService: ExpensePermissionService,
+    @InjectRepository(Customer)
+    private readonly customerRepository: Repository<Customer>,
   ) {}
 
   async create(createExpenseDto: CreateExpenseDto, username: string) {
@@ -350,10 +353,16 @@ export class ExpenseService {
   }
 
   async audit(id: number, userId: number, auditor: string, status: number, reason?: string) {
+    console.log(`----- 审核方法开始 -----`);
+    console.log(`参数 - ID: ${id}, 用户ID: ${userId}, 审核员: ${auditor}, 状态: ${status}, 原因: ${reason || '无'}`);
+    
     const expense = await this.findOne(id, userId);
+    console.log(`找到费用记录 - 公司: ${expense.companyName}, 状态: ${expense.status}, 社会信用代码: ${expense.unifiedSocialCreditCode}, 总费用: ${expense.totalFee}`);
     
     // 检查用户是否有审核权限
     const hasAuditPermission = await this.expensePermissionService.hasExpenseAuditPermission(userId);
+    console.log(`审核权限检查结果: ${hasAuditPermission}`);
+    
     if (!hasAuditPermission) {
       throw new BadRequestException('没有权限审核费用记录');
     }
@@ -376,7 +385,66 @@ export class ExpenseService {
       expense.rejectReason = reason;
     }
 
-    return await this.expenseRepository.save(expense);
+    console.log(`保存费用记录前 - 状态: ${expense.status}, 审核员: ${expense.auditor}`);
+    const updatedExpense = await this.expenseRepository.save(expense);
+    console.log(`保存费用记录后 - 状态: ${updatedExpense.status}, 审核员: ${updatedExpense.auditor}`);
+    
+    // 如果审核通过，更新客户的费用贡献金额
+    if (status === 1 && expense.unifiedSocialCreditCode && expense.totalFee) {
+      try {
+        console.log(`准备更新客户费用贡献金额, 统一社会信用代码: ${expense.unifiedSocialCreditCode}, 费用金额: ${expense.totalFee}`);
+        
+        // 直接查询数据库，获取客户当前数据
+        const customerCheckQuery = `SELECT id, companyName, contributionAmount FROM sys_customer WHERE unifiedSocialCreditCode = ? LIMIT 1`;
+        const customerBeforeUpdate = await this.customerRepository.query(customerCheckQuery, [expense.unifiedSocialCreditCode]);
+        console.log('直接SQL查询的客户数据:', JSON.stringify(customerBeforeUpdate));
+        
+        if (customerBeforeUpdate && customerBeforeUpdate.length > 0) {
+          const customer = customerBeforeUpdate[0];
+          console.log(`找到客户: ${customer.companyName}, ID: ${customer.id}, 当前费用贡献金额: ${customer.contributionAmount || 0}`);
+          
+          // 处理可能的空值和类型转换
+          let currentAmount = 0;
+          if (customer.contributionAmount !== null && customer.contributionAmount !== undefined) {
+            currentAmount = typeof customer.contributionAmount === 'string' 
+              ? parseFloat(customer.contributionAmount) 
+              : customer.contributionAmount;
+          }
+          
+          let feeAmount = typeof expense.totalFee === 'string' 
+            ? parseFloat(expense.totalFee) 
+            : expense.totalFee;
+          
+          console.log(`计算 - 当前金额(${typeof currentAmount}): ${currentAmount}, 费用金额(${typeof feeAmount}): ${feeAmount}`);
+          
+          // 计算新金额
+          const newAmount = currentAmount + feeAmount;
+          console.log(`计算后的新金额(${typeof newAmount}): ${newAmount}`);
+          
+          // 直接使用SQL更新
+          const updateQuery = `UPDATE sys_customer SET contributionAmount = ? WHERE id = ?`;
+          await this.customerRepository.query(updateQuery, [newAmount, customer.id]);
+          console.log(`SQL更新执行完成`);
+          
+          // 再次查询验证更新结果
+          const verifyQuery = `SELECT id, companyName, contributionAmount FROM sys_customer WHERE id = ? LIMIT 1`;
+          const verifyResult = await this.customerRepository.query(verifyQuery, [customer.id]);
+          console.log('更新后验证的客户数据:', JSON.stringify(verifyResult));
+          
+          if (verifyResult && verifyResult.length > 0) {
+            console.log(`客户 ${verifyResult[0].companyName} 的费用贡献金额更新成功, 更新后值: ${verifyResult[0].contributionAmount}`);
+          }
+        } else {
+          console.error(`未找到匹配的客户，统一社会信用代码: ${expense.unifiedSocialCreditCode}`);
+        }
+      } catch (error) {
+        console.error('更新客户费用贡献金额失败:', error);
+        // 这里不抛出异常，避免影响审核流程
+      }
+    }
+    
+    console.log(`----- 审核方法结束 -----`);
+    return updatedExpense;
   }
 
   async cancelAudit(id: number, userId: number, username: string, cancelReason: string) {
@@ -392,13 +460,66 @@ export class ExpenseService {
       throw new BadRequestException('该费用记录未审核，不能取消审核');
     }
 
+    // 如果是已审核状态，则先扣减客户的费用贡献金额
+    if (expense.status === 1 && expense.unifiedSocialCreditCode && expense.totalFee) {
+      try {
+        console.log(`准备减少客户费用贡献金额, 统一社会信用代码: ${expense.unifiedSocialCreditCode}, 费用金额: ${expense.totalFee}`);
+        
+        // 直接查询数据库，获取客户当前数据
+        const customerCheckQuery = `SELECT id, companyName, contributionAmount FROM sys_customer WHERE unifiedSocialCreditCode = ? LIMIT 1`;
+        const customerBeforeUpdate = await this.customerRepository.query(customerCheckQuery, [expense.unifiedSocialCreditCode]);
+        console.log('直接SQL查询的客户数据:', JSON.stringify(customerBeforeUpdate));
+        
+        if (customerBeforeUpdate && customerBeforeUpdate.length > 0) {
+          const customer = customerBeforeUpdate[0];
+          console.log(`找到客户: ${customer.companyName}, ID: ${customer.id}, 当前费用贡献金额: ${customer.contributionAmount || 0}`);
+          
+          // 处理可能的空值和类型转换
+          let currentAmount = 0;
+          if (customer.contributionAmount !== null && customer.contributionAmount !== undefined) {
+            currentAmount = typeof customer.contributionAmount === 'string' 
+              ? parseFloat(customer.contributionAmount) 
+              : customer.contributionAmount;
+          }
+          
+          let feeAmount = typeof expense.totalFee === 'string' 
+            ? parseFloat(expense.totalFee) 
+            : expense.totalFee;
+          
+          console.log(`计算 - 当前金额(${typeof currentAmount}): ${currentAmount}, 费用金额(${typeof feeAmount}): ${feeAmount}`);
+          
+          // 计算新金额，确保不小于0
+          const newAmount = Math.max(0, currentAmount - feeAmount);
+          console.log(`计算后的新金额(${typeof newAmount}): ${newAmount}`);
+          
+          // 直接使用SQL更新
+          const updateQuery = `UPDATE sys_customer SET contributionAmount = ? WHERE id = ?`;
+          await this.customerRepository.query(updateQuery, [newAmount, customer.id]);
+          console.log(`SQL更新执行完成`);
+          
+          // 再次查询验证更新结果
+          const verifyQuery = `SELECT id, companyName, contributionAmount FROM sys_customer WHERE id = ? LIMIT 1`;
+          const verifyResult = await this.customerRepository.query(verifyQuery, [customer.id]);
+          console.log('更新后验证的客户数据:', JSON.stringify(verifyResult));
+          
+          if (verifyResult && verifyResult.length > 0) {
+            console.log(`客户 ${verifyResult[0].companyName} 的费用贡献金额更新成功, 更新后值: ${verifyResult[0].contributionAmount}`);
+          }
+        } else {
+          console.error(`未找到匹配的客户，统一社会信用代码: ${expense.unifiedSocialCreditCode}`);
+        }
+      } catch (error) {
+        console.error('更新客户费用贡献金额失败:', error);
+        // 这里不抛出异常，避免影响取消审核流程
+      }
+    }
+
     // 更新费用记录状态
     expense.status = 0;
     expense.auditor = null;
     expense.auditDate = null;
     expense.rejectReason = null;
   
-
     return await this.expenseRepository.save(expense);
   }
 

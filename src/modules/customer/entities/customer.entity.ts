@@ -259,6 +259,15 @@ export class Customer {
 
   @Column({ 
     nullable: true,
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    comment: '费用贡献金额' 
+  })
+  contributionAmount: number;
+
+  @Column({ 
+    nullable: true,
     type: 'enum', 
     enum: BusinessStatus,
     default: BusinessStatus.NORMAL,
