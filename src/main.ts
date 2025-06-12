@@ -55,20 +55,6 @@ async function bootstrap() {
     }),
   );
 
-  // 针对查询参数的配置，使用全局范围的转换
-  app.use((req, res, next) => {
-    if (req.query) {
-      // 处理查询参数中的数值类型
-      for (const key in req.query) {
-        const value = req.query[key];
-        if (typeof value === 'string' && !isNaN(Number(value))) {
-          req.query[key] = Number(value);
-        }
-      }
-    }
-    next();
-  });
-
   // 设置响应拦截器，统一处理返回的数据格式
   app.useGlobalInterceptors(new TransformInterceptor());
 
