@@ -84,7 +84,7 @@ export class Expense {
   @Column({ type: 'date', nullable: true, comment: '开票软件结束日期' })
   invoiceSoftwareEndDate: string;
 
-  @Column({ type: 'simple-array', nullable: true, comment: '参保险种' })
+  @Column({ type: 'simple-json', nullable: true, comment: '参保险种' })
   insuranceTypes: string[];
 
   @Column({ type: 'int', nullable: true, comment: '参保人数' })
@@ -123,19 +123,19 @@ export class Expense {
   @Column({ type: 'date', nullable: true, comment: '统计结束日期' })
   statisticalEndDate: string;
 
-  @Column({ type: 'simple-array', nullable: true, comment: '变更业务' })
+  @Column({ type: 'simple-json', nullable: true, comment: '变更业务' })
   changeBusiness: string[];
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '变更收费' })
   changeFee: number;
 
-  @Column({ type: 'simple-array', nullable: true, comment: '行政许可' })
+  @Column({ type: 'simple-json', nullable: true, comment: '行政许可' })
   administrativeLicense: string[];
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '行政许可收费' })
   administrativeLicenseFee: number;
 
-  @Column({ type: 'simple-array', nullable: true, comment: '其他业务' })
+  @Column({ type: 'simple-json', nullable: true, comment: '其他业务' })
   otherBusiness: string[];
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '其他业务收费' })
