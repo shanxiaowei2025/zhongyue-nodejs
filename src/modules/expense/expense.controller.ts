@@ -18,13 +18,14 @@ import { ExpenseService } from './expense.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
 import { QueryExpenseDto } from './dto/query-expense.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiHeader, ApiParam, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiHeader, ApiParam, ApiBody, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { ViewReceiptDto } from './dto/view-receipt.dto';
 import { CancelAuditDto } from './dto/cancel-audit.dto';
 import { ExportExpenseDto } from './dto/export-expense.dto';
 import { Response } from 'express';
+import { QueryReceiptDto } from './dto/query-receipt.dto';
 
 @ApiTags('费用管理')
 @Controller('expense')
@@ -38,6 +39,85 @@ export class ExpenseController {
   @ApiResponse({ status: 201, description: '创建成功' })
   create(@Body() createExpenseDto: CreateExpenseDto, @Req() req) {
     return this.expenseService.create(createExpenseDto, req.user.username);
+  }
+
+  @Get('receipt')
+  @ApiOperation({ 
+    summary: '查看费用收据', 
+    description: '通过ID或收据编号查询费用收据。参数示例：/api/expense/receipt?id=67688 或 /api/expense/receipt?receiptNo=202407010001' 
+  })
+  @ApiResponse({ status: 200, description: '查看成功', type: ViewReceiptDto })
+  @ApiQuery({ name: 'id', required: false, description: '费用记录ID，与receiptNo至少提供一个' })
+  @ApiQuery({ name: 'receiptNo', required: false, description: '收据编号，与id至少提供一个' })
+  viewReceipt(@Query() query: any, @Req() req) {
+    console.log(`收据查询 - 原始参数: ${JSON.stringify(query)}`);
+    
+    const params: { id?: number, receiptNo?: string } = {};
+    
+    // 直接从query中获取原始参数
+    const rawId = query.id;
+    const rawReceiptNo = query.receiptNo;
+    
+    console.log(`原始参数 - id: ${rawId} (${typeof rawId}), receiptNo: ${rawReceiptNo}`);
+    
+    // 处理ID参数
+    if (rawId !== undefined && rawId !== null && rawId !== '') {
+      // 尝试将ID转换为数字
+      const id = Number(rawId);
+      console.log(`处理ID参数: ${rawId} -> ${id}, isNaN: ${isNaN(id)}`);
+      
+      if (!isNaN(id)) {
+        params.id = id;
+      } else {
+        console.warn(`无效的ID格式: ${rawId}`);
+        throw new BadRequestException(`无效的费用ID格式: ${rawId}`);
+      }
+    }
+    
+    // 处理receiptNo参数
+    if (rawReceiptNo) {
+      params.receiptNo = String(rawReceiptNo).trim();
+      console.log(`处理receiptNo参数: ${params.receiptNo}`);
+    }
+    
+    console.log(`最终处理的参数: ${JSON.stringify(params)}`);
+    
+    // 确保至少有一个有效的查询参数
+    if (Object.keys(params).length === 0) {
+      throw new BadRequestException('请提供有效的费用ID或收据编号');
+    }
+    
+    return this.expenseService.viewReceipt(params, req.user.id);
+  }
+  
+  @Get('autocomplete/:field')
+  @ApiOperation({ summary: '获取去重后的字段值列表' })
+  getAutocompleteOptions(@Param('field') field: string) {
+    return this.expenseService.getAutocompleteOptions(field);
+  }
+  
+  @Get('export/csv')
+  @ApiOperation({ summary: '导出费用记录为CSV' })
+  @ApiResponse({ status: 200, description: '导出成功' })
+  async exportToCsv(
+    @Query() query: ExportExpenseDto,
+    @Req() req,
+    @Res() res: Response
+  ) {
+    const csvData = await this.expenseService.exportToCsv(query, req.user.id);
+    
+    // 生成带日期的文件名
+    const filename = `expense.csv`;
+    
+    // 确保使用最通用的MIME类型和下载设置
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename=${encodeURIComponent(filename)}`);
+    res.setHeader('Content-Transfer-Encoding', 'binary');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    
+    // 发送CSV数据并结束响应
+    res.end(csvData);
   }
 
   @Get()
@@ -166,42 +246,5 @@ export class ExpenseController {
       req.user.username,
       cancelAuditDto.cancelReason
     );
-  }
-
-  @Get('autocomplete/:field')
-  @ApiOperation({ summary: '获取去重后的字段值列表' })
-  getAutocompleteOptions(@Param('field') field: string) {
-    return this.expenseService.getAutocompleteOptions(field);
-  }
-
-  @Get(':id/receipt')
-  @ApiOperation({ summary: '查看费用收据' })
-  @ApiResponse({ status: 200, description: '查看成功', type: ViewReceiptDto })
-  viewReceipt(@Param('id') id: string, @Req() req) {
-    return this.expenseService.viewReceipt(+id, req.user.id);
-  }
-
-  @Get('export/csv')
-  @ApiOperation({ summary: '导出费用记录为CSV' })
-  @ApiResponse({ status: 200, description: '导出成功' })
-  async exportToCsv(
-    @Query() query: ExportExpenseDto,
-    @Req() req,
-    @Res() res: Response
-  ) {
-    const csvData = await this.expenseService.exportToCsv(query, req.user.id);
-    
-    // 生成带日期的文件名
-    const filename = `expense.csv`;
-    
-    // 确保使用最通用的MIME类型和下载设置
-    res.setHeader('Content-Type', 'application/octet-stream');
-    res.setHeader('Content-Disposition', `attachment; filename=${encodeURIComponent(filename)}`);
-    res.setHeader('Content-Transfer-Encoding', 'binary');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-    
-    // 发送CSV数据并结束响应
-    res.end(csvData);
   }
 } 

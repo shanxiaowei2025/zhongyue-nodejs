@@ -47,11 +47,16 @@ async function bootstrap() {
     new ValidationPipe({
       whitelist: true, // 只允许定义过的数据通过
       transform: true, // 自动转换数据类型
-      forbidNonWhitelisted: true, // 禁止未定义的数据
+      forbidNonWhitelisted: false, // 更改为false，允许未定义的数据通过但会被过滤
       transformOptions: {
         enableImplicitConversion: true, // 允许自动类型转换
       },
       skipMissingProperties: true, // 跳过缺失的属性
+      disableErrorMessages: false, // 允许错误消息
+      validationError: { 
+        target: false, // 不返回目标对象
+        value: false   // 不返回值
+      },
     }),
   );
 
