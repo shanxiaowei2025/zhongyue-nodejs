@@ -709,8 +709,15 @@ export class ExpenseService {
         let feeName = field.name;
         
         // 特殊处理三个业务字段，将数组内容合并到名称中
-        if (field.listField && expense[field.listField] && expense[field.listField].length > 0) {
-          feeName = `${field.name}(${expense[field.listField].join(', ')})`;
+        if (field.listField && expense[field.listField]) {
+          // 确保是数组类型
+          const listData = Array.isArray(expense[field.listField]) 
+            ? expense[field.listField] 
+            : [expense[field.listField]];
+          
+          if (listData.length > 0) {
+            feeName = `${field.name}(${listData.join(', ')})`;
+          }
         }
         
         const feeItem: any = {
@@ -734,15 +741,15 @@ export class ExpenseService {
     }
 
       // 统一处理收费日期格式
-      let formattedChargeDate = expense.chargeDate;
-      if (formattedChargeDate) {
-        formattedChargeDate = new Date(formattedChargeDate).toISOString();
+      let formattedChargeDate = null;
+      if (expense.chargeDate) {
+        formattedChargeDate = new Date(expense.chargeDate).toISOString();
       }
 
     return {
       id: expense.id,
       companyName: expense.companyName,
-        chargeDate: formattedChargeDate,
+      chargeDate: formattedChargeDate,
       // 根据审核状态决定是否返回收据编号
       receiptNo: expense.status === 1 ? expense.receiptNo : '',
       totalFee: expense.totalFee,
