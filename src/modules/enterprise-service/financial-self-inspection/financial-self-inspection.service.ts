@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, Like } from 'typeorm';
 import { FinancialSelfInspection } from './entities/financial-self-inspection.entity';
@@ -48,6 +48,11 @@ export class FinancialSelfInspectionService {
       throw new NotFoundException(`ID为${id}的账务自查记录不存在`);
     }
 
+    // 检查是否已经完成整改
+    if (record.rectificationCompletionDate || record.rectificationResult) {
+      throw new ForbiddenException('该账务已完成，无需重复操作');
+    }
+
     // 更新整改完成日期
     record.rectificationCompletionDate = new Date(dto.rectificationCompletionDate);
     
@@ -66,6 +71,11 @@ export class FinancialSelfInspectionService {
     const record = await this.financialSelfInspectionRepository.findOne({ where: { id } });
     if (!record) {
       throw new NotFoundException(`ID为${id}的账务自查记录不存在`);
+    }
+
+    // 检查抽查人是否已确认
+    if (record.inspectorConfirmation) {
+      throw new ForbiddenException('抽查人已确认，无需重复操作');
     }
 
     // 只更新抽查人确认和备注字段

@@ -259,28 +259,28 @@ export class ExpenseService {
       
       if (!result || result.length === 0) {
         console.error(`未找到费用记录 #${id}`);
-        throw new NotFoundException(`费用记录 #${id} 不存在`);
-      }
+      throw new NotFoundException(`费用记录 #${id} 不存在`);
+    }
       
       const expense = result[0];
       console.log(`找到费用记录 - ID: ${expense.id}, 公司: ${expense.companyName}`);
 
-      // 检查用户是否有权限查看该记录
+    // 检查用户是否有权限查看该记录
       console.log(`获取用户 ${userId} 的权限过滤条件`);
-      const permissionFilter = await this.expensePermissionService.buildExpenseQueryFilter(userId);
+    const permissionFilter = await this.expensePermissionService.buildExpenseQueryFilter(userId);
       console.log(`权限过滤条件: ${JSON.stringify(permissionFilter)}`);
-      
-      const hasPermission = Array.isArray(permissionFilter)
-        ? permissionFilter.some(filter => this.matchesFilter(expense, filter))
-        : this.matchesFilter(expense, permissionFilter);
+    
+    const hasPermission = Array.isArray(permissionFilter)
+      ? permissionFilter.some(filter => this.matchesFilter(expense, filter))
+      : this.matchesFilter(expense, permissionFilter);
       
       console.log(`权限检查结果: ${hasPermission}`);
 
-      if (!hasPermission) {
-        throw new BadRequestException('没有权限查看该费用记录');
-      }
+    if (!hasPermission) {
+      throw new BadRequestException('没有权限查看该费用记录');
+    }
 
-      return expense;
+    return expense;
     } catch (error) {
       console.error(`findOne方法出错: ${error.message}`);
       
@@ -632,106 +632,106 @@ export class ExpenseService {
       } else {
         console.error('缺少查询参数');
         throw new BadRequestException('请提供有效的费用ID或收据编号');
+    }
+
+    // 收集所有非零费用字段
+    const feeItems = [];
+    
+    // 费用字段映射 - 包含名称、金额字段、开始日期字段和结束日期字段
+    const feeFieldsMap = [
+      { name: '办照费用', amountField: 'licenseFee' },
+      { name: '牌子费', amountField: 'brandFee' },
+      { name: '备案章费用', amountField: 'recordSealFee' },
+      { name: '一般刻章费用', amountField: 'generalSealFee' },
+      { 
+        name: '代理费', 
+        amountField: 'agencyFee',
+        startDateField: 'agencyStartDate',
+        endDateField: 'agencyEndDate'
+      },
+      { 
+        name: '记账软件费', 
+        amountField: 'accountingSoftwareFee',
+        startDateField: 'accountingSoftwareStartDate',
+        endDateField: 'accountingSoftwareEndDate'
+      },
+      { 
+        name: '地址费', 
+        amountField: 'addressFee',
+        startDateField: 'addressStartDate',
+        endDateField: 'addressEndDate'
+      },
+      { 
+        name: '开票软件费', 
+        amountField: 'invoiceSoftwareFee',
+        startDateField: 'invoiceSoftwareStartDate',
+        endDateField: 'invoiceSoftwareEndDate'
+      },
+      { 
+        name: '社保代理费', 
+        amountField: 'socialInsuranceAgencyFee',
+        startDateField: 'socialInsuranceStartDate',
+        endDateField: 'socialInsuranceEndDate',
+        listField: 'insuranceTypes'
+      },
+      { 
+        name: '公积金代理费', 
+        amountField: 'housingFundAgencyFee',
+        startDateField: 'housingFundStartDate',
+        endDateField: 'housingFundEndDate'
+      },
+      { 
+        name: '统计局报表费', 
+        amountField: 'statisticalReportFee',
+        startDateField: 'statisticalStartDate',
+        endDateField: 'statisticalEndDate'
+      },
+      { 
+        name: '变更收费', 
+        amountField: 'changeFee',
+        listField: 'changeBusiness'
+      },
+      { 
+        name: '行政许可收费', 
+        amountField: 'administrativeLicenseFee',
+        listField: 'administrativeLicense'
+      },
+      { 
+        name: '其他业务收费', 
+        amountField: 'otherBusinessFee',
+        listField: 'otherBusiness'
       }
+    ];
 
-      // 收集所有非零费用字段
-      const feeItems = [];
-      
-      // 费用字段映射 - 包含名称、金额字段、开始日期字段和结束日期字段
-      const feeFieldsMap = [
-        { name: '办照费用', amountField: 'licenseFee' },
-        { name: '牌子费', amountField: 'brandFee' },
-        { name: '备案章费用', amountField: 'recordSealFee' },
-        { name: '一般刻章费用', amountField: 'generalSealFee' },
-        { 
-          name: '代理费', 
-          amountField: 'agencyFee',
-          startDateField: 'agencyStartDate',
-          endDateField: 'agencyEndDate'
-        },
-        { 
-          name: '记账软件费', 
-          amountField: 'accountingSoftwareFee',
-          startDateField: 'accountingSoftwareStartDate',
-          endDateField: 'accountingSoftwareEndDate'
-        },
-        { 
-          name: '地址费', 
-          amountField: 'addressFee',
-          startDateField: 'addressStartDate',
-          endDateField: 'addressEndDate'
-        },
-        { 
-          name: '开票软件费', 
-          amountField: 'invoiceSoftwareFee',
-          startDateField: 'invoiceSoftwareStartDate',
-          endDateField: 'invoiceSoftwareEndDate'
-        },
-        { 
-          name: '社保代理费', 
-          amountField: 'socialInsuranceAgencyFee',
-          startDateField: 'socialInsuranceStartDate',
-          endDateField: 'socialInsuranceEndDate',
-          listField: 'insuranceTypes'
-        },
-        { 
-          name: '公积金代理费', 
-          amountField: 'housingFundAgencyFee',
-          startDateField: 'housingFundStartDate',
-          endDateField: 'housingFundEndDate'
-        },
-        { 
-          name: '统计局报表费', 
-          amountField: 'statisticalReportFee',
-          startDateField: 'statisticalStartDate',
-          endDateField: 'statisticalEndDate'
-        },
-        { 
-          name: '变更收费', 
-          amountField: 'changeFee',
-          listField: 'changeBusiness'
-        },
-        { 
-          name: '行政许可收费', 
-          amountField: 'administrativeLicenseFee',
-          listField: 'administrativeLicense'
-        },
-        { 
-          name: '其他业务收费', 
-          amountField: 'otherBusinessFee',
-          listField: 'otherBusiness'
+    // 遍历费用字段，找出非零正数的费用
+    for (const field of feeFieldsMap) {
+      if (expense[field.amountField] && expense[field.amountField] > 0) {
+        let feeName = field.name;
+        
+        // 特殊处理三个业务字段，将数组内容合并到名称中
+        if (field.listField && expense[field.listField] && expense[field.listField].length > 0) {
+          feeName = `${field.name}(${expense[field.listField].join(', ')})`;
         }
-      ];
-
-      // 遍历费用字段，找出非零正数的费用
-      for (const field of feeFieldsMap) {
-        if (expense[field.amountField] && expense[field.amountField] > 0) {
-          let feeName = field.name;
-          
-          // 特殊处理三个业务字段，将数组内容合并到名称中
-          if (field.listField && expense[field.listField] && expense[field.listField].length > 0) {
-            feeName = `${field.name}(${expense[field.listField].join(', ')})`;
-          }
-          
-          const feeItem: any = {
-            name: feeName,
-            amount: expense[field.amountField]
-          };
-          
+        
+        const feeItem: any = {
+          name: feeName,
+          amount: expense[field.amountField]
+        };
+        
           // 如果存在日期字段，添加到返回数据中（统一转换为ISO格式）
-          if (field.startDateField && expense[field.startDateField]) {
+        if (field.startDateField && expense[field.startDateField]) {
             const startDate = new Date(expense[field.startDateField]);
             feeItem.startDate = startDate.toISOString();
-          }
-          
-          if (field.endDateField && expense[field.endDateField]) {
+        }
+        
+        if (field.endDateField && expense[field.endDateField]) {
             const endDate = new Date(expense[field.endDateField]);
             feeItem.endDate = endDate.toISOString();
-          }
-          
-          feeItems.push(feeItem);
         }
+        
+        feeItems.push(feeItem);
       }
+    }
 
       // 统一处理收费日期格式
       let formattedChargeDate = expense.chargeDate;
@@ -739,17 +739,17 @@ export class ExpenseService {
         formattedChargeDate = new Date(formattedChargeDate).toISOString();
       }
 
-      return {
-        id: expense.id,
-        companyName: expense.companyName,
+    return {
+      id: expense.id,
+      companyName: expense.companyName,
         chargeDate: formattedChargeDate,
-        // 根据审核状态决定是否返回收据编号
-        receiptNo: expense.status === 1 ? expense.receiptNo : '',
-        totalFee: expense.totalFee,
-        chargeMethod: expense.chargeMethod,
-        remarks: expense.receiptRemarks,
-        feeItems
-      };
+      // 根据审核状态决定是否返回收据编号
+      receiptNo: expense.status === 1 ? expense.receiptNo : '',
+      totalFee: expense.totalFee,
+      chargeMethod: expense.chargeMethod,
+      remarks: expense.receiptRemarks,
+      feeItems
+    };
     } catch (error) {
       // 记录错误日志
       console.error('查看收据出错:', error);
