@@ -214,8 +214,13 @@ export class ContractTokenController {
                           this.configService.get<string>('minio.endPoint');
     const minioBucketName = this.configService.get<string>('MINIO_BUCKET_NAME') || 
                             this.configService.get<string>('minio.bucketName');
+    const minioPort = parseInt(this.configService.get<string>('MINIO_PORT') || 
+                      this.configService.get<string>('minio.port') || '443', 10);
     
-    return `https://${minioEndpoint}/${minioBucketName}/${contractImage}`;
+    // 根据端口号决定使用http还是https
+    const protocol = minioPort === 443 ? 'https' : 'http';
+    
+    return `${protocol}://${minioEndpoint}/${minioBucketName}/${contractImage}`;
   }
 
   // 合并签名图片和合同图片
