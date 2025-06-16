@@ -212,10 +212,10 @@ export class CreateExpenseDto {
   @IsString()
   housingFundEndDate?: string;
 
-  @ApiProperty({ description: '是否赠送代理时长', required: false, default: false })
+  @ApiProperty({ description: '赠送代理时长', required: false })
   @IsOptional()
-  @IsBoolean()
-  isGiftAgencyDuration?: boolean;
+  @IsString()
+  giftAgencyDuration?: string;
 
   @ApiProperty({ description: '统计局报表费', required: false })
   @IsOptional()
