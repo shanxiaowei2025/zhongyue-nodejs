@@ -93,6 +93,9 @@ export class Expense {
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '社保代理费' })
   socialInsuranceAgencyFee: number;
 
+  @Column({ type: 'varchar', length: 100, nullable: true, comment: '社保代理业务类型' })
+  socialInsuranceBusinessType: string;
+
   @Column({ type: 'date', nullable: true, comment: '社保开始日期' })
   socialInsuranceStartDate: string;
 
@@ -113,6 +116,9 @@ export class Expense {
   
   @Column({ type: 'date', nullable: true, comment: '公积金结束日期' })
   housingFundEndDate: string;
+
+  @Column({ type: 'boolean', default: false, comment: '是否赠送代理时长' })
+  isGiftAgencyDuration: boolean;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '统计局报表费' })
   statisticalReportFee: number;

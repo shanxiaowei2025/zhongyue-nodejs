@@ -22,28 +22,7 @@ export class TaxVerificationService {
   async create(createDto: CreateTaxVerificationDto, username: string) {
     console.log('收到的attachments数据:', JSON.stringify(createDto.attachments));
     
-    // 确保attachments是正确的格式
-    if (createDto.attachments) {
-      // 确保数据是数组格式
-      if (!Array.isArray(createDto.attachments)) {
-        console.error('attachments不是数组格式');
-        createDto.attachments = [];
-      } else {
-        // 确保每个元素都是正确的对象格式
-        createDto.attachments = createDto.attachments.map(item => {
-          if (typeof item === 'object' && item !== null) {
-            return {
-              name: item.name,
-              url: item.url
-            };
-          } else {
-            console.error('无效的attachments项:', item);
-            return null;
-          }
-        }).filter(item => item !== null);
-      }
-      console.log('处理后的attachments数据:', JSON.stringify(createDto.attachments));
-    }
+    // 不对attachments字段做任何处理，保持原样传递
     
     const taxVerification = this.taxVerificationRepository.create(createDto);
     const savedRecord = await this.taxVerificationRepository.save(taxVerification);

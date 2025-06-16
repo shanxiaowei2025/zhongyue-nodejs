@@ -172,6 +172,11 @@ export class CreateExpenseDto {
   @IsNumber()
   socialInsuranceAgencyFee?: number;
 
+  @ApiProperty({ description: '社保代理业务类型', required: false })
+  @IsOptional()
+  @IsString()
+  socialInsuranceBusinessType?: string;
+
   @ApiProperty({ description: '社保开始日期', required: false })
   @IsOptional()
   @IsString()
@@ -206,6 +211,11 @@ export class CreateExpenseDto {
   @IsOptional()
   @IsString()
   housingFundEndDate?: string;
+
+  @ApiProperty({ description: '是否赠送代理时长', required: false, default: false })
+  @IsOptional()
+  @IsBoolean()
+  isGiftAgencyDuration?: boolean;
 
   @ApiProperty({ description: '统计局报表费', required: false })
   @IsOptional()

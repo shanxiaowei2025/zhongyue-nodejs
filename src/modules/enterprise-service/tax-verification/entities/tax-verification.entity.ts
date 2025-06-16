@@ -34,5 +34,5 @@ export class TaxVerification {
     type: 'simple-json', 
     nullable: true
   })
-  attachments: any[];
+  attachments: any;
 } 

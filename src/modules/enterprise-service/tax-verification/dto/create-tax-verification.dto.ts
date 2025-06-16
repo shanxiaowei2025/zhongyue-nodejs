@@ -54,7 +54,6 @@ export class CreateTaxVerificationDto {
       }
     }
   })
-  @IsArray()
   @IsOptional()
-  attachments?: any[];
+  attachments?: any;
 } 
