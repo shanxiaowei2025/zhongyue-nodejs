@@ -17,8 +17,10 @@ import {
   ApiTags,
   ApiOperation,
   ApiResponse,
+  ApiBody,
+  ApiProperty,
   ApiBearerAuth,
-} from '../../common/swagger';
+} from '@nestjs/swagger';
 import { Public } from './decorators/public.decorator';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';

@@ -1,9 +1,10 @@
 // 用户实体类，定义用户表的结构
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, BeforeInsert, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, BeforeInsert, ManyToOne, JoinColumn, ManyToMany, JoinTable } from 'typeorm';
 import { Exclude } from 'class-transformer';
 import * as bcrypt from 'bcryptjs';
-import { ApiProperty, ApiHideProperty } from '../../../common/swagger';
+import { ApiProperty, ApiHideProperty } from '@nestjs/swagger';
 import { Department } from '../../department/entities/department.entity';
+import { Role } from '../../roles/entities/role.entity';
 
 @Entity({ name: 'sys_user' }) // 数据库表名为 sys_user
 export class User {
@@ -38,10 +39,10 @@ export class User {
   @Column({ nullable: true, length: 100, comment: '手机号码' })
   phone: string;
   
-  @ApiProperty({ description: '邮箱', example: 'admin@example.com', required: false })
-  // 邮箱，可以为空
-  @Column({ nullable: true, length: 100, comment: '邮箱' })
-  email: string;
+  @ApiProperty({ description: '身份证号', example: '110101199001011234', required: false })
+  // 身份证号，可以为空
+  @Column({ nullable: true, length: 18, comment: '身份证号' })
+  idCardNumber: string;
 
   @ApiProperty({ 
     description: '角色列表', 

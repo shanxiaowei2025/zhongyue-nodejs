@@ -34,7 +34,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       username: user.username,
       roles: roles,  // 使用token中的角色，而不是数据库中的
       phone: user.phone,
-      email: user.email,
+      idCardNumber: user.idCardNumber,
     };
   }
 }

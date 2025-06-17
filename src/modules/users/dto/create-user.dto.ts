@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsEmail, IsOptional, IsString, MinLength, IsBoolean, IsArray, IsNumber } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, MinLength, IsBoolean, IsArray, IsNumber } from 'class-validator';
 
 export class CreateUserDto {
   @ApiProperty({ description: '用户名', example: '张三' })
@@ -27,10 +27,10 @@ export class CreateUserDto {
   @IsString({ message: '手机号必须是字符串' })
   phone?: string;
   
-  @ApiProperty({ description: '邮箱', example: 'user@example.com', required: false })
+  @ApiProperty({ description: '身份证号', example: '110101199001011234', required: false })
   @IsOptional()
-  @IsEmail({}, { message: '邮箱格式不正确' })
-  email?: string;
+  @IsString({ message: '身份证号必须是字符串' })
+  idCardNumber?: string;
 
   @ApiProperty({ description: '角色列表', example: ['user'], required: false })
   @IsOptional()

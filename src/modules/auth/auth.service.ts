@@ -62,7 +62,7 @@ export class AuthService {
         username: user.username,
         roles: roles,
         phone: user.phone,
-        email: user.email,
+        idCardNumber: user.idCardNumber,
         passwordUpdatedAt: user.passwordUpdatedAt,
       },
     };
@@ -91,11 +91,11 @@ export class AuthService {
     return result;
   }
 
-  // 更新用户个人资料（只允许更新email和phone）
+  // 更新用户个人资料（只允许更新idCardNumber和phone）
   async updateProfile(userId: number, updateProfileDto: UpdateProfileDto) {
-    // 只更新email和phone字段
+    // 只更新idCardNumber和phone字段
     const updatedUser = await this.usersService.updateUserProfile(userId, {
-      email: updateProfileDto.email,
+      idCardNumber: updateProfileDto.idCardNumber,
       phone: updateProfileDto.phone,
     });
 
@@ -104,7 +104,7 @@ export class AuthService {
       data: {
         id: updatedUser.id,
         username: updatedUser.username,
-        email: updatedUser.email,
+        idCardNumber: updatedUser.idCardNumber,
         phone: updatedUser.phone,
       },
     };
@@ -150,7 +150,7 @@ export class AuthService {
       username: user.username,
       roles: user.roles,
       phone: user.phone,
-      email: user.email,
+      idCardNumber: user.idCardNumber,
       passwordUpdatedAt: user.passwordUpdatedAt,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,

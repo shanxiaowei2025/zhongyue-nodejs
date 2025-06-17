@@ -262,7 +262,7 @@ export class DepartmentService {
     // 查询该部门下的所有用户
     const users = await this.userRepository.find({
       where: { dept_id: id },
-      select: ['id', 'username', 'email', 'phone', 'isActive', 'roles', 'createdAt', 'updatedAt'] // 排除敏感信息
+      select: ['id', 'username', 'idCardNumber', 'phone', 'isActive', 'roles', 'createdAt', 'updatedAt'] // 排除敏感信息
     });
     
     // 准备返回结果

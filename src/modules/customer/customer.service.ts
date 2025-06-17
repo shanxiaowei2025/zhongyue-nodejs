@@ -20,7 +20,6 @@ import { QueryCustomerDto } from './dto/query-customer.dto';
 import { CustomerPermissionService } from './services/customer-permission.service';
 import { User } from '../users/entities/user.entity';
 import { Department } from '../department/entities/department.entity';
-import { PersonnelType, ReplacePersonnelDto } from './dto/replace-personnel.dto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { exec } from 'child_process';
@@ -465,65 +464,6 @@ export class CustomerService {
 
     // 删除客户
     return await this.customerRepository.remove(customer);
-  }
-
-  // 批量替换人员信息
-  async replacePersonnel(
-    replacePersonnelDto: ReplacePersonnelDto,
-    userId: number,
-  ) {
-    // 获取用户信息
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      throw new ForbiddenException('用户不存在');
-    }
-
-    // 检查权限 - 只有管理员和超级管理员可以进行批量替换操作
-    if (!user.roles.includes('admin') && !user.roles.includes('super_admin')) {
-      throw new ForbiddenException('没有批量替换人员的权限');
-    }
-
-    const { personnelType, originalName, replacementName } = replacePersonnelDto;
-
-    // 查找所有将被更新的客户
-    const customersToUpdate = await this.customerRepository.find({
-      where: { [personnelType]: originalName }
-    });
-
-    // 构建更新条件和数据
-    const updateResult = await this.customerRepository
-      .createQueryBuilder()
-      .update(Customer)
-      .set({ [personnelType]: replacementName })
-      .where(`${personnelType} = :originalName`, { originalName })
-      .execute();
-
-    // 为每个更新的客户创建服务历程记录
-    if (customersToUpdate.length > 0) {
-      const serviceHistoryPromises = customersToUpdate.map(async (customer) => {
-        try {
-          // 更新客户对象的相应字段
-          customer[personnelType] = replacementName;
-          await this.serviceHistoryService.createFromCustomer(customer);
-          return true;
-        } catch (error) {
-          this.logger.error(`为客户 ${customer.companyName} 创建服务历程记录失败: ${error.message}`, error.stack);
-          return false;
-        }
-      });
-
-      // 等待所有服务历程创建完成
-      await Promise.all(serviceHistoryPromises);
-    }
-
-    return {
-      success: true,
-      message: `批量替换完成，共影响 ${updateResult.affected} 条记录`,
-      affectedCount: updateResult.affected,
-    };
   }
 
   /**

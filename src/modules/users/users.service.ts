@@ -211,26 +211,24 @@ export class UsersService {
     return this.userRepository.save(updatedUser);
   }
 
-  // 更新用户个人资料（只允许更新email和phone）
+  // 更新用户个人资料（只允许更新idCardNumber和phone）
   async updateUserProfile(
     id: number,
-    profileData: { email?: string; phone?: string },
+    profileData: { idCardNumber?: string; phone?: string },
   ): Promise<User> {
     const user = await this.userRepository.findOne({ where: { id } });
     if (!user) {
       throw new NotFoundException(`用户ID ${id} 不存在`);
     }
 
-    // 只更新email和phone字段
-    if (profileData.email !== undefined) {
-      user.email = profileData.email;
+    // 只更新idCardNumber和phone字段
+    if (profileData.idCardNumber !== undefined) {
+      user.idCardNumber = profileData.idCardNumber;
     }
-
     if (profileData.phone !== undefined) {
       user.phone = profileData.phone;
     }
 
-    // 保存更新后的用户信息
     return this.userRepository.save(user);
   }
 
