@@ -40,8 +40,8 @@ export class User {
   phone: string;
   
   @ApiProperty({ description: '身份证号', example: '110101199001011234', required: false })
-  // 身份证号，可以为空
-  @Column({ nullable: true, length: 18, comment: '身份证号' })
+  // 身份证号，可以为空，设为唯一
+  @Column({ nullable: true, length: 18, comment: '身份证号', unique: true })
   idCardNumber: string;
 
   @ApiProperty({ 

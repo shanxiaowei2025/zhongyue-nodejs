@@ -43,6 +43,16 @@ export class UsersService {
       throw new BadRequestException('用户名已存在');
     }
 
+    // 检查身份证号是否已存在（如果提供了身份证号）
+    if (createUserDto.idCardNumber) {
+      const existingUserWithIdCard = await this.userRepository.findOne({
+        where: { idCardNumber: createUserDto.idCardNumber }
+      });
+      if (existingUserWithIdCard) {
+        throw new BadRequestException('身份证号已存在');
+      }
+    }
+
     // 获取要创建的用户角色，如果没有设置，默认为['user']
     const userRoles = createUserDto.roles || ['user'];
 
@@ -219,6 +229,17 @@ export class UsersService {
     const user = await this.userRepository.findOne({ where: { id } });
     if (!user) {
       throw new NotFoundException(`用户ID ${id} 不存在`);
+    }
+
+    // 检查身份证号是否已存在（如果要修改身份证号）
+    if (profileData.idCardNumber !== undefined && 
+        profileData.idCardNumber !== user.idCardNumber) {
+      const existingUserWithIdCard = await this.userRepository.findOne({
+        where: { idCardNumber: profileData.idCardNumber }
+      });
+      if (existingUserWithIdCard) {
+        throw new BadRequestException('身份证号已存在');
+      }
     }
 
     // 只更新idCardNumber和phone字段
