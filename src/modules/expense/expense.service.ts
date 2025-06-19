@@ -1308,12 +1308,7 @@ export class ExpenseService {
     
     if (expenses.length === 0) {
       console.log('未找到企业已审核记录');
-      return {
-        code: 0,
-        message: '未找到相关企业的已审核费用记录',
-        data: null,
-        timestamp: new Date().toISOString()
-      };
+      throw new NotFoundException('未找到相关企业的已审核费用记录');
     }
     
     console.log(`找到 ${expenses.length} 条已审核记录`);
@@ -1349,11 +1344,6 @@ export class ExpenseService {
       }
     }
     
-    return {
-      code: 0,
-      message: '成功获取最大日期的下一天',
-      data: result,
-      timestamp: new Date().toISOString()
-    };
+    return result;
   }
 } 

@@ -144,24 +144,15 @@ export class ExpenseController {
     try {
       // 检查用户是否已认证
       if (!req.user) {
-        return {
-          code: 401,
-          message: '用户未认证',
-          data: null,
-          timestamp: new Date().toISOString()
-        };
+        throw new UnauthorizedException('用户未认证');
       }
       
-      return await this.expenseService.getMaxDatesNextDay(queryDto);
+      const result = await this.expenseService.getMaxDatesNextDay(queryDto);
+      // 直接返回结果，不需要访问data属性
+      return result;
     } catch (error) {
       console.error('获取最大日期的下一天出错:', error);
-      
-      return {
-        code: error.status || 400,
-        message: error.message || '获取数据失败',
-        data: null,
-        timestamp: new Date().toISOString()
-      };
+      throw error;
     }
   }
 
@@ -183,20 +174,12 @@ export class ExpenseController {
       throw new ForbiddenException('未能获取有效的用户身份');
     }
     
-    const result = await this.expenseService.update(
+    return await this.expenseService.update(
       +id, 
       updateExpenseDto, 
       req.user.id,
       req.user.username // 传递当前用户名
     );
-    
-    // 返回标准格式化响应
-    return {
-      data: result,
-      code: 0,
-      message: '操作成功',
-      timestamp: Date.now()
-    };
   }
 
   @Delete(':id')
