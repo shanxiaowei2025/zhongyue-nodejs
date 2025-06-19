@@ -235,8 +235,14 @@ export class Customer {
   @Column({ nullable: true, type: 'text', comment: '个税申报人员' })
   personalIncomeTaxStaff: string;
 
-  @Column({ nullable: true, comment: '企业信息表编号' })
-  enterpriseInfoSheetNumber: string;
+  @Column({ nullable: true, comment: '纸质资料档案编号' })
+  paperArchiveNumber: string;
+
+  @Column({ nullable: true, comment: '网银托管存放编号' })
+  onlineBankingStorageNumber: string;
+
+  @Column({ type: 'text', nullable: true, comment: '档案存放备注' })
+  archiveStorageRemarks: string;
 
   @Column({ nullable: true, comment: '章存放编号' })
   sealStorageNumber: string;

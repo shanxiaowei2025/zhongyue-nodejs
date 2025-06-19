@@ -378,10 +378,20 @@ export class CreateCustomerDto {
   @IsOptional()
   personalIncomeTaxStaff?: string;
 
-  @ApiPropertyOptional({ description: '企业信息表编号' })
+  @ApiPropertyOptional({ description: '纸质资料档案编号' })
   @IsString()
   @IsOptional()
-  enterpriseInfoSheetNumber?: string;
+  paperArchiveNumber?: string;
+
+  @ApiPropertyOptional({ description: '网银托管存放编号' })
+  @IsString()
+  @IsOptional()
+  onlineBankingStorageNumber?: string;
+
+  @ApiPropertyOptional({ description: '档案存放备注' })
+  @IsString()
+  @IsOptional()
+  archiveStorageRemarks?: string;
 
   @ApiPropertyOptional({ description: '章存放编号' })
   @IsString()
