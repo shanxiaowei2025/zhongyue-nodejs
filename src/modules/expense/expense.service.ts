@@ -15,6 +15,7 @@ import { ExpensePermissionService } from './services/expense-permission.service'
 import { Parser } from 'json2csv';
 import { ExportExpenseDto } from './dto/export-expense.dto';
 import { Customer } from '../customer/entities/customer.entity';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class ExpenseService {
@@ -24,6 +25,8 @@ export class ExpenseService {
     private readonly expensePermissionService: ExpensePermissionService,
     @InjectRepository(Customer)
     private readonly customerRepository: Repository<Customer>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   async create(createExpenseDto: CreateExpenseDto, username: string) {
@@ -52,6 +55,26 @@ export class ExpenseService {
       }
       console.log('处理后的relatedContract数据:', JSON.stringify(createExpenseDto.relatedContract));
     }
+    
+    // 自动填充开始日期字段
+    let hasQueryIdentifier = false;
+    
+    // 首先尝试使用统一社会信用代码查询
+    if (createExpenseDto.unifiedSocialCreditCode) {
+      console.log(`根据统一社会信用代码 ${createExpenseDto.unifiedSocialCreditCode} 查询最新已审核费用记录`);
+      hasQueryIdentifier = true;
+      await this.autoFillStartDates(createExpenseDto, 'unifiedSocialCreditCode', createExpenseDto.unifiedSocialCreditCode);
+    } 
+    // 如果统一社会信用代码为空但公司名称不为空，则使用公司名称查询
+    else if (createExpenseDto.companyName) {
+      console.log(`根据企业名称 ${createExpenseDto.companyName} 查询最新已审核费用记录`);
+      hasQueryIdentifier = true;
+      await this.autoFillStartDates(createExpenseDto, 'companyName', createExpenseDto.companyName);
+    }
+    
+    if (!hasQueryIdentifier) {
+      console.log('未提供有效的查询标识符（统一社会信用代码或企业名称），跳过自动填充');
+    }
 
     const expense = this.expenseRepository.create({
       ...createExpenseDto,
@@ -73,6 +96,105 @@ export class ExpenseService {
     console.log('保存后的relatedContract数据:', JSON.stringify(savedExpense.relatedContract));
     
     return savedExpense;
+  }
+
+  // 辅助方法：根据查询条件自动填充开始日期字段
+  private async autoFillStartDates(createExpenseDto: CreateExpenseDto, fieldName: string, fieldValue: string): Promise<void> {
+    try {
+      // 首先查询一次，确认是否有相关的已审核记录
+      const checkQuery = `SELECT COUNT(*) as count FROM sys_expense WHERE ${fieldName} = ? AND status = 1`;
+      const checkResult = await this.expenseRepository.query(checkQuery, [fieldValue]);
+      
+      if (checkResult[0].count > 0) {
+        console.log(`找到 ${checkResult[0].count} 条现有已审核费用记录，开始查询各结束日期最大值`);
+        
+        // 直接使用SQL查询每个字段的最大值，只查询已审核记录
+        const maxDatesQuery = `
+          SELECT 
+            MAX(agencyEndDate) as maxAgencyEndDate,
+            MAX(accountingSoftwareEndDate) as maxAccountingSoftwareEndDate,
+            MAX(invoiceSoftwareEndDate) as maxInvoiceSoftwareEndDate,
+            MAX(socialInsuranceEndDate) as maxSocialInsuranceEndDate,
+            MAX(housingFundEndDate) as maxHousingFundEndDate,
+            MAX(statisticalEndDate) as maxStatisticalEndDate,
+            MAX(addressEndDate) as maxAddressEndDate
+          FROM sys_expense 
+          WHERE ${fieldName} = ? AND status = 1`;
+        
+        const maxDatesResult = await this.expenseRepository.query(maxDatesQuery, [fieldValue]);
+        console.log(`SQL查询结果:`, JSON.stringify(maxDatesResult[0], null, 2));
+        
+        // 处理每个日期字段
+        const dateFields = {
+          'maxAgencyEndDate': 'agencyStartDate',
+          'maxAccountingSoftwareEndDate': 'accountingSoftwareStartDate',
+          'maxInvoiceSoftwareEndDate': 'invoiceSoftwareStartDate',
+          'maxSocialInsuranceEndDate': 'socialInsuranceStartDate',
+          'maxHousingFundEndDate': 'housingFundStartDate',
+          'maxStatisticalEndDate': 'statisticalStartDate',
+          'maxAddressEndDate': 'addressStartDate'
+        };
+        
+        for (const [dbField, dtoField] of Object.entries(dateFields)) {
+          const dateValue = maxDatesResult[0][dbField];
+          if (dateValue) {
+            // 先使用旧的方法计算下一天的日期（获取完整日期）
+            const calculatedDate = this.getNextDay(dateValue);
+            
+            // 检查用户是否传入了该字段的日期
+            const hasUserInput = createExpenseDto[dtoField] !== undefined && 
+                                createExpenseDto[dtoField] !== null && 
+                                createExpenseDto[dtoField] !== '';
+            
+            if (hasUserInput) {
+              // 用户传入了日期，从计算日期中提取年月，从用户日期中提取日
+              const [calculatedYear, calculatedMonth] = calculatedDate.split('-');
+              try {
+                const userDate = new Date(createExpenseDto[dtoField]);
+                if (!isNaN(userDate.getTime())) {
+                  // 提取用户传入日期的日部分
+                  const userSelectedDay = String(userDate.getDate()).padStart(2, '0');
+                  console.log(`从用户输入中提取到日期: ${dtoField} = ${userSelectedDay}日`);
+                  
+                  // 组合年月和用户选择的日
+                  const combinedDate = `${calculatedYear}-${calculatedMonth}-${userSelectedDay}`;
+                  
+                  // 验证组合后的日期是否有效
+                  const testDate = new Date(combinedDate);
+                  if (isNaN(testDate.getTime())) {
+                    // 如果无效（比如2月30日），则使用计算的日期
+                    console.warn(`组合后的日期 ${combinedDate} 无效，使用计算的日期 ${calculatedDate}`);
+                    createExpenseDto[dtoField] = calculatedDate;
+                  } else {
+                    createExpenseDto[dtoField] = combinedDate;
+                  }
+                  
+                  console.log(`设置${dtoField}: ${createExpenseDto[dtoField]} (年月从${dbField}计算，日从用户输入获取)`);
+                } else {
+                  // 用户传入的日期无效，使用计算的日期
+                  console.warn(`无法解析用户输入的日期 ${createExpenseDto[dtoField]}，使用计算的日期 ${calculatedDate}`);
+                  createExpenseDto[dtoField] = calculatedDate;
+                }
+              } catch (error) {
+                // 解析出错，使用计算的日期
+                console.error(`解析用户输入的日期失败，使用计算的日期: ${calculatedDate}`, error);
+                createExpenseDto[dtoField] = calculatedDate;
+              }
+            } else {
+              // 用户没有传入日期，直接使用计算的完整日期
+              createExpenseDto[dtoField] = calculatedDate;
+              console.log(`用户未传入${dtoField}，使用计算的完整日期: ${calculatedDate}`);
+            }
+          } else {
+            console.log(`${dbField}为空，保留原始值: ${createExpenseDto[dtoField]}`);
+          }
+        }
+      } else {
+        console.log(`未找到${fieldName}为 ${fieldValue} 的现有记录`);
+      }
+    } catch (error) {
+      console.error('查询现有费用记录失败:', error);
+    }
   }
 
   // 生成收据编号的辅助方法
@@ -303,22 +425,118 @@ export class ExpenseService {
   async update(id: number, updateExpenseDto: UpdateExpenseDto, userId: number, username: string) {
     const expense = await this.findOne(id, userId);
     
-    // 检查是否有权限编辑
-    // 1. 有费用编辑权限的用户可以编辑
-    // 2. 或者是被退回状态(status=2)下的原业务员可以编辑
-    let hasEditPermission = await this.expensePermissionService.hasExpenseEditPermission(userId);
-    
-    // 如果是退回状态且当前用户是原业务员，也赋予编辑权限
-    if (!hasEditPermission && expense.status === 2 && expense.salesperson === username) {
-      hasEditPermission = true;
-    }
+    // 检查用户是否有编辑权限
+    const hasEditPermission = await this.expensePermissionService.hasExpenseEditPermission(userId);
     
     if (!hasEditPermission) {
       throw new BadRequestException('没有权限编辑费用记录');
     }
 
-    // 添加调试信息
-    console.log('更新前的relatedContract数据:', JSON.stringify(expense.relatedContract));
+    // 非管理员只能编辑自己创建且未审核或被退回的费用记录
+    if (!(await this.expensePermissionService.hasExpenseAuditPermission(userId))) {
+      if (expense.salesperson !== username || (expense.status !== 0 && expense.status !== 2)) {
+        throw new BadRequestException('只能编辑自己创建且未审核或被退回的费用记录');
+      }
+    }
+    
+    // 获取用户信息和角色
+    const user = await this.userRepository.findOne({
+      where: { id: userId }
+    });
+    
+    if (!user) {
+      throw new BadRequestException('无法获取用户信息');
+    }
+    
+    // 检查用户是否有特定角色（费用审核员、管理员或超级管理员）
+    const hasSpecialRole = user.roles && (
+      user.roles.includes('expense_auditor') || // 费用审核员
+      user.roles.includes('admin') || // 管理员
+      user.roles.includes('super_admin') // 超级管理员
+    );
+    
+    console.log(`用户 ${user.username} 的角色: ${user.roles ? user.roles.join(', ') : '无角色'}, 特殊角色检查结果: ${hasSpecialRole}`);
+    
+    // 定义需要特殊处理的日期字段列表
+    const protectedDateFields = [
+      'agencyStartDate',
+      'accountingSoftwareStartDate',
+      'invoiceSoftwareStartDate',
+      'socialInsuranceStartDate',
+      'housingFundStartDate',
+      'statisticalStartDate',
+      'addressStartDate'
+    ];
+    
+    // 如果不是特定角色，则对日期字段进行特殊处理
+    if (!hasSpecialRole) {
+      console.log('用户不是特定角色，处理日期字段');
+      
+      // 遍历受保护的日期字段
+      for (const field of protectedDateFields) {
+        // 检查更新DTO中是否包含此字段
+        if (field in updateExpenseDto && updateExpenseDto[field]) {
+          console.log(`处理日期字段 ${field}`);
+          
+          // 确保原始记录中有该日期字段
+          if (expense[field]) {
+            try {
+              // 从原始记录中获取年月部分
+              const originalDate = new Date(expense[field]);
+              const originalYear = originalDate.getFullYear();
+              const originalMonth = originalDate.getMonth() + 1; // 月份从0开始，需要+1
+              
+              console.log(`原始日期 ${field}: ${expense[field]}, 年: ${originalYear}, 月: ${originalMonth}`);
+              
+              // 解析用户提供的新日期
+              const userDate = new Date(updateExpenseDto[field]);
+              
+              // 检查用户日期是否有效
+              if (!isNaN(userDate.getTime())) {
+                // 提取用户日期中的日部分
+                const userDay = userDate.getDate();
+                console.log(`用户输入日期: ${updateExpenseDto[field]}, 提取的日: ${userDay}`);
+                
+                // 组合原始年月和用户提供的日
+                const combinedDate = new Date(originalYear, originalMonth - 1, userDay);
+                
+                // 格式化为YYYY-MM-DD
+                const year = combinedDate.getFullYear();
+                const month = String(combinedDate.getMonth() + 1).padStart(2, '0');
+                const day = String(combinedDate.getDate()).padStart(2, '0');
+                const formattedDate = `${year}-${month}-${day}`;
+                
+                // 验证组合后的日期是否有效
+                const testDate = new Date(formattedDate);
+                if (!isNaN(testDate.getTime())) {
+                  // 如果有效，替换为组合后的日期
+                  console.log(`保留年月，仅修改日: ${field} = ${formattedDate}`);
+                  updateExpenseDto[field] = formattedDate;
+                } else {
+                  // 如果无效，保留原始日期
+                  console.warn(`组合后的日期 ${formattedDate} 无效，保留原始日期 ${expense[field]}`);
+                  updateExpenseDto[field] = expense[field];
+                }
+              } else {
+                // 如果用户提供的日期无效，保留原始日期
+                console.warn(`用户提供的日期 ${updateExpenseDto[field]} 无效，保留原始日期`);
+                updateExpenseDto[field] = expense[field];
+              }
+            } catch (error) {
+              // 处理错误，保留原始日期
+              console.error(`处理日期字段 ${field} 失败:`, error);
+              updateExpenseDto[field] = expense[field];
+            }
+          } else {
+            // 如果原始记录没有该字段，则允许用户设置（可能是首次设置）
+            console.log(`原始记录没有日期字段 ${field}，允许设置`);
+          }
+        }
+      }
+    } else {
+      console.log('用户具有特殊角色，可以完全修改日期字段');
+    }
+
     console.log('更新请求中的relatedContract数据:', JSON.stringify(updateExpenseDto.relatedContract));
     
     // 确保relatedContract是正确的格式
@@ -374,12 +592,57 @@ export class ExpenseService {
       updated.rejectReason = null; // 清除退回原因
     }
     
+    // 保存更新后的记录
     const savedExpense = await this.expenseRepository.save(updated);
     
     // 添加调试信息
     console.log('更新后的relatedContract数据:', JSON.stringify(savedExpense.relatedContract));
     
-    return savedExpense;
+    // 使用原始SQL查询获取最新数据（保持日期格式原样）
+    const rawResult = await this.expenseRepository.query(
+      'SELECT * FROM sys_expense WHERE id = ?',
+      [id]
+    );
+    
+    // 获取结果并格式化日期字段
+    const result = rawResult[0];
+    
+    if (result) {
+      // 需要格式化的日期字段列表
+      const dateFields = [
+        'accountingSoftwareStartDate',
+        'accountingSoftwareEndDate',
+        'addressStartDate',
+        'addressEndDate',
+        'agencyStartDate',
+        'agencyEndDate',
+        'invoiceSoftwareStartDate',
+        'invoiceSoftwareEndDate',
+        'socialInsuranceStartDate', 
+        'socialInsuranceEndDate',
+        'housingFundStartDate',
+        'housingFundEndDate',
+        'statisticalStartDate',
+        'statisticalEndDate',
+        'chargeDate',
+        'auditDate'
+      ];
+      
+      // 处理每个日期字段
+      dateFields.forEach(field => {
+        if (result[field] && result[field] instanceof Date) {
+          // 将日期转换为YYYY-MM-DD格式
+          const date = new Date(result[field]);
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          result[field] = `${year}-${month}-${day}`;
+        }
+      });
+    }
+    
+    // 返回格式化后的结果
+    return result;
   }
 
   async remove(id: number, userId: number) {
@@ -953,5 +1216,144 @@ export class ExpenseService {
     } catch (err) {
       throw new BadRequestException(`导出CSV失败: ${err.message}`);
     }
+  }
+
+  // 查找数组中指定属性的最大日期
+  private findMaxDate(expenses: Expense[], dateField: string): string | null {
+    let maxDate = null;
+    
+    for (const expense of expenses) {
+      const dateValue = expense[dateField];
+      if (dateValue) {
+        const currentDate = new Date(dateValue);
+        if (!maxDate || currentDate > new Date(maxDate)) {
+          maxDate = dateValue;
+        }
+      }
+    }
+    
+    return maxDate;
+  }
+  
+  // 计算指定日期的下一天
+  private getNextDay(dateString: string): string {
+    try {
+      // 确保是字符串类型
+      const dateStr = String(dateString);
+      console.log(`正在处理日期: ${dateStr}`);
+
+      // 创建日期对象
+      const date = new Date(dateStr);
+      
+      // 验证日期是否有效
+      if (isNaN(date.getTime())) {
+        console.error(`无效的日期字符串: ${dateStr}`);
+        return '';
+      }
+      
+      console.log(`原始日期对象: ${date.toISOString()}`);
+      
+      // 获取年、月、日
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const day = date.getDate();
+      
+      // 创建新的日期对象，设置为下一天
+      const nextDay = new Date(year, month, day + 1);
+      console.log(`计算得到的下一天: ${nextDay.toISOString()}`);
+      
+      // 格式化为YYYY-MM-DD格式
+      const nextYear = nextDay.getFullYear();
+      const nextMonth = String(nextDay.getMonth() + 1).padStart(2, '0');
+      const nextDayOfMonth = String(nextDay.getDate()).padStart(2, '0');
+      
+      const result = `${nextYear}-${nextMonth}-${nextDayOfMonth}`;
+      console.log(`格式化后的结果: ${result}`);
+      
+      return result;
+    } catch (error) {
+      console.error(`日期处理出错: ${error.message}`);
+      return '';
+    }
+  }
+
+  // 获取企业最大日期的下一天
+  async getMaxDatesNextDay(params: {companyName?: string, unifiedSocialCreditCode?: string}) {
+    console.log('获取最大日期的下一天，参数:', params);
+    
+    // 至少需要提供一个查询条件
+    if (!params.companyName && !params.unifiedSocialCreditCode) {
+      throw new BadRequestException('必须提供企业名称或统一社会信用代码');
+    }
+    
+    // 构建查询条件
+    const where: FindOptionsWhere<Expense> = {
+      // 只获取已审核的记录(status = 1)
+      status: 1
+    };
+    
+    if (params.companyName) {
+      where.companyName = params.companyName;
+    }
+    
+    if (params.unifiedSocialCreditCode) {
+      where.unifiedSocialCreditCode = params.unifiedSocialCreditCode;
+    }
+    
+    // 查询这个企业的所有已审核记录
+    const expenses = await this.expenseRepository.find({
+      where,
+      order: { id: 'DESC' }
+    });
+    
+    if (expenses.length === 0) {
+      console.log('未找到企业已审核记录');
+      return {
+        code: 0,
+        message: '未找到相关企业的已审核费用记录',
+        data: null,
+        timestamp: new Date().toISOString()
+      };
+    }
+    
+    console.log(`找到 ${expenses.length} 条已审核记录`);
+    
+    // 需要计算的日期字段列表
+    const dateFields = [
+      'agencyEndDate',
+      'accountingSoftwareEndDate',
+      'invoiceSoftwareEndDate',
+      'socialInsuranceEndDate',
+      'housingFundEndDate',
+      'statisticalEndDate',
+      'addressEndDate'
+    ];
+    
+    // 结果对象
+    const result = {
+      companyName: expenses[0].companyName,
+      unifiedSocialCreditCode: expenses[0].unifiedSocialCreditCode,
+      dates: {}
+    };
+    
+    // 计算每个日期字段的最大值和下一天
+    for (const field of dateFields) {
+      const maxDate = this.findMaxDate(expenses, field);
+      const startFieldName = field.replace('EndDate', 'StartDate');
+      
+      if (maxDate) {
+        const nextDay = this.getNextDay(maxDate);
+        result.dates[startFieldName] = nextDay;
+      } else {
+        result.dates[startFieldName] = null;
+      }
+    }
+    
+    return {
+      code: 0,
+      message: '成功获取最大日期的下一天',
+      data: result,
+      timestamp: new Date().toISOString()
+    };
   }
 } 

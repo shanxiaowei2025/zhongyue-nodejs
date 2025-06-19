@@ -13,6 +13,7 @@ import {
   Request,
   BadRequestException,
   Res,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ExpenseService } from './expense.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
@@ -26,6 +27,7 @@ import { CancelAuditDto } from './dto/cancel-audit.dto';
 import { ExportExpenseDto } from './dto/export-expense.dto';
 import { Response } from 'express';
 import { QueryReceiptDto } from './dto/query-receipt.dto';
+import { QueryMaxDatesDto } from './dto/query-max-dates.dto';
 
 @ApiTags('费用管理')
 @Controller('expense')
@@ -130,6 +132,39 @@ export class ExpenseController {
     return this.expenseService.findAll(filters, pagination, req.user.id);
   }
 
+  // 获取企业最大日期的下一天 - 移到:id路由前面
+  @Get('max-dates-next-day')
+  @ApiOperation({ summary: '获取企业的最大日期的下一天' })
+  @ApiQuery({ name: 'companyName', required: false, description: '企业名称' })
+  @ApiQuery({ name: 'unifiedSocialCreditCode', required: false, description: '统一社会信用代码' })
+  async getMaxDatesNextDay(
+    @Query() queryDto: QueryMaxDatesDto, 
+    @Request() req
+  ) {
+    try {
+      // 检查用户是否已认证
+      if (!req.user) {
+        return {
+          code: 401,
+          message: '用户未认证',
+          data: null,
+          timestamp: new Date().toISOString()
+        };
+      }
+      
+      return await this.expenseService.getMaxDatesNextDay(queryDto);
+    } catch (error) {
+      console.error('获取最大日期的下一天出错:', error);
+      
+      return {
+        code: error.status || 400,
+        message: error.message || '获取数据失败',
+        data: null,
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
   @Get(':id')
   @ApiOperation({ summary: '获取单个费用记录' })
   findOne(@Param('id') id: string, @Req() req) {
@@ -139,7 +174,7 @@ export class ExpenseController {
   @Patch(':id')
   @ApiOperation({ summary: '更新费用记录', description: '管理员可编辑任何记录，被退回的记录原提交人可编辑' })
   @ApiResponse({ status: 200, description: '更新成功' })
-  update(
+  async update(
     @Param('id') id: string,
     @Body() updateExpenseDto: UpdateExpenseDto,
     @Request() req
@@ -148,12 +183,20 @@ export class ExpenseController {
       throw new ForbiddenException('未能获取有效的用户身份');
     }
     
-    return this.expenseService.update(
+    const result = await this.expenseService.update(
       +id, 
       updateExpenseDto, 
       req.user.id,
       req.user.username // 传递当前用户名
     );
+    
+    // 返回标准格式化响应
+    return {
+      data: result,
+      code: 0,
+      message: '操作成功',
+      timestamp: Date.now()
+    };
   }
 
   @Delete(':id')
