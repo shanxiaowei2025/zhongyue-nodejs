@@ -11,6 +11,7 @@ import { PaginationDto } from '../../common/dto/pagination.dto';
 import { TokenService } from './services/token.service';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
+import { Expense } from '../expense/entities/expense.entity';
 
 @Injectable()
 export class ContractService {
@@ -608,6 +609,82 @@ export class ContractService {
     } catch (error) {
       this.logger.error(`更新合同图片失败: ${error.message}`, error.stack);
       return false;
+    }
+  }
+
+  // 获取代理日期数据
+  async getAgencyDates(companyName?: string, unifiedSocialCreditCode?: string): Promise<{ agencyStartDate: string, agencyEndDate: string }> {
+    this.logger.debug(`请求获取代理日期 - 原始参数: companyName='${companyName}', unifiedSocialCreditCode='${unifiedSocialCreditCode}'`);
+    
+    // 检查是否至少提供了一个查询参数
+    if (!companyName && !unifiedSocialCreditCode) {
+      this.logger.warn('获取代理日期请求未提供任何查询参数');
+      throw new BadRequestException('必须提供企业名称或统一社会信用代码');
+    }
+
+    try {
+      // 优先使用统一社会信用代码，如果没有则使用公司名称
+      let params: any[] = [];
+      let whereClause: string = '';
+      
+      if (unifiedSocialCreditCode && unifiedSocialCreditCode.trim() !== '') {
+        whereClause = 'unifiedSocialCreditCode = ?';
+        params.push(unifiedSocialCreditCode.trim());
+        this.logger.debug(`使用统一社会信用代码查询: '${unifiedSocialCreditCode.trim()}'`);
+      } else if (companyName && companyName.trim() !== '') {
+        whereClause = 'companyName = ?';
+        params.push(companyName.trim());
+        this.logger.debug(`使用企业名称查询: '${companyName.trim()}'`);
+      } else {
+        this.logger.warn('查询参数为空或只包含空格');
+        throw new BadRequestException('查询参数不能为空');
+      }
+      
+      // 确保参数不包含NaN
+      if (params.some(param => param === 'NaN' || Number.isNaN(param))) {
+        this.logger.warn(`查询参数中包含NaN值: [${params.join(', ')}]`);
+        throw new BadRequestException('查询参数无效');
+      }
+      
+      // 执行查询，获取agencyEndDate最大值的记录
+      const query = `
+        SELECT agencyStartDate, agencyEndDate FROM sys_expense
+        WHERE ${whereClause}
+        AND status = 0
+        ORDER BY agencyEndDate DESC
+        LIMIT 1
+      `;
+
+      this.logger.debug(`执行查询SQL: ${query}`);
+      this.logger.debug(`查询参数: [${params.join(', ')}]`);
+      
+      // 执行原生SQL查询
+      const result = await this.contractRepository.query(query, params);
+      
+      // 检查是否找到结果
+      if (!result || result.length === 0) {
+        this.logger.warn(`未找到符合条件的代理日期记录 - 查询条件: ${whereClause}, 参数: [${params.join(', ')}]`);
+        throw new NotFoundException('未找到符合条件的代理日期记录');
+      }
+      
+      this.logger.debug(`查询结果: ${JSON.stringify(result[0])}`);
+      
+      // 确保返回的日期字段存在
+      if (!result[0].agencyStartDate || !result[0].agencyEndDate) {
+        this.logger.warn(`查询结果缺少日期字段: ${JSON.stringify(result[0])}`);
+      }
+      
+      // 返回结果对象
+      return {
+        agencyStartDate: result[0].agencyStartDate || null,
+        agencyEndDate: result[0].agencyEndDate || null
+      };
+    } catch (error) {
+      this.logger.error(`获取代理日期失败: ${error.message}`, error.stack);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException(`获取代理日期失败: ${error.message}`);
     }
   }
 } 

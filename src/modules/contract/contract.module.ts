@@ -22,6 +22,7 @@ import { Token } from './entities/token.entity';
 import { TokenService } from './services/token.service';
 import { ContractTokenController } from './contract-token.controller';
 import { StorageModule } from '../storage/storage.module';
+import { Expense } from '../expense/entities/expense.entity';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { StorageModule } from '../storage/storage.module';
       Permission,
       Department,
       Token,
+      Expense,
     ]),
     forwardRef(() => AuthModule),
     StorageModule,
