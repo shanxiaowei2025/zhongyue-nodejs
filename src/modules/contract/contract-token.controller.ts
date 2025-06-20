@@ -296,7 +296,19 @@ export class ContractTokenController {
 
   @Post('signature')
   @ApiOperation({ summary: '保存合同签名图片并合成' })
-  @ApiResponse({ status: 201, description: '签名保存成功' })
+  @ApiResponse({ 
+    status: 201, 
+    description: '签名保存成功', 
+    schema: {
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: '签名保存成功' },
+        contractId: { type: 'number', example: 1 },
+        encryptedCode: { type: 'string', example: '8A7F6D5E4C3B2A1' },
+        partyACompany: { type: 'string', example: '北京某某科技有限公司', description: '甲方公司名称' }
+      }
+    }
+  })
   @ApiResponse({ status: 400, description: '参数错误或令牌与合同不匹配' })
   @ApiResponse({ status: 404, description: '该连接已失效或合同不存在' })
   @ApiBody({ type: SaveSignatureDto })
@@ -385,6 +397,28 @@ export class ContractTokenController {
       // 签名保存成功后，获取合同的加密编号
       const encryptedCode = await this.contractService.getContractEncryptedCode(contractId);
       
+      // 获取甲方公司名称
+      this.logger.log(`获取合同甲方公司名称，合同ID: ${contractId}`);
+      let partyACompany = null;
+      try {
+        // 使用合同服务直接查询数据库获取甲方公司名称
+        const query = `
+          SELECT partyACompany 
+          FROM sys_contract 
+          WHERE id = ?
+        `;
+        // 使用contractService的repository执行查询
+        const result = await this.contractService['contractRepository'].query(query, [contractId]);
+        
+        if (result && result.length > 0) {
+          partyACompany = result[0].partyACompany;
+          this.logger.log(`获取到甲方公司名称: ${partyACompany}`);
+        }
+      } catch (error) {
+        this.logger.warn(`获取甲方公司名称失败: ${error.message}`);
+        // 即使获取失败也继续流程，不影响签名保存的主要功能
+      }
+      
       // 清理临时文件
       try {
         fs.unlinkSync(signatureImagePath);
@@ -398,7 +432,8 @@ export class ContractTokenController {
         success: true,
         message: '签名保存成功',
         contractId,
-        encryptedCode: encryptedCode // 返回合同的加密编号
+        encryptedCode,
+        partyACompany // 返回甲方公司名称
       };
     } catch (error) {
       console.error(`处理签名图片失败: ${error.message}`, error.stack);
