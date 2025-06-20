@@ -8,10 +8,15 @@ import { FinancialSelfInspectionModule } from './financial-self-inspection/finan
 import { TaxVerificationModule } from './tax-verification/tax-verification.module';
 import { ChangeHistoryModule } from './change-history/change-history.module';
 import { Customer } from '../customer/entities/customer.entity';
+import { EnterprisePermissionService } from './services/enterprise-permission.service';
+import { EnterprisePermissionGuard } from './guards/enterprise-permission.guard';
+import { PermissionsModule } from '../permissions/permissions.module';
+import { Role } from '../roles/entities/role.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Customer]),
+    TypeOrmModule.forFeature([Customer, Role]),
+    PermissionsModule,
     ServiceHistoryModule,
     ExpenseContributionModule,
     FinancialSelfInspectionModule,
@@ -19,7 +24,14 @@ import { Customer } from '../customer/entities/customer.entity';
     ChangeHistoryModule,
   ],
   controllers: [EnterpriseServiceController],
-  providers: [EnterpriseServiceService],
-  exports: [EnterpriseServiceService],
+  providers: [
+    EnterpriseServiceService,
+    EnterprisePermissionService,
+    EnterprisePermissionGuard
+  ],
+  exports: [
+    EnterpriseServiceService,
+    EnterprisePermissionService
+  ],
 })
 export class EnterpriseServiceModule {} 
