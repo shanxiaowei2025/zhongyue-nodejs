@@ -6,7 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, Between, FindOptionsWhere, Not, IsNull, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
+import { Repository, Like, Between, FindOptionsWhere, Not, IsNull, MoreThanOrEqual, LessThanOrEqual, In, Raw } from 'typeorm';
 import { Expense } from './entities/expense.entity';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
@@ -16,6 +16,11 @@ import { Parser } from 'json2csv';
 import { ExportExpenseDto } from './dto/export-expense.dto';
 import { Customer } from '../customer/entities/customer.entity';
 import { User } from '../users/entities/user.entity';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+import { CancelAuditDto } from './dto/cancel-audit.dto';
+import { ViewReceiptDto } from './dto/view-receipt.dto';
 
 @Injectable()
 export class ExpenseService {
@@ -275,82 +280,136 @@ export class ExpenseService {
 
     // 获取权限过滤条件
     const permissionFilter = await this.expensePermissionService.buildExpenseQueryFilter(userId);
-    const where: FindOptionsWhere<Expense> | FindOptionsWhere<Expense>[] = Array.isArray(permissionFilter)
-      ? permissionFilter.map(filter => ({ ...filter }))
-      : { ...permissionFilter };
-
-    // 处理查询条件
-    const addConditions = (conditions: any) => {
-      // 对所有字符串字段使用模糊查询
-      if (query.companyName) {
-        conditions.companyName = Like(`%${query.companyName}%`);
-      }
-      if (query.unifiedSocialCreditCode) {
-        conditions.unifiedSocialCreditCode = Like(`%${query.unifiedSocialCreditCode}%`);
-      }
-      if (query.companyType) {
-        conditions.companyType = Like(`%${query.companyType}%`);
-      }
-      if (query.companyLocation) {
-        conditions.companyLocation = Like(`%${query.companyLocation}%`);
-      }
-      if (query.businessType) {
-        conditions.businessType = Like(`%${query.businessType}%`);
-      }
-      if (query.status !== undefined) {
-        conditions.status = query.status;
-      }
-      if (query.salesperson) {
-        conditions.salesperson = Like(`%${query.salesperson}%`);
-      }
-      // 添加对其他可能的字符串字段的模糊查询
-      if (query.paymentMethod) {
-        conditions.paymentMethod = Like(`%${query.paymentMethod}%`);
-      }
-      if (query.remarks) {
-        conditions.remarks = Like(`%${query.remarks}%`);
-      }
-      if (query.servicePeriod) {
-        conditions.servicePeriod = Like(`%${query.servicePeriod}%`);
-      }
-      if (query.receiptNo) {
-        conditions.receiptNo = Like(`%${query.receiptNo}%`);
-      }
-      if (query.auditor) {
-        conditions.auditor = Like(`%${query.auditor}%`);
-      }
-      if (query.payee) {
-        conditions.payee = Like(`%${query.payee}%`);
+    
+    // 记录原始权限过滤条件，稍后用于构建复合查询
+    let originalPermissionFilter = permissionFilter;
+    
+    // 创建查询构建器
+    const queryBuilder = this.expenseRepository.createQueryBuilder('expense');
+    
+    // 首先应用权限过滤条件
+    if (Array.isArray(permissionFilter)) {
+      if (permissionFilter.length === 0) {
+        // 如果没有任何权限，返回空结果
+        return {
+          list: [],
+          total: 0,
+          currentPage: page,
+          pageSize,
+        };
       }
       
-      if (query.chargeDateStart && query.chargeDateEnd) {
-        conditions.chargeDate = Between(query.chargeDateStart, query.chargeDateEnd);
-      } else if (query.chargeDateStart) {
-        conditions.chargeDate = MoreThanOrEqual(query.chargeDateStart);
-      } else if (query.chargeDateEnd) {
-        conditions.chargeDate = LessThanOrEqual(query.chargeDateEnd);
-      }
-      if (query.startDate && query.endDate) {
-        conditions.createdAt = Between(new Date(query.startDate), new Date(query.endDate));
-      }
-    };
-
-    // 根据权限过滤条件类型添加查询条件
-    if (Array.isArray(where)) {
-      where.forEach(condition => addConditions(condition));
+      // 处理多个OR条件的权限过滤
+      const permissionWhere = permissionFilter.map((filter, index) => {
+        const params = {};
+        let whereClause = '';
+        
+        Object.entries(filter).forEach(([key, value]) => {
+          if (whereClause) whereClause += ' AND ';
+          const paramKey = `permission_${key}_${index}`;
+          whereClause += `expense.${key} = :${paramKey}`;
+          params[paramKey] = value;
+        });
+        
+        if (whereClause) {
+          queryBuilder.orWhere(`(${whereClause})`, params);
+        }
+      });
     } else {
-      addConditions(where);
+      // 处理单一权限过滤条件
+      const params = {};
+      let whereClause = '';
+      
+      Object.entries(permissionFilter).forEach(([key, value]) => {
+        if (whereClause) whereClause += ' AND ';
+        const paramKey = `permission_${key}`;
+        whereClause += `expense.${key} = :${paramKey}`;
+        params[paramKey] = value;
+      });
+      
+      if (whereClause) {
+        queryBuilder.where(whereClause, params);
+      }
     }
-
-    const [expenses, total] = await this.expenseRepository.findAndCount({
-      where,
-      skip,
-      take: pageSize,
-      order: {
-        id: 'DESC',
-      },
-    });
-
+    
+    // 然后在权限过滤的基础上应用查询参数
+    if (query.companyName) {
+      queryBuilder.andWhere('expense.companyName LIKE :companyName', { companyName: `%${query.companyName}%` });
+    }
+    
+    if (query.unifiedSocialCreditCode) {
+      queryBuilder.andWhere('expense.unifiedSocialCreditCode LIKE :unifiedSocialCreditCode', 
+                           { unifiedSocialCreditCode: `%${query.unifiedSocialCreditCode}%` });
+    }
+    
+    if (query.companyType) {
+      queryBuilder.andWhere('expense.companyType LIKE :companyType', { companyType: `%${query.companyType}%` });
+    }
+    
+    if (query.companyLocation) {
+      queryBuilder.andWhere('expense.companyLocation LIKE :companyLocation', { companyLocation: `%${query.companyLocation}%` });
+    }
+    
+    if (query.businessType) {
+      queryBuilder.andWhere('expense.businessType LIKE :businessType', { businessType: `%${query.businessType}%` });
+    }
+    
+    if (query.status !== undefined) {
+      queryBuilder.andWhere('expense.status = :status', { status: query.status });
+    }
+    
+    if (query.salesperson) {
+      queryBuilder.andWhere('expense.salesperson LIKE :salesperson', { salesperson: `%${query.salesperson}%` });
+    }
+    
+    if (query.paymentMethod) {
+      queryBuilder.andWhere('expense.paymentMethod LIKE :paymentMethod', { paymentMethod: `%${query.paymentMethod}%` });
+    }
+    
+    if (query.remarks) {
+      queryBuilder.andWhere('expense.remarks LIKE :remarks', { remarks: `%${query.remarks}%` });
+    }
+    
+    if (query.servicePeriod) {
+      queryBuilder.andWhere('expense.servicePeriod LIKE :servicePeriod', { servicePeriod: `%${query.servicePeriod}%` });
+    }
+    
+    if (query.receiptNo) {
+      queryBuilder.andWhere('expense.receiptNo LIKE :receiptNo', { receiptNo: `%${query.receiptNo}%` });
+    }
+    
+    if (query.auditor) {
+      queryBuilder.andWhere('expense.auditor LIKE :auditor', { auditor: `%${query.auditor}%` });
+    }
+    
+    if (query.payee) {
+      queryBuilder.andWhere('expense.payee LIKE :payee', { payee: `%${query.payee}%` });
+    }
+    
+    if (query.chargeDateStart && query.chargeDateEnd) {
+      queryBuilder.andWhere('expense.chargeDate BETWEEN :startDate AND :endDate', 
+                          { startDate: query.chargeDateStart, endDate: query.chargeDateEnd });
+    } else if (query.chargeDateStart) {
+      queryBuilder.andWhere('expense.chargeDate >= :startDate', { startDate: query.chargeDateStart });
+    } else if (query.chargeDateEnd) {
+      queryBuilder.andWhere('expense.chargeDate <= :endDate', { endDate: query.chargeDateEnd });
+    }
+    
+    if (query.startDate && query.endDate) {
+      queryBuilder.andWhere('expense.createdAt BETWEEN :createdStartDate AND :createdEndDate',
+                          { createdStartDate: new Date(query.startDate), createdEndDate: new Date(query.endDate) });
+    }
+    
+    // 应用排序和分页
+    queryBuilder
+      .orderBy('expense.id', 'DESC')
+      .skip(skip)
+      .take(pageSize);
+    
+    // 执行查询
+    const [expenses, total] = await queryBuilder.getManyAndCount();
+    
+    // 返回结果
     return {
       list: expenses,
       total,
@@ -1051,56 +1110,93 @@ export class ExpenseService {
   async exportToCsv(query: ExportExpenseDto, userId: number): Promise<string> {
     // 获取权限过滤条件
     const permissionFilter = await this.expensePermissionService.buildExpenseQueryFilter(userId);
-    const where: FindOptionsWhere<Expense> | FindOptionsWhere<Expense>[] = Array.isArray(permissionFilter)
-      ? permissionFilter.map(filter => ({ ...filter }))
-      : { ...permissionFilter };
-
-    // 处理查询条件
-    const addConditions = (conditions: any) => {
-      if (query.companyName) {
-        conditions.companyName = Like(`%${query.companyName}%`);
+    
+    // 创建查询构建器
+    const queryBuilder = this.expenseRepository.createQueryBuilder('expense');
+    
+    // 首先应用权限过滤条件
+    if (Array.isArray(permissionFilter)) {
+      if (permissionFilter.length === 0) {
+        // 如果没有任何权限，返回空结果
+        return "\uFEFF"; // 返回空的CSV，只有BOM标记
       }
-      if (query.unifiedSocialCreditCode) {
-        conditions.unifiedSocialCreditCode = Like(`%${query.unifiedSocialCreditCode}%`);
-      }
-      if (query.companyType) {
-        conditions.companyType = query.companyType;
-      }
-      if (query.companyLocation) {
-        conditions.companyLocation = query.companyLocation;
-      }
-      if (query.businessType) {
-        conditions.businessType = query.businessType;
-      }
-      if (query.status !== undefined) {
-        conditions.status = query.status;
-      }
-      if (query.salesperson) {
-        conditions.salesperson = query.salesperson;
-      }
-      if (query.chargeDateStart && query.chargeDateEnd) {
-        conditions.chargeDate = Between(query.chargeDateStart, query.chargeDateEnd);
-      } else if (query.chargeDateStart) {
-        conditions.chargeDate = MoreThanOrEqual(query.chargeDateStart);
-      } else if (query.chargeDateEnd) {
-        conditions.chargeDate = LessThanOrEqual(query.chargeDateEnd);
-      }
-    };
-
-    // 根据权限过滤条件类型添加查询条件
-    if (Array.isArray(where)) {
-      where.forEach(condition => addConditions(condition));
+      
+      // 处理多个OR条件的权限过滤
+      const permissionWhere = permissionFilter.map((filter, index) => {
+        const params = {};
+        let whereClause = '';
+        
+        Object.entries(filter).forEach(([key, value]) => {
+          if (whereClause) whereClause += ' AND ';
+          const paramKey = `permission_${key}_${index}`;
+          whereClause += `expense.${key} = :${paramKey}`;
+          params[paramKey] = value;
+        });
+        
+        if (whereClause) {
+          queryBuilder.orWhere(`(${whereClause})`, params);
+        }
+      });
     } else {
-      addConditions(where);
+      // 处理单一权限过滤条件
+      const params = {};
+      let whereClause = '';
+      
+      Object.entries(permissionFilter).forEach(([key, value]) => {
+        if (whereClause) whereClause += ' AND ';
+        const paramKey = `permission_${key}`;
+        whereClause += `expense.${key} = :${paramKey}`;
+        params[paramKey] = value;
+      });
+      
+      if (whereClause) {
+        queryBuilder.where(whereClause, params);
+      }
     }
-
+    
+    // 然后在权限过滤的基础上应用查询参数
+    if (query.companyName) {
+      queryBuilder.andWhere('expense.companyName LIKE :companyName', { companyName: `%${query.companyName}%` });
+    }
+    
+    if (query.unifiedSocialCreditCode) {
+      queryBuilder.andWhere('expense.unifiedSocialCreditCode LIKE :unifiedSocialCreditCode', 
+                           { unifiedSocialCreditCode: `%${query.unifiedSocialCreditCode}%` });
+    }
+    
+    if (query.companyType) {
+      queryBuilder.andWhere('expense.companyType = :companyType', { companyType: query.companyType });
+    }
+    
+    if (query.companyLocation) {
+      queryBuilder.andWhere('expense.companyLocation = :companyLocation', { companyLocation: query.companyLocation });
+    }
+    
+    if (query.businessType) {
+      queryBuilder.andWhere('expense.businessType = :businessType', { businessType: query.businessType });
+    }
+    
+    if (query.status !== undefined) {
+      queryBuilder.andWhere('expense.status = :status', { status: query.status });
+    }
+    
+    if (query.salesperson) {
+      queryBuilder.andWhere('expense.salesperson LIKE :salesperson', { salesperson: `%${query.salesperson}%` });
+    }
+    
+    if (query.chargeDateStart && query.chargeDateEnd) {
+      queryBuilder.andWhere('expense.chargeDate BETWEEN :startDate AND :endDate', 
+                          { startDate: query.chargeDateStart, endDate: query.chargeDateEnd });
+    } else if (query.chargeDateStart) {
+      queryBuilder.andWhere('expense.chargeDate >= :startDate', { startDate: query.chargeDateStart });
+    } else if (query.chargeDateEnd) {
+      queryBuilder.andWhere('expense.chargeDate <= :endDate', { endDate: query.chargeDateEnd });
+    }
+    
     // 查询数据
-    const expenses = await this.expenseRepository.find({
-      where,
-      order: {
-        id: 'DESC',
-      },
-    });
+    const expenses = await queryBuilder
+      .orderBy('expense.id', 'DESC')
+      .getMany();
 
     // 定义CSV字段映射
     const fieldMapping = {
