@@ -43,9 +43,8 @@ import { ChangeHistory } from './modules/enterprise-service/change-history/entit
 import { FinancialSelfInspection } from './modules/enterprise-service/financial-self-inspection/entities/financial-self-inspection.entity'; // 财务自检实体
 import { TaxVerification } from './modules/enterprise-service/tax-verification/entities/tax-verification.entity'; // 税务核验实体
 import { Employee } from './modules/employee/entities/employee.entity'; // 新增员工实体
-import { Salary } from './modules/salary/entities/salary.entity'; // 新增薪资实体
-// 暂时注释考勤补贴实体，后续再实现
-// import { AttendanceSubsidy } from './modules/salary/attendance-subsidy/entities/attendance-subsidy.entity'; // 新增考勤补贴实体
+// import { Salary } from './modules/salary/entities/salary.entity'; // 新增薪资实体
+// import { SalaryModule } from './modules/salary/salary.module'; // 新增薪资模块
 
 @Module({
   imports: [
@@ -105,7 +104,6 @@ import { Salary } from './modules/salary/entities/salary.entity'; // 新增薪�
           TaxVerification,
           Employee, // 新增员工实体
           // Salary, // 新增薪资实体
-          // AttendanceSubsidy, // 新增考勤补贴实体
         ],
         synchronize: configService.get('DB_SYNCHRONIZE', 'false') === 'true',
         logging: configService.get('DB_LOGGING', 'false') === 'true',
