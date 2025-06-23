@@ -137,6 +137,9 @@ export class Contract {
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '费用总计' })
   totalCost: number;
   
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '本次收费金额' })
+  currentChargeFee: number;
+  
   @Column({ nullable: true, comment: '甲方盖章图片' })
   partyAStampImage: string;
   

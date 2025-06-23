@@ -212,6 +212,11 @@ export class CreateContractDto {
   @IsOptional()
   totalCost?: number;
   
+  @ApiProperty({ description: '本次收费金额', required: false })
+  @IsNumber()
+  @IsOptional()
+  currentChargeFee?: number;
+  
   @ApiProperty({ description: '甲方盖章图片', required: false })
   @IsString()
   @IsOptional()

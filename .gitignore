@@ -45,6 +45,7 @@ lerna-debug.log*
 # temp directory
 .temp
 .tmp
+/temp
 
 # Runtime data
 pids
@@ -59,3 +60,37 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 viki-cache/
 viki-dist/
 .viki/
+
+# Docs related
+docs/node_modules/
+docs/.vitepress/dist/
+docs/.vitepress/cache/
+docs/.vitepress/.temp/
+docs/.vuepress/dist/
+docs/.vuepress/.temp/
+docs/.vuepress/.cache/
+docs/.temp/
+docs/
+
+# 上传的文件
+/uploads/*
+
+# Python脚本和数据文件
+*.py[cod]
+__pycache__/
+*.so
+.Python
+*.json.bak
+
+# 数据迁移文件
+migrate_*.py
+*.json
+
+# Docker相关
+.docker-volumes/
+docker-volumes/
+
+# 其他
+.cursorrules
+.env*
+!.env.example
