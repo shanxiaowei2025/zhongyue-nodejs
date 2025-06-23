@@ -44,7 +44,7 @@ export class ContractTokenController {
   ) {}
 
   @Get()
-  @ApiOperation({ summary: '根据合同ID生成临时令牌(30分钟有效)' })
+  @ApiOperation({ summary: '根据合同ID生成临时令牌(7天有效)' })
   @ApiResponse({ status: 200, description: '临时令牌生成成功' })
   @ApiResponse({ status: 400, description: '参数错误或合同已签署/已终止' })
   @ApiResponse({ status: 404, description: '合同不存在' })
@@ -68,7 +68,7 @@ export class ContractTokenController {
         // 1. 如果合同已签署(contractStatus='1')，会抛出BadRequestException并删除所有相关token
         // 2. 如果合同已终止(contractStatus='2')，会抛出BadRequestException并删除所有相关token
         // 3. 如果合同未签署未终止，会正常生成token
-        const token = await this.tokenService.generateTemporaryToken(contractId, 30);
+        const token = await this.tokenService.generateTemporaryToken(contractId, 10080);
         
         return {
           token: token.token,
