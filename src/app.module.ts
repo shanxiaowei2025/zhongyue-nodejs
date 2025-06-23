@@ -19,6 +19,8 @@ import { ExpenseModule } from './modules/expense/expense.module'; // 新增费�
 import { ContractModule } from './modules/contract/contract.module'; // 新增合同管理模块
 import { CombinedAuthGuard } from './modules/auth/guards/combined-auth.guard';
 import { EnterpriseServiceModule } from './modules/enterprise-service/enterprise-service.module'; // 新增企业服务模块
+import { EmployeeModule } from './modules/employee/employee.module'; // 新增员工模块
+// import { SalaryModule } from './modules/salary/salary.module'; // 新增薪资模块
 
 // 导入各种配置文件
 import appConfig from './config/app.config'; // 应用配置
@@ -40,6 +42,10 @@ import { ServiceHistory } from './modules/enterprise-service/service-history/ent
 import { ChangeHistory } from './modules/enterprise-service/change-history/entities/change-history.entity'; // 变更历史实体
 import { FinancialSelfInspection } from './modules/enterprise-service/financial-self-inspection/entities/financial-self-inspection.entity'; // 财务自检实体
 import { TaxVerification } from './modules/enterprise-service/tax-verification/entities/tax-verification.entity'; // 税务核验实体
+import { Employee } from './modules/employee/entities/employee.entity'; // 新增员工实体
+import { Salary } from './modules/salary/entities/salary.entity'; // 新增薪资实体
+// 暂时注释考勤补贴实体，后续再实现
+// import { AttendanceSubsidy } from './modules/salary/attendance-subsidy/entities/attendance-subsidy.entity'; // 新增考勤补贴实体
 
 @Module({
   imports: [
@@ -97,6 +103,9 @@ import { TaxVerification } from './modules/enterprise-service/tax-verification/e
           ChangeHistory,
           FinancialSelfInspection,
           TaxVerification,
+          Employee, // 新增员工实体
+          // Salary, // 新增薪资实体
+          // AttendanceSubsidy, // 新增考勤补贴实体
         ],
         synchronize: configService.get('DB_SYNCHRONIZE', 'false') === 'true',
         logging: configService.get('DB_LOGGING', 'false') === 'true',
@@ -115,6 +124,8 @@ import { TaxVerification } from './modules/enterprise-service/tax-verification/e
     ExpenseModule, // 费用管理模块：处理费用相关的功能
     ContractModule, // 合同管理模块：处理合同相关的功能
     EnterpriseServiceModule, // 企业服务模块：处理企业服务相关的功能
+    EmployeeModule, // 员工模块：处理员工相关的功能
+    // SalaryModule, // 薪资模块：处理薪资相关的功能
   ],
   controllers: [AppController], // 控制器：负责接收请求，像前台接待
   providers: [

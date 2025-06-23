@@ -9,6 +9,10 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter'; //
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'; // 这是生成API文档的工具
 import { BulkDeleteDto } from './modules/department/dto/department.dto';
 import { SaveSignatureDto } from './modules/contract/dto/save-signature.dto';
+import { CreateEmployeeDto } from './modules/employee/dto/create-employee.dto';
+import { UpdateEmployeeDto } from './modules/employee/dto/update-employee.dto';
+import { QueryEmployeeDto } from './modules/employee/dto/query-employee.dto';
+import { Employee } from './modules/employee/entities/employee.entity';
 import * as cookieParser from 'cookie-parser';
 import { join } from 'path';
 import * as express from 'express';
@@ -100,7 +104,14 @@ async function bootstrap() {
       .build();
     const document = SwaggerModule.createDocument(app, config, {
       deepScanRoutes: true, // 确保深度扫描所有路由
-      extraModels: [BulkDeleteDto, SaveSignatureDto] // 确保包含额外模型
+      extraModels: [
+        BulkDeleteDto, 
+        SaveSignatureDto, 
+        CreateEmployeeDto, 
+        UpdateEmployeeDto, 
+        QueryEmployeeDto, 
+        Employee
+      ] // 确保包含额外模型
     });
 
     // 设置文档访问路径为 /api/docs
