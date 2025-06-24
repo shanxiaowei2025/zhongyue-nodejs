@@ -429,6 +429,18 @@ export class CustomerService {
       }
     }
 
+    // 获取用户信息
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new ForbiddenException('用户不存在');
+    }
+
+    // 更新submitter字段为当前用户
+    updateCustomerDto.submitter = user.username;
+
     // 检查关键字段是否有变化，以决定是否需要创建服务历程记录
     const needCreateServiceHistory = 
       updateCustomerDto.consultantAccountant !== undefined && updateCustomerDto.consultantAccountant !== existingCustomer.consultantAccountant ||
@@ -584,17 +596,17 @@ export class CustomerService {
           // 如果没有空对象，添加权限条件
           const allParams = {};
           const orConditions = permissionConditions.map((condition, index) => {
-            const conditions = [];
-  
-            Object.entries(condition).forEach(([key, value]) => {
-              const paramKey = `perm_${key}_${index}`;
-              allParams[paramKey] = value;
-              conditions.push(`customer.${key} = :${paramKey}`);
-            });
-  
+              const conditions = [];
+
+              Object.entries(condition).forEach(([key, value]) => {
+                  const paramKey = `perm_${key}_${index}`;
+                  allParams[paramKey] = value;
+                  conditions.push(`customer.${key} = :${paramKey}`);
+              });
+
             return conditions.join(' AND ');
           });
-  
+
           if (orConditions.length > 0) {
             queryBuilder.andWhere(`(${orConditions.join(' OR ')})`);
             queryBuilder.setParameters(allParams);
@@ -604,8 +616,8 @@ export class CustomerService {
       } else if (Object.keys(permissionConditions).length > 0) {
         // 如果不是数组且不是空对象，添加权限条件
         Object.entries(permissionConditions).forEach(([key, value]) => {
-          queryBuilder.andWhere(`customer.${key} = :${key}`, { [key]: value });
-        });
+            queryBuilder.andWhere(`customer.${key} = :${key}`, { [key]: value });
+          });
       }
       
       console.log('导出CSV - 最终SQL:', queryBuilder.getSql());

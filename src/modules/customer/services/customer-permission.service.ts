@@ -174,46 +174,33 @@ export class CustomerPermissionService {
 
     // 处理查看自己提交的权限
     if (permissions.includes('customer_date_view_own')) {
-      if (roleCodes.includes('bookkeepingAccountant')) {
+      const isSpecialRole = roleCodes.includes('consultantAccountant') || 
+                            roleCodes.includes('bookkeepingAccountant') || 
+                            roleCodes.includes('invoiceOfficer');
+      
+      // 如果是特殊角色，根据角色对应的字段筛选
+      if (isSpecialRole) {
+        if (roleCodes.includes('consultantAccountant')) {
+          conditions.push({
+            consultantAccountant: user.username,
+          });
+        }
+        
+        if (roleCodes.includes('bookkeepingAccountant')) {
+          conditions.push({
+            bookkeepingAccountant: user.username,
+          });
+        }
+        
+        if (roleCodes.includes('invoiceOfficer')) {
+          conditions.push({
+            invoiceOfficer: user.username,
+          });
+        }
+      } else {
+        // 如果不是特殊角色，则根据submitter字段筛选
         conditions.push({
-          bookkeepingAccountant: user.username,
-        });
-      }
-      if (roleCodes.includes('consultantAccountant')) {
-        conditions.push({
-          consultantAccountant: user.username,
-        });
-      }
-      if (roleCodes.includes('invoiceOfficer')) {
-        conditions.push({
-          invoiceOfficer: user.username,
-        });
-      }
-      // 为销售专员添加条件
-      if (roleCodes.includes('sales_specialist')) {
-        conditions.push({
-          submitter: user.username, // 只能查看自己提交的客户
-        });
-      }
-    }
-
-    // 只有当用户有查看自己数据的权限时，才添加角色默认的查看条件
-    if (permissions.includes('customer_date_view_own')) {
-      if (roleCodes.includes('consultantAccountant')) {
-        conditions.push({
-          consultantAccountant: user.username,
-        });
-      }
-
-      if (roleCodes.includes('bookkeepingAccountant')) {
-        conditions.push({
-          bookkeepingAccountant: user.username,
-        });
-      }
-
-      if (roleCodes.includes('invoiceOfficer')) {
-        conditions.push({
-          invoiceOfficer: user.username,
+          submitter: user.username,
         });
       }
     }
