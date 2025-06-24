@@ -130,6 +130,17 @@ export class CustomerPermissionService {
     // 存储不同权限对应的查询条件
     const conditions: any[] = [];
 
+    // 检查是否有任何客户查看权限
+    const hasViewPermission = 
+      permissions.includes('customer_date_view_all') || 
+      permissions.includes('customer_date_view_by_location') || 
+      permissions.includes('customer_date_view_own');
+
+    // 如果没有任何查看权限，返回一个不可能满足的条件（确保查不到任何数据）
+    if (!hasViewPermission) {
+      return { id: -1 }; // 确保不会匹配任何记录
+    }
+
     // 处理查看所有权限
     if (permissions.includes('customer_date_view_all')) {
       conditions.push({}); // 空对象表示无限制条件
@@ -178,30 +189,38 @@ export class CustomerPermissionService {
           invoiceOfficer: user.username,
         });
       }
+      // 为销售专员添加条件
+      if (roleCodes.includes('sales_specialist')) {
+        conditions.push({
+          submitter: user.username, // 只能查看自己提交的客户
+        });
+      }
     }
 
-    // 添加角色默认的查看条件（始终添加，作为条件合集的一部分）
-    if (roleCodes.includes('consultantAccountant')) {
-      conditions.push({
-        consultantAccountant: user.username,
-      });
+    // 只有当用户有查看自己数据的权限时，才添加角色默认的查看条件
+    if (permissions.includes('customer_date_view_own')) {
+      if (roleCodes.includes('consultantAccountant')) {
+        conditions.push({
+          consultantAccountant: user.username,
+        });
+      }
+
+      if (roleCodes.includes('bookkeepingAccountant')) {
+        conditions.push({
+          bookkeepingAccountant: user.username,
+        });
+      }
+
+      if (roleCodes.includes('invoiceOfficer')) {
+        conditions.push({
+          invoiceOfficer: user.username,
+        });
+      }
     }
 
-    if (roleCodes.includes('bookkeepingAccountant')) {
-      conditions.push({
-        bookkeepingAccountant: user.username,
-      });
-    }
-
-    if (roleCodes.includes('invoiceOfficer')) {
-      conditions.push({
-        invoiceOfficer: user.username,
-      });
-    }
-
-    // 如果没有任何权限条件，返回空对象
+    // 如果没有任何权限条件，返回一个不可能满足的条件
     if (conditions.length === 0) {
-      return {};
+      return { id: -1 }; // 确保不会匹配任何记录
     }
 
     console.log('查询条件:', conditions);

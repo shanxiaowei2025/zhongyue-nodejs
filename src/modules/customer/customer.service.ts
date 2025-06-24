@@ -333,6 +333,14 @@ export class CustomerService {
 
     console.log('查询单个客户的权限条件:', permissionConditions);
 
+    // 如果权限条件是 {id: -1}，说明用户没有任何查看权限
+    if (
+      !Array.isArray(permissionConditions) && 
+      permissionConditions.id === -1
+    ) {
+      throw new ForbiddenException('您没有查看客户的权限');
+    }
+
     // 创建查询构建器
     const queryBuilder = this.customerRepository.createQueryBuilder('customer');
 
@@ -476,6 +484,14 @@ export class CustomerService {
       
       console.log('导出CSV - 权限条件:', JSON.stringify(permissionConditions));
       
+      // 如果权限条件是 {id: -1}，说明用户没有任何查看权限
+      if (
+        !Array.isArray(permissionConditions) && 
+        permissionConditions.id === -1
+      ) {
+        throw new ForbiddenException('您没有权限导出客户数据');
+      }
+      
       // 创建查询构建器
       const queryBuilder = this.customerRepository.createQueryBuilder('customer');
       
@@ -556,62 +572,40 @@ export class CustomerService {
         );
       }
       
-      // 处理权限条件 - 修复NaN问题
+      // 处理权限条件
       if (Array.isArray(permissionConditions)) {
         // 如果是数组，说明有多个 OR 条件
         // 检查是否包含空对象（表示无限制条件）
-        if (!permissionConditions.some(condition => Object.keys(condition).length === 0)) {
+        if (
+          !permissionConditions.some(
+            (condition) => Object.keys(condition).length === 0,
+          )
+        ) {
           // 如果没有空对象，添加权限条件
           const allParams = {};
-          const orConditions = permissionConditions
-            .filter(condition => {
-              // 过滤掉包含NaN值的条件
-              return !Object.values(condition).some(value => 
-                value === null || value === undefined || 
-                (typeof value === 'number' && isNaN(value))
-              );
-            })
-            .map((condition, index) => {
-              const conditions = [];
-
-              Object.entries(condition).forEach(([key, value]) => {
-                // 确保值不是NaN
-                if (value !== null && value !== undefined && 
-                    !(typeof value === 'number' && isNaN(value))) {
-                  const paramKey = `perm_${key}_${index}`;
-                  allParams[paramKey] = value;
-                  conditions.push(`customer.${key} = :${paramKey}`);
-                }
-              });
-
-              return conditions.length > 0 ? conditions.join(' AND ') : null;
-            })
-            .filter(Boolean); // 移除空条件
-
+          const orConditions = permissionConditions.map((condition, index) => {
+            const conditions = [];
+  
+            Object.entries(condition).forEach(([key, value]) => {
+              const paramKey = `perm_${key}_${index}`;
+              allParams[paramKey] = value;
+              conditions.push(`customer.${key} = :${paramKey}`);
+            });
+  
+            return conditions.join(' AND ');
+          });
+  
           if (orConditions.length > 0) {
             queryBuilder.andWhere(`(${orConditions.join(' OR ')})`);
             queryBuilder.setParameters(allParams);
-            console.log('导出CSV - 设置OR查询参数:', JSON.stringify(allParams));
+            console.log('设置的参数:', allParams);
           }
         }
       } else if (Object.keys(permissionConditions).length > 0) {
         // 如果不是数组且不是空对象，添加权限条件
-        const validConditions = {};
-        
         Object.entries(permissionConditions).forEach(([key, value]) => {
-          // 过滤掉NaN值和id字段
-          if (key !== 'id' && value !== null && value !== undefined && 
-              !(typeof value === 'number' && isNaN(value))) {
-            validConditions[key] = value;
-          }
+          queryBuilder.andWhere(`customer.${key} = :${key}`, { [key]: value });
         });
-        
-        if (Object.keys(validConditions).length > 0) {
-          Object.entries(validConditions).forEach(([key, value]) => {
-            queryBuilder.andWhere(`customer.${key} = :${key}`, { [key]: value });
-          });
-          console.log('导出CSV - 设置普通查询参数:', JSON.stringify(validConditions));
-        }
       }
       
       console.log('导出CSV - 最终SQL:', queryBuilder.getSql());
