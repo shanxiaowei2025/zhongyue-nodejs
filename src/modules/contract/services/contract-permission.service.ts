@@ -105,15 +105,21 @@ export class ContractPermissionService {
         relations: ['parent'],
       });
 
-      if (department.type === 2) {
-        conditions.push({
-          location: department.name,
-        });
-      } else if (department?.parent) {
-        conditions.push({
-          location: department.parent.name,
-        });
-      }
+      // 暂时注释掉location相关查询条件
+      // if (department.type === 2) {
+      //   conditions.push({
+      //     location: department.name,
+      //   });
+      // } else if (department?.parent) {
+      //   conditions.push({
+      //     location: department.parent.name,
+      //   });
+      // }
+      
+      // 当前合同实体中不存在location字段，添加临时条件以保证权限有效
+      conditions.push({
+        id: -1 // 使用一个不可能存在的ID作为替代条件
+      });
     }
 
     // 处理查看自己提交的权限
@@ -177,19 +183,23 @@ export class ContractPermissionService {
     
     // 处理按区域查看权限
     if (permissions.includes('contract_data_view_by_location')) {
-      const department = await this.departmentRepository.findOne({
-        where: { id: user.dept_id },
-        relations: ['parent'],
-      });
+      // 暂时注释掉location相关的权限检查
+      // const department = await this.departmentRepository.findOne({
+      //   where: { id: user.dept_id },
+      //   relations: ['parent'],
+      // });
       
-      // 如果合同有区域信息，检查是否匹配
-    //   if (contract.location) {
-    //     if (department.type === 2 && contract.location === department.name) {
-    //       return true;
-    //     } else if (department?.parent && contract.location === department.parent.name) {
-    //       return true;
-    //     }
-    //   }
+      // // 如果合同有区域信息，检查是否匹配
+      // if (contract.location) {
+      //   if (department.type === 2 && contract.location === department.name) {
+      //     return true;
+      //   } else if (department?.parent && contract.location === department.parent.name) {
+      //     return true;
+      //   }
+      // }
+      
+      // 暂时直接返回false，依靠其他权限检查
+      return false;
     }
     
     return false;
@@ -232,19 +242,23 @@ export class ContractPermissionService {
     
     // 处理按区域查看权限
     if (permissions.includes('contract_data_view_by_location')) {
-      const department = await this.departmentRepository.findOne({
-        where: { id: user.dept_id },
-        relations: ['parent'],
-      });
+      // 暂时注释掉location相关的权限检查
+      // const department = await this.departmentRepository.findOne({
+      //   where: { id: user.dept_id },
+      //   relations: ['parent'],
+      // });
       
-      // 如果合同有区域信息，检查是否匹配
-    //   if (contract.location) {
-    //     if (department.type === 2 && contract.location === department.name) {
-    //       return true;
-    //     } else if (department?.parent && contract.location === department.parent.name) {
-    //       return true;
-    //     }
-    //   }
+      // // 如果合同有区域信息，检查是否匹配
+      // if (contract.location) {
+      //   if (department.type === 2 && contract.location === department.name) {
+      //     return true;
+      //   } else if (department?.parent && contract.location === department.parent.name) {
+      //     return true;
+      //   }
+      // }
+      
+      // 暂时直接返回false，依靠其他权限检查
+      return false;
     }
     
     return false;
@@ -287,19 +301,23 @@ export class ContractPermissionService {
     
     // 处理按区域查看权限
     if (permissions.includes('contract_data_view_by_location')) {
-      const department = await this.departmentRepository.findOne({
-        where: { id: user.dept_id },
-        relations: ['parent'],
-      });
+      // 暂时注释掉location相关的权限检查
+      // const department = await this.departmentRepository.findOne({
+      //   where: { id: user.dept_id },
+      //   relations: ['parent'],
+      // });
       
-      // 如果合同有区域信息，检查是否匹配
-    //   if (contract.location) {
-    //     if (department.type === 2 && contract.location === department.name) {
-    //       return true;
-    //     } else if (department?.parent && contract.location === department.parent.name) {
-    //       return true;
-    //     }
-    //   }
+      // // 如果合同有区域信息，检查是否匹配
+      // if (contract.location) {
+      //   if (department.type === 2 && contract.location === department.name) {
+      //     return true;
+      //   } else if (department?.parent && contract.location === department.parent.name) {
+      //     return true;
+      //   }
+      // }
+      
+      // 暂时直接返回false，依靠其他权限检查
+      return false;
     }
     
     return false;
