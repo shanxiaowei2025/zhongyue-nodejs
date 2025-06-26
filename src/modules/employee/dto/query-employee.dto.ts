@@ -43,6 +43,15 @@ export class QueryEmployeeDto extends PaginationDto {
   commissionRatePosition?: string;
 
   /**
+   * 职位
+   * @example '项目经理'
+   */
+  @ApiPropertyOptional({ description: '职位', example: '项目经理' })
+  @IsString()
+  @IsOptional()
+  position?: string;
+
+  /**
    * 是否离职
    * @example false
    */
@@ -50,6 +59,15 @@ export class QueryEmployeeDto extends PaginationDto {
   @IsBoolean()
   @IsOptional()
   isResigned?: boolean;
+
+  /**
+   * 实际生日
+   * @example '农历1990年正月初一'
+   */
+  @ApiPropertyOptional({ description: '实际生日', example: '农历1990年正月初一' })
+  @IsString()
+  @IsOptional()
+  actualBirthday?: string;
 
   /**
    * 身份证号

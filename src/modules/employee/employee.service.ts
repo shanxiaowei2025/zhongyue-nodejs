@@ -195,36 +195,41 @@ export class EmployeeService {
    * @returns 员工列表和总数
    */
   async findAll(queryEmployeeDto: QueryEmployeeDto) {
-    const { page = 1, pageSize = 10, name, departmentId, employeeType, idCardNumber, commissionRatePosition, isResigned } = queryEmployeeDto;
+    const { page = 1, pageSize = 10, name, departmentId, employeeType, idCardNumber, commissionRatePosition, position, isResigned } = queryEmployeeDto;
     const skip = (page - 1) * pageSize;
     
-    const queryBuilder = this.employeeRepository.createQueryBuilder('employee');
+    // 构建查询条件
+    const where: any = {};
     
-    // 添加查询条件
     if (name) {
-      queryBuilder.andWhere('employee.name LIKE :name', { name: `%${name}%` });
+      where.name = Like(`%${name}%`);
     }
     
     if (departmentId) {
-      queryBuilder.andWhere('employee.departmentId = :departmentId', { departmentId });
+      where.departmentId = departmentId;
     }
     
     if (employeeType) {
-      queryBuilder.andWhere('employee.employeeType LIKE :employeeType', { employeeType: `%${employeeType}%` });
+      where.employeeType = employeeType;
     }
     
     if (idCardNumber) {
-      queryBuilder.andWhere('employee.idCardNumber LIKE :idCardNumber', { idCardNumber: `%${idCardNumber}%` });
+      where.idCardNumber = Like(`%${idCardNumber}%`);
     }
-    
+
     if (commissionRatePosition) {
-      queryBuilder.andWhere('employee.commissionRatePosition LIKE :commissionRatePosition', { commissionRatePosition: `%${commissionRatePosition}%` });
+      where.commissionRatePosition = commissionRatePosition;
+    }
+
+    if (position) {
+      where.position = Like(`%${position}%`);
     }
     
-    // 如果指定了是否离职条件
     if (isResigned !== undefined) {
-      queryBuilder.andWhere('employee.isResigned = :isResigned', { isResigned });
+      where.isResigned = isResigned;
     }
+    
+    const queryBuilder = this.employeeRepository.createQueryBuilder('employee');
     
     // 分页
     queryBuilder.skip(skip).take(pageSize);
@@ -233,7 +238,7 @@ export class EmployeeService {
     queryBuilder.orderBy('employee.createdAt', 'DESC');
     
     // 执行查询
-    const [employees, total] = await queryBuilder.getManyAndCount();
+    const [employees, total] = await queryBuilder.where(where).getManyAndCount();
     
     // 对每个员工强制应用工龄规则
     const processedEmployees = employees.map(employee => this.enforceWorkYearsLimit(employee));

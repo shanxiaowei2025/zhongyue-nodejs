@@ -34,6 +34,10 @@ export class Employee {
   @ApiProperty({ description: '提成比率职位', required: false })
   commissionRatePosition: string;
 
+  @Column({ length: 50, nullable: true, comment: '职位' })
+  @ApiProperty({ description: '职位', required: false })
+  position: string;
+
   @Column({ type: 'boolean', default: false, comment: '是否离职' })
   @ApiProperty({ description: '是否离职', default: false })
   isResigned: boolean;
@@ -49,6 +53,10 @@ export class Employee {
   @Column({ type: 'date', nullable: true, comment: '生日' })
   @ApiProperty({ description: '生日', required: false })
   birthday: Date;
+
+  @Column({ length: 20, nullable: true, comment: '实际生日' })
+  @ApiProperty({ description: '实际生日', required: false })
+  actualBirthday: string;
 
   @Column({ length: 18, nullable: true, comment: '身份证号', unique: true })
   @ApiProperty({ description: '身份证号', required: false })

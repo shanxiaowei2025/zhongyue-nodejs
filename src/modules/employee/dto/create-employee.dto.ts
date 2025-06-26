@@ -48,6 +48,15 @@ export class CreateEmployeeDto {
   commissionRatePosition?: string;
 
   /**
+   * 职位
+   * @example '项目经理'
+   */
+  @ApiProperty({ description: '职位', example: '项目经理', required: false })
+  @IsString()
+  @IsOptional()
+  position?: string;
+
+  /**
    * 是否离职
    * @example false
    */
@@ -87,6 +96,15 @@ export class CreateEmployeeDto {
   @Type(() => Date)
   @IsOptional()
   birthday?: Date;
+
+  /**
+   * 实际生日
+   * @example '农历1990年正月初一'
+   */
+  @ApiProperty({ description: '实际生日', example: '农历1990年正月初一', required: false })
+  @IsString()
+  @IsOptional()
+  actualBirthday?: string;
 
   /**
    * 身份证号
