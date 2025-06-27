@@ -117,9 +117,9 @@ export class ContractPermissionService {
       // }
       
       // 当前合同实体中不存在location字段，添加临时条件以保证权限有效
-      conditions.push({
-        id: -1 // 使用一个不可能存在的ID作为替代条件
-      });
+       conditions.push({
+         id: -1 // 使用一个不可能存在的ID作为替代条件
+       });
     }
 
     // 处理查看自己提交的权限

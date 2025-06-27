@@ -131,7 +131,7 @@ export class ContractController {
     }
     
     const result = await this.contractService.findOne(+id, req.user.id);
-    return removeEncryptedCode(result);
+    return result; // 直接返回结果，保留encryptedCode字段
   }
 
   @Patch(':id')
