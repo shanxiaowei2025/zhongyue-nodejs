@@ -48,13 +48,24 @@ export class EnterprisePermissionService {
       const roleName = await this.getRoleNameByCode(roleCode);
       this.logger.log(`角色代码 ${roleCode} 对应的角色名称: ${roleName}`);
       
-      // 使用角色名称(中文)查询权限表
-      const { permission_value } = await this.permissionService.getPermissionValueByName(
+      // 检查是否具有创建合同的权限
+      const { permission_value: contractPermission } = await this.permissionService.getPermissionValueByName(
         roleName,
         'contract_action_create'
       );
       
-      return permission_value;
+      // 如果有创建合同权限，直接返回true
+      if (contractPermission) {
+        return true;
+      }
+      
+      // 检查是否具有创建费用的权限
+      const { permission_value: expensePermission } = await this.permissionService.getPermissionValueByName(
+        roleName,
+        'expense_action_create'
+      );
+      
+      return expensePermission;
     } catch (error) {
       this.logger.error(`检查权限失败: ${error.message}`, error.stack);
       return false;
