@@ -1019,9 +1019,14 @@ export class ExpenseService {
         listField: 'administrativeLicense'
       },
       { 
-        name: '其他业务收费', 
+        name: '其他业务收费(自有)', 
         amountField: 'otherBusinessFee',
         listField: 'otherBusiness'
+      },
+      { 
+        name: '其他业务收费(外包)', 
+        amountField: 'otherBusinessOutsourcingFee',
+        listField: 'otherBusinessOutsourcing'
       }
     ];
 
@@ -1244,8 +1249,10 @@ export class ExpenseService {
       changeFee: '变更收费',
       administrativeLicense: '行政许可',
       administrativeLicenseFee: '行政许可收费',
-      otherBusiness: '其他业务',
-      otherBusinessFee: '其他业务收费',
+      otherBusiness: '其他业务(自有)',
+      otherBusinessFee: '其他业务收费(自有)',
+      otherBusinessOutsourcing: '其他业务(外包)',
+      otherBusinessOutsourcingFee: '其他业务收费(外包)',
       totalFee: '总费用',
       salesperson: '业务员',
       chargeDate: '收费日期',
@@ -1289,7 +1296,7 @@ export class ExpenseService {
       }
       
       // 处理字符串数组类型字段
-      ['insuranceTypes', 'changeBusiness', 'administrativeLicense', 'otherBusiness'].forEach(field => {
+      ['insuranceTypes', 'changeBusiness', 'administrativeLicense', 'otherBusiness', 'otherBusinessOutsourcing'].forEach(field => {
         if (item[field] && Array.isArray(item[field])) {
           item[field] = item[field].join(',');
         }

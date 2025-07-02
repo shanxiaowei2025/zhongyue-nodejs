@@ -254,16 +254,27 @@ export class CreateExpenseDto {
   @IsNumber()
   administrativeLicenseFee?: number;
 
-  @ApiProperty({ description: '其他业务', required: false })
+  @ApiProperty({ description: '其他业务(自有)', required: false })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   otherBusiness?: string[];
 
-  @ApiProperty({ description: '其他业务收费', required: false })
+  @ApiProperty({ description: '其他业务收费(自有)', required: false })
   @IsOptional()
   @IsNumber()
   otherBusinessFee?: number;
+
+  @ApiProperty({ description: '其他业务(外包)', required: false })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  otherBusinessOutsourcing?: string[];
+
+  @ApiProperty({ description: '其他业务收费(外包)', required: false })
+  @IsOptional()
+  @IsNumber()
+  otherBusinessOutsourcingFee?: number;
 
   @ApiProperty({ description: '收费凭证', required: false })
   @IsOptional()

@@ -141,11 +141,17 @@ export class Expense {
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '行政许可收费' })
   administrativeLicenseFee: number;
 
-  @Column({ type: 'simple-json', nullable: true, comment: '其他业务' })
+  @Column({ type: 'simple-json', nullable: true, comment: '其他业务(自有)' })
   otherBusiness: string[];
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '其他业务收费' })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '其他业务收费(自有)' })
   otherBusinessFee: number;
+
+  @Column({ type: 'simple-json', nullable: true, comment: '其他业务(外包)' })
+  otherBusinessOutsourcing: string[];
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '其他业务收费(外包)' })
+  otherBusinessOutsourcingFee: number;
 
   @Column({ type: 'simple-json', nullable: true, comment: '收费凭证' })
   proofOfCharge: string[];
