@@ -291,6 +291,11 @@ export class CreateExpenseDto {
   @IsString()
   salesperson?: string;
 
+  @ApiProperty({ description: '业务提成', required: false })
+  @IsOptional()
+  @IsNumber()
+  businessCommission?: number;
+
   @ApiProperty({ description: '收费日期', required: false })
   @IsOptional()
   @IsString()
