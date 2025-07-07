@@ -200,10 +200,10 @@ export class ContractController {
   @Get('getAgency/agencyDates')
   @ApiBearerAuth() // 需要登录才能访问
   @UseGuards(JwtAuthGuard, RolesGuard) // 使用JWT认证和角色守卫
-  @ApiOperation({ summary: '根据企业名称或统一社会信用代码获取代理日期' })
-  @ApiResponse({ status: 200, description: '获取代理日期成功' })
+  @ApiOperation({ summary: '根据企业名称或统一社会信用代码获取代理记账合同的下个月日期', description: '筛选contractType为代理记账合同且contractStatus为1的记录，返回委托结束日期的下个月，格式为YYYY-MM' })
+  @ApiResponse({ status: 200, description: '获取下个月日期成功', schema: { type: 'object', properties: { nextMonth: { type: 'string', example: '2025-06' } } } })
   @ApiResponse({ status: 400, description: '请求参数错误' })
-  @ApiResponse({ status: 404, description: '未找到代理日期记录' })
+  @ApiResponse({ status: 404, description: '未找到符合条件的代理记账合同记录' })
   @ApiQuery({ 
     name: 'companyName', 
     required: false, 

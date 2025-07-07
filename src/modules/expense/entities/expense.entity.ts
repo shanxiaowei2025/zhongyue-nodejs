@@ -162,7 +162,7 @@ export class Expense {
   @Column({ type: 'varchar', length: 100, nullable: true, comment: '业务员' })
   salesperson: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '业务提成' })
+  @Column({ name: 'business_commission', type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '业务提成' })
   businessCommission: number;
 
   @ApiProperty({ description: '创建时间' })

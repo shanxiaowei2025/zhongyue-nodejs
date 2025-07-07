@@ -132,12 +132,12 @@ export class ExpenseController {
     return this.expenseService.findAll(filters, pagination, req.user.id);
   }
 
-  // 获取企业最大日期的下一天 - 移到:id路由前面
-  @Get('max-dates-next-day')
-  @ApiOperation({ summary: '获取企业的最大日期的下一天' })
+  // 获取企业最大日期的下个月 - 移到:id路由前面
+  @Get('max-dates-next-month')
+  @ApiOperation({ summary: '获取企业的最大日期的下个月，格式为YYYY-MM' })
   @ApiQuery({ name: 'companyName', required: false, description: '企业名称' })
   @ApiQuery({ name: 'unifiedSocialCreditCode', required: false, description: '统一社会信用代码' })
-  async getMaxDatesNextDay(
+  async getMaxDatesNextMonth(
     @Query() queryDto: QueryMaxDatesDto, 
     @Request() req
   ) {
@@ -147,11 +147,11 @@ export class ExpenseController {
         throw new UnauthorizedException('用户未认证');
       }
       
-      const result = await this.expenseService.getMaxDatesNextDay(queryDto);
+      const result = await this.expenseService.getMaxDatesNextMonth(queryDto);
       // 直接返回结果，不需要访问data属性
       return result;
     } catch (error) {
-      console.error('获取最大日期的下一天出错:', error);
+      console.error('获取最大日期的下个月出错:', error);
       throw error;
     }
   }

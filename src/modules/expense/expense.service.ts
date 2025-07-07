@@ -144,7 +144,7 @@ export class ExpenseService {
           const dateValue = maxDatesResult[0][dbField];
           if (dateValue) {
             // 先使用旧的方法计算下一天的日期（获取完整日期）
-            const calculatedDate = this.getNextDay(dateValue);
+            const calculatedDate = this.getNextMonth(dateValue);
             
             // 检查用户是否传入了该字段的日期
             const hasUserInput = createExpenseDto[dtoField] !== undefined && 
@@ -1338,8 +1338,8 @@ export class ExpenseService {
     return maxDate;
   }
   
-  // 计算指定日期的下一天
-  private getNextDay(dateString: string): string {
+  // 计算指定日期的下个月
+  private getNextMonth(dateString: string): string {
     try {
       // 确保是字符串类型
       const dateStr = String(dateString);
@@ -1356,21 +1356,19 @@ export class ExpenseService {
       
       console.log(`原始日期对象: ${date.toISOString()}`);
       
-      // 获取年、月、日
+      // 获取年、月
       const year = date.getFullYear();
       const month = date.getMonth();
-      const day = date.getDate();
       
-      // 创建新的日期对象，设置为下一天
-      const nextDay = new Date(year, month, day + 1);
-      console.log(`计算得到的下一天: ${nextDay.toISOString()}`);
+      // 创建新的日期对象，设置为下个月
+      const nextMonth = new Date(year, month + 1, 1);
+      console.log(`计算得到的下个月: ${nextMonth.toISOString()}`);
       
-      // 格式化为YYYY-MM-DD格式
-      const nextYear = nextDay.getFullYear();
-      const nextMonth = String(nextDay.getMonth() + 1).padStart(2, '0');
-      const nextDayOfMonth = String(nextDay.getDate()).padStart(2, '0');
+      // 格式化为YYYY-MM格式
+      const nextYear = nextMonth.getFullYear();
+      const nextMonthFormatted = String(nextMonth.getMonth() + 1).padStart(2, '0');
       
-      const result = `${nextYear}-${nextMonth}-${nextDayOfMonth}`;
+      const result = `${nextYear}-${nextMonthFormatted}`;
       console.log(`格式化后的结果: ${result}`);
       
       return result;
@@ -1380,9 +1378,9 @@ export class ExpenseService {
     }
   }
 
-  // 获取企业最大日期的下一天
-  async getMaxDatesNextDay(params: {companyName?: string, unifiedSocialCreditCode?: string}) {
-    console.log('获取最大日期的下一天，参数:', params);
+  // 获取企业最大日期的下个月
+  async getMaxDatesNextMonth(params: {companyName?: string, unifiedSocialCreditCode?: string}) {
+    console.log('获取最大日期的下个月，参数:', params);
     
     // 至少需要提供一个查询条件
     if (!params.companyName && !params.unifiedSocialCreditCode) {
@@ -1434,14 +1432,14 @@ export class ExpenseService {
       dates: {}
     };
     
-    // 计算每个日期字段的最大值和下一天
+    // 计算每个日期字段的最大值和下个月
     for (const field of dateFields) {
       const maxDate = this.findMaxDate(expenses, field);
       const startFieldName = field.replace('EndDate', 'StartDate');
       
       if (maxDate) {
-        const nextDay = this.getNextDay(maxDate);
-        result.dates[startFieldName] = nextDay;
+        const nextMonth = this.getNextMonth(maxDate);
+        result.dates[startFieldName] = nextMonth;
       } else {
         result.dates[startFieldName] = null;
       }
