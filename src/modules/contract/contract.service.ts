@@ -43,6 +43,86 @@ export class ContractService {
       throw new ForbiddenException('您没有创建合同的权限');
     }
 
+    // 检查客户表中是否已存在该客户
+    let customerExists = false;
+    let customerInfo = null;
+    let createdCustomer = null;
+    let customerMessage = '';
+    
+    if (createContractDto.partyACompany && createContractDto.partyACreditCode) {
+      // 查询条件：检查客户表中是否已有一个匹配的记录
+      const querySQL = `
+        SELECT * FROM sys_customer 
+        WHERE companyName = ? 
+        OR unifiedSocialCreditCode = ?
+      `;
+      
+      const queryParams = [
+        createContractDto.partyACompany, 
+        createContractDto.partyACreditCode
+      ];
+      
+      // 使用原生SQL查询客户表
+      const queryResult = await this.contractRepository.query(querySQL, queryParams);
+      
+      if (queryResult && queryResult.length > 0) {
+        customerInfo = queryResult[0];
+        customerExists = true;
+        this.logger.debug(`客户已存在: ${customerInfo.companyName}`);
+      } else {
+        // 如果客户不存在，则创建客户
+        try {
+          // 1. 准备actualResponsibles数组数据
+          const actualResponsibles = [];
+          if (createContractDto.partyAContact || createContractDto.partyAPhone) {
+            actualResponsibles.push({
+              name: createContractDto.partyAContact || '',
+              phone: createContractDto.partyAPhone || ''
+            });
+          }
+          
+          // 2. 创建客户信息
+          const createCustomerDto = {
+            companyName: createContractDto.partyACompany,
+            unifiedSocialCreditCode: createContractDto.partyACreditCode,
+            registeredAddress: createContractDto.partyAAddress,
+            actualResponsibles: actualResponsibles.length > 0 ? actualResponsibles : null,
+            submitter: username
+          };
+          
+          // 3. 执行创建客户的SQL
+          const insertResult = await this.contractRepository.query(
+            `INSERT INTO sys_customer (companyName, unifiedSocialCreditCode, registeredAddress, actualResponsibles, submitter, createTime, updateTime) 
+             VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
+            [
+              createCustomerDto.companyName,
+              createCustomerDto.unifiedSocialCreditCode,
+              createCustomerDto.registeredAddress,
+              actualResponsibles.length > 0 ? JSON.stringify(actualResponsibles) : null,
+              username
+            ]
+          );
+          
+          if (insertResult && insertResult.insertId) {
+            // 查询创建的客户记录
+            const newCustomer = await this.contractRepository.query(
+              'SELECT * FROM sys_customer WHERE id = ?',
+              [insertResult.insertId]
+            );
+            
+            if (newCustomer && newCustomer.length > 0) {
+              createdCustomer = newCustomer[0];
+              customerMessage = `自动创建客户: ${createdCustomer.companyName}`;
+              this.logger.debug(customerMessage);
+            }
+          }
+        } catch (error) {
+          this.logger.error('创建客户失败:', error);
+          // 创建客户失败不影响合同的创建
+        }
+      }
+    }
+
     const contract = this.contractRepository.create({
       ...createContractDto,
       submitter: username,
@@ -60,7 +140,14 @@ export class ContractService {
       }
     }
 
-    return await this.contractRepository.save(contract);
+    // 保存合同并添加客户消息
+    const savedContract = await this.contractRepository.save(contract);
+    if (customerMessage) {
+      // 添加特殊字段用于传递消息
+      (savedContract as any).__customerMessage = customerMessage;
+    }
+    
+    return savedContract;
   }
 
   // 格式化日期为YYYYMMDD格式的字符串

@@ -21,6 +21,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { CancelAuditDto } from './dto/cancel-audit.dto';
 import { ViewReceiptDto } from './dto/view-receipt.dto';
+import { Department } from '../department/entities/department.entity';
 
 @Injectable()
 export class ExpenseService {
@@ -32,11 +33,109 @@ export class ExpenseService {
     private readonly customerRepository: Repository<Customer>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Department)
+    private readonly departmentRepository: Repository<Department>,
   ) {}
 
   async create(createExpenseDto: CreateExpenseDto, username: string) {
     // 添加调试信息
     console.log('收到的relatedContract数据:', JSON.stringify(createExpenseDto.relatedContract));
+    
+    // 检查客户表中是否已存在该客户
+    let customerExists = false;
+    let customerInfo = null;
+    let createdCustomer = null;
+    
+    if (createExpenseDto.companyName || createExpenseDto.unifiedSocialCreditCode) {
+      // 构建查询条件
+      const whereCondition = [];
+      const queryParams = [];
+      
+      if (createExpenseDto.companyName) {
+        whereCondition.push('companyName = ?');
+        queryParams.push(createExpenseDto.companyName);
+      }
+      
+      if (createExpenseDto.unifiedSocialCreditCode) {
+        whereCondition.push('unifiedSocialCreditCode = ?');
+        queryParams.push(createExpenseDto.unifiedSocialCreditCode);
+      }
+      
+      // 使用原生SQL查询客户表
+      const queryResult = await this.customerRepository.query(
+        `SELECT * FROM sys_customer WHERE ${whereCondition.join(' OR ')}`,
+        queryParams
+      );
+      
+      if (queryResult && queryResult.length > 0) {
+        customerInfo = queryResult[0];
+        customerExists = true;
+      }
+      
+      // 如果客户不存在，则创建客户
+      if (!customerExists) {
+        try {
+          // 查询用户信息
+          const user = await this.userRepository.findOne({
+            where: { username },
+            relations: ['department']
+          });
+          
+          if (!user) {
+            console.error(`找不到用户: ${username}`);
+          } else {
+            // 创建客户信息
+            const createCustomerDto = {
+              companyName: createExpenseDto.companyName,
+              unifiedSocialCreditCode: createExpenseDto.unifiedSocialCreditCode,
+              enterpriseType: createExpenseDto.companyType,
+              location: createExpenseDto.companyLocation,
+              submitter: username
+            };
+            
+            // 创建客户实体
+            const customer = this.customerRepository.create(createCustomerDto);
+            
+            // 获取用户的角色信息
+            const userRoles = user.roles || [];
+            
+            // 设置相关字段
+            if (userRoles.includes('consultantAccountant')) {
+              customer.consultantAccountant = username;
+            }
+            
+            if (userRoles.includes('bookkeepingAccountant')) {
+              customer.bookkeepingAccountant = username;
+            }
+            
+            if (userRoles.includes('invoiceOfficer')) {
+              customer.invoiceOfficer = username;
+            }
+            
+            if (userRoles.includes('branch_manager') && user.dept_id) {
+              const department = await this.departmentRepository.findOne({
+                where: { id: user.dept_id },
+              });
+              
+              if (department) {
+                customer.location = department.name;
+              } else if (createExpenseDto.companyLocation) {
+                customer.location = createExpenseDto.companyLocation;
+              }
+            }
+            
+            // 保存客户信息
+            createdCustomer = await this.customerRepository.save(customer);
+            console.log(`成功创建客户: ${createdCustomer.companyName}`);
+          }
+        } catch (error) {
+          console.error('创建客户失败:', error);
+          // 创建客户失败不影响费用记录的创建
+        }
+      } else {
+        console.log(`客户已存在: ${customerInfo.companyName}`);
+      }
+    }
     
     // 确保relatedContract是正确的格式
     if (createExpenseDto.relatedContract) {
@@ -95,12 +194,28 @@ export class ExpenseService {
       }
     }
 
+    // 保存费用记录
     const savedExpense = await this.expenseRepository.save(expense);
     
     // 添加调试信息
     console.log('保存后的relatedContract数据:', JSON.stringify(savedExpense.relatedContract));
     
-    return savedExpense;
+    // 准备客户信息消息
+    let customerMessage = '';
+    
+    if (createdCustomer) {
+      customerMessage = `已自动创建客户: ${createdCustomer.companyName}`;
+    } else if (customerExists && customerInfo) {
+      customerMessage = `客户已存在: ${customerInfo.companyName}`;
+    }
+    
+    // 这个字段将被transform.interceptor读取并添加到顶层message中
+    const result = {
+      ...savedExpense,
+      __customerMessage: customerMessage // 这个字段会在controller层被处理
+    };
+    
+    return result;
   }
 
   // 辅助方法：根据查询条件自动填充开始日期字段

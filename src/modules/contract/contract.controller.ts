@@ -91,7 +91,21 @@ export class ContractController {
     }
     
     const result = await this.contractService.create(createContractDto, req.user.id, req.user.username);
-    return removeEncryptedCode(result);
+    
+    // 检查是否有客户创建消息
+    const customerMessage = (result as any).__customerMessage;
+    
+    // 从结果中删除特殊字段
+    if (result && (result as any).__customerMessage !== undefined) {
+      delete (result as any).__customerMessage;
+    }
+    
+    // 返回带有适当消息的响应
+    return {
+      code: 200,
+      message: customerMessage ? `操作成功，${customerMessage}` : '操作成功',
+      data: removeEncryptedCode(result)
+    };
   }
 
   @Get()

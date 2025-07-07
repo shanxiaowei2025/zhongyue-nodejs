@@ -37,10 +37,48 @@ export class ExpenseController {
   constructor(private readonly expenseService: ExpenseService) {}
 
   @Post()
-  @ApiOperation({ summary: '创建费用记录' })
-  @ApiResponse({ status: 201, description: '创建成功' })
-  create(@Body() createExpenseDto: CreateExpenseDto, @Req() req) {
-    return this.expenseService.create(createExpenseDto, req.user.username);
+  @ApiOperation({ 
+    summary: '创建费用记录',
+    description: '创建费用记录，并自动检查客户表。如果公司名称和统一社会信用代码在客户表中都不存在，则自动创建客户记录。响应消息中会包含客户创建状态。'
+  })
+  @ApiResponse({ 
+    status: 201, 
+    description: '创建成功',
+    schema: {
+      properties: {
+        code: { type: 'number', example: 0 },
+        message: { type: 'string', example: '操作成功，已自动创建客户: 某某科技有限公司' },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', example: 1 },
+            companyName: { type: 'string', example: '某某科技有限公司' }
+          }
+        },
+        timestamp: { type: 'number', example: 1623827132000 }
+      }
+    }
+  })
+  async create(@Body() createExpenseDto: CreateExpenseDto, @Req() req, @Res() res: Response) {
+    const result = await this.expenseService.create(createExpenseDto, req.user.username);
+    
+    // 提取并移除特殊的客户信息消息字段
+    const customerMessage = result.__customerMessage;
+    delete result.__customerMessage;
+    
+    // 根据消息内容判断是否显示客户信息
+    let message = '操作成功';
+    if (customerMessage && customerMessage.includes('已自动创建客户')) {
+      message = `操作成功，${customerMessage}`;
+    }
+    
+    // 手动构建响应并返回
+    return res.status(201).json({
+      code: 0,
+      message: message,
+      data: result,
+      timestamp: Date.now()
+    });
   }
 
   @Get('receipt')
