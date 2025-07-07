@@ -72,14 +72,14 @@ export class CustomerService {
       }
     }
 
-    // 检查税号是否已存在
-    if (createCustomerDto.taxNumber) {
-      const existingCustomerByTaxNumber = await this.customerRepository.findOne({
-        where: { taxNumber: createCustomerDto.taxNumber }
+    // 检查公司名称是否已存在
+    if (createCustomerDto.companyName) {
+      const existingCustomerByName = await this.customerRepository.findOne({
+        where: { companyName: createCustomerDto.companyName }
       });
       
-      if (existingCustomerByTaxNumber) {
-        throw new ForbiddenException(`税号 ${createCustomerDto.taxNumber} 已存在，不能重复创建`);
+      if (existingCustomerByName) {
+        throw new ForbiddenException(`公司名称 ${createCustomerDto.companyName} 已存在，不能重复创建`);
       }
     }
 
@@ -440,21 +440,21 @@ export class CustomerService {
       }
     }
 
-    // 如果更新了税号，检查是否与其他客户重复
+    // 如果更新了公司名称，检查是否与其他客户重复
     if (
-      updateCustomerDto.taxNumber && 
-      updateCustomerDto.taxNumber !== existingCustomer.taxNumber
+      updateCustomerDto.companyName && 
+      updateCustomerDto.companyName !== existingCustomer.companyName
     ) {
-      const duplicateCustomerByTaxNumber = await this.customerRepository.findOne({
+      const duplicateCustomerByName = await this.customerRepository.findOne({
         where: { 
-          taxNumber: updateCustomerDto.taxNumber,
+          companyName: updateCustomerDto.companyName,
           id: Not(id) // 排除当前客户自身
         }
       });
 
-      if (duplicateCustomerByTaxNumber) {
+      if (duplicateCustomerByName) {
         throw new ForbiddenException(
-          `税号 ${updateCustomerDto.taxNumber} 已存在，不能重复使用`
+          `公司名称 ${updateCustomerDto.companyName} 已存在，不能重复使用`
         );
       }
     }

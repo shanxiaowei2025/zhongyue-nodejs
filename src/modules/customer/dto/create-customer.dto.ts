@@ -64,7 +64,9 @@ export class ActualResponsibleItemDto {
 }
 
 export class CreateCustomerDto {
-  @ApiProperty({ description: '企业名称' })
+  @ApiProperty({ 
+    description: '企业名称（必须唯一，系统会检查是否已存在）'
+  })
   @IsString()
   @IsOptional()
   companyName?: string;
@@ -102,10 +104,7 @@ export class CreateCustomerDto {
   @IsOptional()
   unifiedSocialCreditCode?: string;
 
-  @ApiPropertyOptional({ 
-    description: '税号（必须唯一，系统会检查是否已存在）',
-    example: '91110000100000000A' 
-  })
+  @ApiPropertyOptional({ description: '税号' })
   @IsString()
   @IsOptional()
   taxNumber?: string;
