@@ -66,7 +66,7 @@ export class CustomerController {
   @Post()
   @ApiOperation({ summary: '创建客户信息' })
   @ApiResponse({ status: 201, description: '客户信息创建成功' })
-  @ApiResponse({ status: 403, description: '没有创建客户的权限或统一社会信用代码已存在' })
+  @ApiResponse({ status: 403, description: '没有创建客户的权限或统一社会信用代码/税号已存在' })
   create(@Body() createCustomerDto: CreateCustomerDto, @Request() req) {
     this.logger.debug(`用户请求创建客户，用户信息: ${JSON.stringify(req.user)}`);
     
@@ -103,7 +103,7 @@ export class CustomerController {
   @Patch(':id')
   @ApiOperation({ summary: '更新客户信息' })
   @ApiResponse({ status: 200, description: '客户信息更新成功' })
-  @ApiResponse({ status: 403, description: '没有更新客户的权限或统一社会信用代码已存在' })
+  @ApiResponse({ status: 403, description: '没有更新客户的权限或统一社会信用代码/税号已存在' })
   update(
     @Param('id') id: string,
     @Body() updateCustomerDto: UpdateCustomerDto,

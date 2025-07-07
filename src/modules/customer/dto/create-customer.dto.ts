@@ -102,7 +102,10 @@ export class CreateCustomerDto {
   @IsOptional()
   unifiedSocialCreditCode?: string;
 
-  @ApiPropertyOptional({ description: '税号' })
+  @ApiPropertyOptional({ 
+    description: '税号（必须唯一，系统会检查是否已存在）',
+    example: '91110000100000000A' 
+  })
   @IsString()
   @IsOptional()
   taxNumber?: string;

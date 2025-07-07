@@ -72,6 +72,17 @@ export class CustomerService {
       }
     }
 
+    // 检查税号是否已存在
+    if (createCustomerDto.taxNumber) {
+      const existingCustomerByTaxNumber = await this.customerRepository.findOne({
+        where: { taxNumber: createCustomerDto.taxNumber }
+      });
+      
+      if (existingCustomerByTaxNumber) {
+        throw new ForbiddenException(`税号 ${createCustomerDto.taxNumber} 已存在，不能重复创建`);
+      }
+    }
+
     // 获取用户信息
     const user = await this.userRepository.findOne({
       where: { id: userId },
@@ -425,6 +436,25 @@ export class CustomerService {
       if (duplicateCustomer) {
         throw new ForbiddenException(
           `统一社会信用代码 ${updateCustomerDto.unifiedSocialCreditCode} 已存在，不能重复使用`
+        );
+      }
+    }
+
+    // 如果更新了税号，检查是否与其他客户重复
+    if (
+      updateCustomerDto.taxNumber && 
+      updateCustomerDto.taxNumber !== existingCustomer.taxNumber
+    ) {
+      const duplicateCustomerByTaxNumber = await this.customerRepository.findOne({
+        where: { 
+          taxNumber: updateCustomerDto.taxNumber,
+          id: Not(id) // 排除当前客户自身
+        }
+      });
+
+      if (duplicateCustomerByTaxNumber) {
+        throw new ForbiddenException(
+          `税号 ${updateCustomerDto.taxNumber} 已存在，不能重复使用`
         );
       }
     }
@@ -1196,14 +1226,23 @@ export class CustomerService {
         // 记录更新结果
         this.logger.log(`更新结果: 成功=${success}, 更新=${updated_count}, 失败=${failed_count}`);
         
+        // 检查是否所有失败记录都是因为重复
+        const allDuplicates = failed_records && failed_records.length > 0 && 
+          failed_records.every(record => record.reason === '统一社会信用代码重复');
+        
         // 构造返回消息
         let message = '';
+        let resultSuccess = success;
         
         if (success) {
           message = `成功更新${updated_count}条客户记录`;
           if (failed_count > 0) {
             message += `，${failed_count}条记录更新失败`;
           }
+        } else if (allDuplicates) {
+          // 如果所有失败都是因为重复，视为成功但无新增记录
+          message = `所有记录(${failed_count}条)均为重复数据，无需更新`;
+          resultSuccess = true; // 虽然Python返回false，但我们视为业务上的"成功"
         } else {
           message = error_message || '更新失败，未能更新任何记录';
           if (failed_count > 0) {
@@ -1213,7 +1252,7 @@ export class CustomerService {
         
         // 返回结果
         return {
-          success,
+          success: resultSuccess,
           message,
           count: updated_count > 0 ? updated_count : undefined,
           failedRecords: failed_records && failed_records.length > 0 ? failed_records : undefined
@@ -1238,10 +1277,30 @@ export class CustomerService {
         this.logger.error(`解析错误信息JSON失败: ${error.message}`);
       }
 
+      // 如果没有找到JSON结果，尝试使用老方法解析
+      // 获取更新记录数
+      const updateCount = stdout.match(/成功更新 (\d+) 条记录/);
+      const count = updateCount ? parseInt(updateCount[1], 10) : 0;
+
+      // 检查是否有重复数据的提示
+      const duplicateMatch = stdout.match(/所有记录\((\d+)条\)均为重复数据/);
+      if (duplicateMatch) {
+        const duplicateCount = parseInt(duplicateMatch[1], 10);
+        this.logger.log(`检测到${duplicateCount}条重复记录`);
+        
+        return {
+          success: true, // 重复数据视为业务上的"成功"
+          message: `所有记录(${duplicateCount}条)均为重复数据，无需更新`,
+        };
+      }
+
+      this.logger.log(`更新完成，共更新${count}条记录`);
+      
       // 简单返回结果
       return {
-        success: false,
-        message: '更新失败，无法获取详细结果'
+        success: count > 0,
+        message: count > 0 ? `成功更新${count}条客户记录` : '更新失败，未能更新任何记录',
+        count: count > 0 ? count : undefined
       };
     } catch (error) {
       this.logger.error(`批量更新客户数据失败: ${error.message}`, error.stack);
