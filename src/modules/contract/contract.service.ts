@@ -482,60 +482,16 @@ export class ContractService {
    * @returns 加密后的字符串
    */
   private generateEncryptedCode(contractNumber: string, id: number): string {
-    // 使用contractNumber和id，加上盐值，生成加密编号
-    const data = `${contractNumber}-${id}-${this.contractSalt}`;
+    // 使用环境变量中的盐值进行加密
+    const rawData = `${contractNumber || ''}${id}`;
     
-    // 使用SHA256哈希算法
-    const hash = crypto.createHash('sha256')
-                      .update(data)
+    // 使用SHA-256算法进行加密
+    const hash = crypto.createHmac('sha256', this.contractSalt)
+                      .update(rawData)
                       .digest('hex');
     
     // 取前16位，使结果更短且易于使用
     return hash.substring(0, 16).toUpperCase();
-  }
-
-  /**
-   * 获取指定日期的下个月，格式为YYYY-MM
-   * @param dateString 日期字符串
-   * @returns 下个月的日期，格式为YYYY-MM
-   */
-  private getNextMonth(dateString: string): string {
-    try {
-      // 确保是字符串类型
-      const dateStr = String(dateString);
-      this.logger.debug(`正在处理日期: ${dateStr}`);
-
-      // 创建日期对象
-      const date = new Date(dateStr);
-      
-      // 验证日期是否有效
-      if (isNaN(date.getTime())) {
-        this.logger.error(`无效的日期字符串: ${dateStr}`);
-        return '';
-      }
-      
-      this.logger.debug(`原始日期对象: ${date.toISOString()}`);
-      
-      // 获取年、月
-      const year = date.getFullYear();
-      const month = date.getMonth();
-      
-      // 创建新的日期对象，设置为下个月
-      const nextMonth = new Date(year, month + 1, 1);
-      this.logger.debug(`计算得到的下个月: ${nextMonth.toISOString()}`);
-      
-      // 格式化为YYYY-MM格式
-      const nextYear = nextMonth.getFullYear();
-      const nextMonthFormatted = String(nextMonth.getMonth() + 1).padStart(2, '0');
-      
-      const result = `${nextYear}-${nextMonthFormatted}`;
-      this.logger.debug(`格式化后的结果: ${result}`);
-      
-      return result;
-    } catch (error) {
-      this.logger.error(`日期处理出错: ${error.message}`);
-      return '';
-    }
   }
 
   /**
@@ -656,8 +612,63 @@ export class ContractService {
     }
   }
 
+  /**
+   * 计算指定日期的下个月
+   * @param dateString 日期字符串
+   * @returns 下个月的日期字符串 (YYYY-MM-DD)
+   */
+  private getNextMonth(dateString: string): string {
+    try {
+      // 确保是字符串类型
+      const dateStr = String(dateString);
+      this.logger.debug(`正在处理日期(下个月): ${dateStr}`);
+
+      // 创建日期对象
+      const date = new Date(dateStr);
+      
+      // 验证日期是否有效
+      if (isNaN(date.getTime())) {
+        this.logger.error(`无效的日期字符串: ${dateStr}`);
+        return '';
+      }
+      
+      this.logger.debug(`原始日期对象: ${date.toISOString()}`);
+      
+      // 获取年、月、日
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const day = date.getDate();
+      
+      // 创建新的日期对象，设置为下个月同一天
+      const nextMonth = new Date(year, month + 1, day);
+      
+      // 处理月末问题（例如1月31日的下个月应该是2月28/29日）
+      // 如果计算的下个月日期的月份不是期望的月份+1，说明发生了溢出
+      // 例如：3月31日 + 1个月 = 5月1日（错误，应该是4月30日）
+      if (nextMonth.getMonth() !== (month + 1) % 12) {
+        // 设置为该月的最后一天
+        nextMonth.setDate(0); // 设置为上个月的最后一天
+      }
+      
+      this.logger.debug(`计算得到的下个月: ${nextMonth.toISOString()}`);
+      
+      // 格式化为YYYY-MM-DD格式
+      const nextYear = nextMonth.getFullYear();
+      const nextMonthNum = String(nextMonth.getMonth() + 1).padStart(2, '0');
+      const nextDayOfMonth = String(nextMonth.getDate()).padStart(2, '0');
+      
+      const result = `${nextYear}-${nextMonthNum}-${nextDayOfMonth}`;
+      this.logger.debug(`格式化后的结果: ${result}`);
+      
+      return result;
+    } catch (error) {
+      this.logger.error(`日期处理出错: ${error.message}`);
+      return '';
+    }
+  }
+
   // 获取代理日期数据
-  async getAgencyDates(companyName?: string, unifiedSocialCreditCode?: string): Promise<{ nextMonth: string }> {
+  async getAgencyDates(companyName?: string, unifiedSocialCreditCode?: string): Promise<{ agencyStartDate: string }> {
     this.logger.debug(`请求获取代理日期 - 原始参数: companyName='${companyName}', unifiedSocialCreditCode='${unifiedSocialCreditCode}'`);
     
     // 检查是否至少提供了一个查询参数
@@ -667,53 +678,69 @@ export class ContractService {
     }
 
     try {
-      // 构建查询条件
-      const whereConditions: FindOptionsWhere<Contract> = {
-        contractType: '代理记账合同', // 筛选代理记账合同
-        contractStatus: '1'          // 筛选状态为1的记录
-      };
+      // 优先使用统一社会信用代码，如果没有则使用公司名称
+      let params: any[] = [];
+      let whereClause: string = '';
       
-      // 根据提供的参数添加查询条件
       if (unifiedSocialCreditCode && unifiedSocialCreditCode.trim() !== '') {
-        whereConditions.partyACreditCode = unifiedSocialCreditCode.trim();
+        whereClause = 'partyACreditCode = ?';
+        params.push(unifiedSocialCreditCode.trim());
         this.logger.debug(`使用统一社会信用代码查询: '${unifiedSocialCreditCode.trim()}'`);
       } else if (companyName && companyName.trim() !== '') {
-        whereConditions.partyACompany = companyName.trim();
+        whereClause = 'partyACompany = ?';
+        params.push(companyName.trim());
         this.logger.debug(`使用企业名称查询: '${companyName.trim()}'`);
       } else {
         this.logger.warn('查询参数为空或只包含空格');
         throw new BadRequestException('查询参数不能为空');
       }
       
-      // 执行查询，获取entrustmentEndDate最大的记录
-      const contract = await this.contractRepository.findOne({
-        where: whereConditions,
-        order: { entrustmentEndDate: 'DESC' }
-      });
+      // 确保参数不包含NaN
+      if (params.some(param => param === 'NaN' || Number.isNaN(param))) {
+        this.logger.warn(`查询参数中包含NaN值: [${params.join(', ')}]`);
+        throw new BadRequestException('查询参数无效');
+      }
+      
+      // 执行查询，获取代理记账合同且状态为已签署的记录，按委托结束日期降序排序
+      const query = `
+        SELECT entrustmentStartDate, entrustmentEndDate FROM sys_contract
+        WHERE ${whereClause}
+        AND contractType = '代理记账合同'
+        AND contractStatus = '1'
+        ORDER BY entrustmentEndDate DESC
+        LIMIT 1
+      `;
+
+      this.logger.debug(`执行查询SQL: ${query}`);
+      this.logger.debug(`查询参数: [${params.join(', ')}]`);
+      
+      // 执行原生SQL查询
+      const result = await this.contractRepository.query(query, params);
       
       // 检查是否找到结果
-      if (!contract) {
-        this.logger.warn(`未找到符合条件的代理记账合同记录 - 查询条件: ${JSON.stringify(whereConditions)}`);
+      if (!result || result.length === 0) {
+        this.logger.warn(`未找到符合条件的代理记账合同记录 - 查询条件: ${whereClause}, 参数: [${params.join(', ')}]`);
         throw new NotFoundException('未找到符合条件的代理记账合同记录');
       }
       
-      this.logger.debug(`查询结果: ${JSON.stringify(contract)}`);
+      this.logger.debug(`查询结果: ${JSON.stringify(result[0])}`);
       
-      // 确保委托结束日期字段存在
-      if (!contract.entrustmentEndDate) {
-        this.logger.warn(`查询结果缺少委托结束日期字段: ${JSON.stringify(contract)}`);
-        throw new BadRequestException('合同记录缺少委托结束日期');
+      // 确保返回的日期字段存在
+      if (!result[0].entrustmentStartDate || !result[0].entrustmentEndDate) {
+        this.logger.warn(`查询结果缺少日期字段: ${JSON.stringify(result[0])}`);
+        throw new BadRequestException('合同日期数据不完整');
       }
       
-      // 计算下个月，格式为YYYY-MM
-      const nextMonth = this.getNextMonth(contract.entrustmentEndDate.toString());
-      
-      if (!nextMonth) {
-        throw new BadRequestException('无法计算下个月日期');
+      // 计算委托结束日期的下个月
+      const nextMonthDate = this.getNextMonth(result[0].entrustmentEndDate);
+      if (!nextMonthDate) {
+        throw new BadRequestException('无法计算委托结束日期的下个月');
       }
       
-      // 返回结果对象
-      return { nextMonth };
+      // 只返回agencyStartDate字段
+      return {
+        agencyStartDate: nextMonthDate // 使用委托结束日期的下个月作为开始日期
+      };
     } catch (error) {
       this.logger.error(`获取代理日期失败: ${error.message}`, error.stack);
       if (error instanceof NotFoundException) {
