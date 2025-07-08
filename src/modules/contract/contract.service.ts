@@ -577,8 +577,7 @@ export class ContractService {
                       .update(rawData)
                       .digest('hex');
     
-    // 取前16位，使结果更短且易于使用
-    return hash.substring(0, 16).toUpperCase();
+    return hash.toUpperCase();
   }
 
   /**
