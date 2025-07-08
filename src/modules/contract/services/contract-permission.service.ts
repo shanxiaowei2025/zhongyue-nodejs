@@ -69,7 +69,7 @@ export class ContractPermissionService {
 
     if (!user) {
       console.log('用户未找到:', userId);
-      return {};
+      return { id: -999 }; // 返回一个不可能满足的查询条件
     }
 
     console.log('用户信息:', {
@@ -81,6 +81,19 @@ export class ContractPermissionService {
 
     const permissions = await this.getUserPermissions(userId);
     console.log('用户权限:', permissions);
+
+    // 检查用户是否有任何合同查看权限
+    const hasAnyContractViewPermission = permissions.some(p => 
+      p === 'contract_data_view_all' || 
+      p === 'contract_data_view_own' || 
+      p === 'contract_data_view_by_location'
+    );
+    
+    // 如果用户没有任何合同查看权限，返回一个不可能满足的查询条件
+    if (!hasAnyContractViewPermission) {
+      console.log('用户没有任何合同查看权限');
+      return { id: -999 }; // 返回一个不可能存在的ID
+    }
 
     // 存储不同权限对应的查询条件
     const conditions: any[] = [];
@@ -129,9 +142,9 @@ export class ContractPermissionService {
       });
     }
 
-    // 如果没有任何权限条件，返回空对象
+    // 如果没有任何权限条件，返回不可能满足的查询条件
     if (conditions.length === 0) {
-      return {};
+      return { id: -999 }; // 返回一个不可能存在的ID
     }
 
     console.log('查询条件:', conditions);

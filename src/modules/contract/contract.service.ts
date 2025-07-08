@@ -287,6 +287,25 @@ export class ContractService {
     const { page = 1, pageSize = 10 } = pagination;
     const skip = (page - 1) * pageSize;
 
+    // 先检查用户是否有任何合同查看权限
+    const permissions = await this.contractPermissionService.getUserPermissions(userId);
+    const hasViewPermission = permissions.some(p => 
+      p === 'contract_data_view_all' || 
+      p === 'contract_data_view_own' || 
+      p === 'contract_data_view_by_location'
+    );
+    
+    if (!hasViewPermission) {
+      this.logger.warn(`用户ID ${userId} 尝试查看合同列表但没有权限，返回空列表`);
+      // 不抛出异常，而是返回空数据列表
+      return {
+        list: [],
+        total: 0,
+        currentPage: page,
+        pageSize
+      };
+    }
+
     // 获取权限过滤条件
     const permissionFilter = await this.contractPermissionService.buildContractQueryFilter(userId);
     const where: FindOptionsWhere<Contract> | FindOptionsWhere<Contract>[] = Array.isArray(permissionFilter)

@@ -113,6 +113,7 @@ export class ContractController {
   @UseGuards(JwtAuthGuard, RolesGuard) // 使用JWT认证和角色守卫
   @ApiOperation({ summary: '获取合同列表' })
   @ApiResponse({ status: 200, description: '获取合同列表成功' })
+  @ApiResponse({ status: 403, description: '没有查看合同的权限' })
   async findAll(
     @Query() query: QueryContractDto,
     @Request() req
@@ -121,17 +122,31 @@ export class ContractController {
       throw new ForbiddenException('未能获取有效的用户身份');
     }
     
+    this.logger.debug(`用户 ${req.user.username} (ID: ${req.user.id}) 请求获取合同列表，角色: ${req.user.roles?.join(', ')}`);
+    
     const { page = 1, pageSize = 10, ...filters } = query;
     const pagination = { page, pageSize };
     
-    const result = await this.contractService.findAll(filters, pagination, req.user.id);
-    
-    // 移除列表中每个合同对象的encryptedCode字段
-    if (result && result.list) {
-      result.list = removeEncryptedCode(result.list);
+    try {
+      const result = await this.contractService.findAll(filters, pagination, req.user.id);
+      
+      // 移除列表中每个合同对象的encryptedCode字段
+      if (result && result.list) {
+        result.list = removeEncryptedCode(result.list);
+      }
+      
+      this.logger.debug(`合同列表查询成功，返回 ${result.total} 条记录`);
+      return result;
+    } catch (error) {
+      // 记录错误但不抛出异常，返回空数据
+      this.logger.error(`获取合同列表失败: ${error.message}`, error.stack);
+      return {
+        list: [],
+        total: 0,
+        currentPage: page,
+        pageSize
+      };
     }
-    
-    return result;
   }
 
   @Get(':id')
