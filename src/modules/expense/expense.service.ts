@@ -515,9 +515,14 @@ export class ExpenseService {
                           { createdStartDate: new Date(query.startDate), createdEndDate: new Date(query.endDate) });
     }
     
-    // 应用排序和分页
+    // 修改排序逻辑：首先按照创建时间降序排序
+    queryBuilder.orderBy('expense.createdAt', 'DESC');
+    
+    // 如果需要其他排序条件，可以作为次要排序
+    // queryBuilder.addOrderBy('expense.id', 'DESC');
+    
+    // 应用分页
     queryBuilder
-      .orderBy('expense.id', 'DESC')
       .skip(skip)
       .take(pageSize);
     

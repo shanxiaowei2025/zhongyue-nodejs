@@ -96,7 +96,7 @@ export class RoleService {
   async findAll(): Promise<Role[]> {
     return this.roleRepository.find({
       relations: ['permissions'],
-      order: { create_time: 'DESC' }
+      order: { id: 'DESC' }
     });
   }
 
