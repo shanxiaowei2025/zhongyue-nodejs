@@ -98,8 +98,18 @@ export class StorageService implements OnModuleInit {
       // 2. 生成时间戳作为唯一标识符
       const timestamp = Date.now();
 
-      // 3. 构建文件名，使用时间戳和清理后的原始文件名，用下划线连接
-      const fileName = `${timestamp}_${cleanedName}`;
+      // 3. 分离文件名和扩展名
+      const lastDotIndex = cleanedName.lastIndexOf('.');
+      let nameWithoutExt = cleanedName;
+      let extension = '';
+      
+      if (lastDotIndex !== -1) {
+        nameWithoutExt = cleanedName.substring(0, lastDotIndex);
+        extension = cleanedName.substring(lastDotIndex); // 包含点号
+      }
+      
+      // 4. 构建文件名，使用"原始文件名_时间戳.扩展名"的格式
+      const fileName = `${nameWithoutExt}_${timestamp}${extension}`;
 
       this.logger.log(
         `正在上传文件: ${fileName}, 原始名称: ${file.originalname}, 处理后: ${cleanedName}, 大小: ${file.size} 字节, 类型: ${file.mimetype}`,

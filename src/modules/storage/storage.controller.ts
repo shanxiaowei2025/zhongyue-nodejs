@@ -120,9 +120,12 @@ export class StorageController {
       // 获取原始文件名
       const originalName = file.originalname;
       
+      // 原始文件名已经包含在上传的文件名中（格式为 "原始文件名_时间戳"）
+      // 所以这里直接使用fileName即可
+      
       this.logger.log(`文件上传成功: ${fileName}, URL: ${url}, 原始文件名: ${originalName}`);
       return {
-        fileName, // 直接返回存储的文件名（timestamp_中文名.png格式）
+        fileName, // 返回存储的文件名（原始文件名_时间戳格式）
         url,
       };
     } catch (error) {
@@ -217,8 +220,27 @@ export class StorageController {
         );
       }
       
+      // 从存储的文件名中提取时间戳和扩展名
+      const lastDotIndex = fileName.lastIndexOf('.');
+      const fileNameWithoutExt = lastDotIndex !== -1 ? fileName.substring(0, lastDotIndex) : fileName;
+      const extension = lastDotIndex !== -1 ? fileName.substring(lastDotIndex) : ''; // 包含点号
+      
+      // 分离原始文件名部分和时间戳部分
+      const lastUnderscoreIndex = fileNameWithoutExt.lastIndexOf('_');
+      const timestamp = lastUnderscoreIndex !== -1 ? fileNameWithoutExt.substring(lastUnderscoreIndex + 1) : '';
+      
+      // 从原始文件名(originalFileName)中提取不带扩展名的部分
+      const origLastDotIndex = originalFileName.lastIndexOf('.');
+      const origNameWithoutExt = origLastDotIndex !== -1 ? 
+          originalFileName.substring(0, origLastDotIndex) : originalFileName;
+      
+      // 构建新的下载文件名格式："原始文件名_时间戳.扩展名"
+      const downloadFileName = `${origNameWithoutExt}_${timestamp}${extension}`;
+      
+      this.logger.debug(`下载文件名: ${downloadFileName}`);
+      
       return {
-        fileName: originalFileName,
+        fileName: downloadFileName,
         url,
       };
     } catch (error) {
