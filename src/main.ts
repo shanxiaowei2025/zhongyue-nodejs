@@ -2,7 +2,7 @@
 // 这些是我们需要用到的工具，就像在工具箱里拿工具一样
 import { NestFactory } from '@nestjs/core'; // 这是创建应用的工厂，就像开厂需要的机器
 import { AppModule } from './app.module'; // 这是我们的主模块，像是产品的设计图
-import { ValidationPipe, Logger, LogLevel } from '@nestjs/common'; // 这些是验证和日志工具
+import { ValidationPipe, Logger, LogLevel, ConsoleLogger } from '@nestjs/common'; // 这些是验证和日志工具
 import { ConfigService } from '@nestjs/config'; // 这是读取配置的工具
 import { TransformInterceptor } from './common/interceptors/transform.interceptor'; // 这是处理返回数据的工具
 import { HttpExceptionFilter } from './common/filters/http-exception.filter'; // 这是处理错误的工具
@@ -13,34 +13,89 @@ import { CreateEmployeeDto } from './modules/employee/dto/create-employee.dto';
 import { UpdateEmployeeDto } from './modules/employee/dto/update-employee.dto';
 import { QueryEmployeeDto } from './modules/employee/dto/query-employee.dto';
 import { Employee } from './modules/employee/entities/employee.entity';
-import * as cookieParser from 'cookie-parser';
+import cookieParser from 'cookie-parser';
 import { join } from 'path';
-import * as express from 'express';
+import express from 'express';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // 启动应用
 async function bootstrap() {
+  // 创建日志目录
+  const logDir = path.join(process.cwd(), 'logs');
+  if (!fs.existsSync(logDir)) {
+    fs.mkdirSync(logDir, { recursive: true });
+  }
+  
+  // 创建日志文件流
+  const date = new Date();
+  const logFileName = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}.log`;
+  const logFilePath = path.join(logDir, logFileName);
+  const logStream = fs.createWriteStream(logFilePath, { flags: 'a' });
+  
+  // 自定义日志格式 - 修改为继承ConsoleLogger
+  class CustomLogger extends ConsoleLogger {
+    log(message: any, context?: string) {
+      const logEntry = `${new Date().toISOString()} [${context || 'Application'}] [LOG] ${message}\n`;
+      logStream.write(logEntry);
+      super.log(message, context);
+    }
+    
+    error(message: any, trace?: string, context?: string) {
+      const logEntry = `${new Date().toISOString()} [${context || 'Application'}] [ERROR] ${message}\n${trace ? trace + '\n' : ''}`;
+      logStream.write(logEntry);
+      super.error(message, trace, context);
+    }
+    
+    warn(message: any, context?: string) {
+      const logEntry = `${new Date().toISOString()} [${context || 'Application'}] [WARN] ${message}\n`;
+      logStream.write(logEntry);
+      super.warn(message, context);
+    }
+    
+    debug(message: any, context?: string) {
+      const logEntry = `${new Date().toISOString()} [${context || 'Application'}] [DEBUG] ${message}\n`;
+      logStream.write(logEntry);
+      super.debug(message, context);
+    }
+  }
+
   // 设置日志级别，就像设置警报等级
   const logLevels: LogLevel[] = ['error', 'warn', 'log', 'debug'];
 
   // 创建应用，就像开启一个工厂
   const app = await NestFactory.create(AppModule, {
     // 根据环境设置不同的日志级别
-    logger:
-      process.env.LOG_LEVEL === 'debug'
-        ? logLevels // 调试模式：显示所有日志
-        : process.env.LOG_LEVEL === 'info'
-          ? logLevels.slice(0, 3) // 信息模式：显示错误、警告、普通日志
-          : process.env.LOG_LEVEL === 'warn'
-            ? logLevels.slice(0, 2) // 警告模式：只显示错误和警告
-            : ['error'], // 默认模式：只显示错误
+    logger: new CustomLogger(),
+    bufferLogs: true,
   });
+
+  // 设置日志级别
+  const configService = app.get(ConfigService);
+  const logLevel = configService.get('app.logger.level') || 'error';
+  let activeLogLevels: LogLevel[] = ['error'];
+  
+  if (logLevel === 'debug') {
+    activeLogLevels = logLevels; // 调试模式：显示所有日志
+  } else if (logLevel === 'info') {
+    activeLogLevels = logLevels.slice(0, 3); // 信息模式：显示错误、警告、普通日志
+  } else if (logLevel === 'warn') {
+    activeLogLevels = logLevels.slice(0, 2); // 警告模式：只显示错误和警告
+  }
 
   // 创建日志记录器，就像设置一个记录本
   const logger = new Logger('Bootstrap');
+  
+  // 显式设置NestJS应用的日志级别
+  app.useLogger(activeLogLevels.length === 1 ? 
+    ['error'] : 
+    (activeLogLevels.length === 2 ? 
+      ['error', 'warn'] : 
+      (activeLogLevels.length === 3 ? 
+        ['error', 'warn', 'log'] : 
+        ['error', 'warn', 'log', 'debug'])));
 
   // 获取配置服务，用来读取配置文件
-  const configService = app.get(ConfigService);
-
   // 设置API前缀，所有接口都会加上 '/api'
   // 比如 /users 变成 /api/users
   app.setGlobalPrefix('api');
@@ -60,6 +115,18 @@ async function bootstrap() {
       validationError: { 
         target: false, // 不返回目标对象
         value: false   // 不返回值
+      },
+      // 自定义错误信息格式
+      exceptionFactory: (errors) => {
+        const messages = errors.map(err => {
+          return Object.values(err.constraints).join(', ');
+        });
+        const error = new Error(messages.join('; '));
+        error['response'] = { 
+          message: messages,
+          statusCode: 400
+        };
+        return error;
       },
     }),
   );
@@ -136,19 +203,25 @@ async function bootstrap() {
   // 获取配置信息
   const port = configService.get('app.port'); // 获取端口号
   const env = configService.get('app.env'); // 获取环境
-  const logLevel = configService.get('app.logger.level'); // 获取日志级别
+  const configLogLevel = configService.get('app.logger.level'); // 获取日志级别
 
   // 启动应用
   await app.listen(port);
   // 打印启动信息
   logger.log(
-    `应用已启动 [${env}环境] [日志级别:${logLevel}]，访问: http://localhost:${port}/api`,
+    `应用已启动 [${env}环境] [日志级别:${configLogLevel}]，访问: http://localhost:${port}/api`,
   );
+  logger.log(`日志文件路径: ${logFilePath}`);
 
   // 在开发环境显示文档地址
   if (configService.get('app.env') !== 'production') {
     logger.log(`API文档地址: http://localhost:${port}/api/docs`);
   }
+  
+  // 处理程序退出时关闭日志流
+  process.on('exit', () => {
+    logStream.end();
+  });
 }
 
 // 运行启动函数

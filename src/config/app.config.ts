@@ -26,9 +26,9 @@ export default registerAs('app', () => ({
 
   // 设置日志级别
   logger: {
-    level: process.env.LOG_LEVEL || 'info',
+    level: process.env.LOG_LEVEL || 'warn',
   },
   // 含义：
   // 1. 读取 LOG_LEVEL 环境变量
-  // 2. 如果没有设置，默认使用 'info'（信息级别）
+  // 2. 如果没有设置，默认使用 'warn'（警告级别）
 }));

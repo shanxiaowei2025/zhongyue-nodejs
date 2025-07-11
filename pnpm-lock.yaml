@@ -41,9 +41,6 @@ importers:
       '@techstark/opencv-js':
         specifier: 4.11.0-release.1
         version: 4.11.0-release.1
-      '@types/axios':
-        specifier: ^0.14.4
-        version: 0.14.4
       '@types/fs-extra':
         specifier: ^11.0.4
         version: 11.0.4
@@ -86,6 +83,9 @@ importers:
       minio:
         specifier: ^8.0.5
         version: 8.0.5
+      moment:
+        specifier: ^2.30.1
+        version: 2.30.1
       multer:
         specifier: 1.4.5-lts.2
         version: 1.4.5-lts.2
@@ -132,12 +132,18 @@ importers:
       '@nestjs/testing':
         specifier: ^10.0.0
         version: 10.4.15(@nestjs/common@10.4.15(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@10.4.15)(@nestjs/platform-express@10.4.15)
+      '@types/axios':
+        specifier: ^0.14.4
+        version: 0.14.4
       '@types/bcrypt':
         specifier: ^5.0.2
         version: 5.0.2
       '@types/cookie-parser':
         specifier: ^1.4.8
         version: 1.4.8(@types/express@5.0.1)
+      '@types/cron':
+        specifier: ^2.4.3
+        version: 2.4.3
       '@types/express':
         specifier: ^5.0.0
         version: 5.0.1
@@ -150,6 +156,9 @@ importers:
       '@types/minio':
         specifier: ^7.1.1
         version: 7.1.1
+      '@types/moment':
+        specifier: ^2.13.0
+        version: 2.13.0
       '@types/multer':
         specifier: ^1.4.12
         version: 1.4.12
@@ -1405,6 +1414,10 @@ packages:
   '@types/cookiejar@2.1.5':
     resolution: {integrity: sha512-he+DHOWReW0nghN24E1WUqM0efK4kI9oTqDm6XmK8ZPe2djZ90BSNdGnIyCLzCPw7/pogPlGbzI2wHGGmi4O/Q==}
 
+  '@types/cron@2.4.3':
+    resolution: {integrity: sha512-ViRBkoZD9Rk0hGeMdd2GHGaOaZuH9mDmwsE5/Zo53Ftwcvh7h9VJc8lIt2wdgEwS4EW5lbtTX6vlE0idCLPOyA==}
+    deprecated: This is a stub types definition. cron provides its own type definitions, so you do not need this installed.
+
   '@types/eslint-scope@3.7.7':
     resolution: {integrity: sha512-MzMFlSLBqNF2gcHWO0G1vP/YQyfvrxZ0bF+u7mzUdZ1/xK4A4sru+nraZz5i3iEIk1l1uyicaDVTB4QbbEkAYg==}
 
@@ -1483,6 +1496,10 @@ packages:
   '@types/minio@7.1.1':
     resolution: {integrity: sha512-B7OWB7JwIxVBxypiS3gA96gaK4yo2UknGdqmuQsTccZZ/ABiQ2F3fTe9lZIXL6ZuN23l+mWIC3J4CefKNyWjxA==}
     deprecated: This is a stub types definition. minio provides its own type definitions, so you do not need this installed.
+
+  '@types/moment@2.13.0':
+    resolution: {integrity: sha512-DyuyYGpV6r+4Z1bUznLi/Y7HpGn4iQ4IVcGn8zrr1P4KotKLdH0sbK1TFR6RGyX6B+G8u83wCzL+bpawKU/hdQ==}
+    deprecated: This is a stub types definition for Moment (https://github.com/moment/moment). Moment provides its own type definitions, so you don't need @types/moment installed!
 
   '@types/multer@1.4.12':
     resolution: {integrity: sha512-pQ2hoqvXiJt2FP9WQVLPRO+AmiIm/ZYkavPlIQnx282u4ZrVdztx0pkh3jjpQt0Kz+YI0YhSG264y08UJKoUQg==}
@@ -3462,6 +3479,9 @@ packages:
   mkdirp@0.5.6:
     resolution: {integrity: sha512-FP+p8RB8OWpF3YZBCrP5gtADmtXApB5AMLn+vdyA+PyxCjrCs00mjyUozssO33cwDeT3wNGdLxJ5M//YqtHAJw==}
     hasBin: true
+
+  moment@2.30.1:
+    resolution: {integrity: sha512-uEmtNhbDOrWPFS+hdjFCBfy9f2YoyzRpwcl+DqpC6taX21FzsTLQVbMV/W7PzNSX6x/bhC1zA3c2UQ5NzH6how==}
 
   ms@2.0.0:
     resolution: {integrity: sha512-Tpp60P6IUJDTuOq/5Z8cdskzJujfwqfOTkrwIwj7IRISpnkJnT6SyJ4PCPnGMoFjC9ddhal5KVIYtAt97ix05A==}
@@ -6099,6 +6119,10 @@ snapshots:
 
   '@types/cookiejar@2.1.5': {}
 
+  '@types/cron@2.4.3':
+    dependencies:
+      cron: 4.3.0
+
   '@types/eslint-scope@3.7.7':
     dependencies:
       '@types/eslint': 9.6.1
@@ -6195,6 +6219,10 @@ snapshots:
   '@types/minio@7.1.1':
     dependencies:
       minio: 8.0.5
+
+  '@types/moment@2.13.0':
+    dependencies:
+      moment: 2.30.1
 
   '@types/multer@1.4.12':
     dependencies:
@@ -8547,6 +8575,8 @@ snapshots:
   mkdirp@0.5.6:
     dependencies:
       minimist: 1.2.8
+
+  moment@2.30.1: {}
 
   ms@2.0.0: {}
 
