@@ -96,34 +96,6 @@ export class ExpenseService {
             // 创建客户实体
             const customer = this.customerRepository.create(createCustomerDto);
             
-            // 获取用户的角色信息
-            const userRoles = user.roles || [];
-            
-            // 设置相关字段
-            if (userRoles.includes('consultantAccountant')) {
-              customer.consultantAccountant = username;
-            }
-            
-            if (userRoles.includes('bookkeepingAccountant')) {
-              customer.bookkeepingAccountant = username;
-            }
-            
-            if (userRoles.includes('invoiceOfficer')) {
-              customer.invoiceOfficer = username;
-            }
-            
-            if (userRoles.includes('branch_manager') && user.dept_id) {
-              const department = await this.departmentRepository.findOne({
-                where: { id: user.dept_id },
-              });
-              
-              if (department) {
-                customer.location = department.name;
-              } else if (createExpenseDto.companyLocation) {
-                customer.location = createExpenseDto.companyLocation;
-              }
-            }
-            
             // 保存客户信息
             createdCustomer = await this.customerRepository.save(customer);
             console.log(`成功创建客户: ${createdCustomer.companyName}`);

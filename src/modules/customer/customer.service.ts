@@ -96,34 +96,8 @@ export class CustomerService {
     // 创建客户实体
     const customer = this.customerRepository.create(createCustomerDto);
 
-    // 获取用户的角色信息
-    const userRoles = user.roles || [];
-
     // 无论什么角色，submitter字段都设置为当前用户名
     customer.submitter = user.username;
-
-    // 根据用户角色设置其他相应字段
-    if (userRoles.includes('consultantAccountant')) {
-      customer.consultantAccountant = user.username;
-    }
-
-    if (userRoles.includes('bookkeepingAccountant')) {
-      customer.bookkeepingAccountant = user.username;
-    }
-
-    if (userRoles.includes('invoiceOfficer')) {
-      customer.invoiceOfficer = user.username;
-    }
-
-    if (userRoles.includes('branch_manager') && user.dept_id) {
-      const department = await this.departmentRepository.findOne({
-        where: { id: user.dept_id },
-      });
-
-      if (department) {
-        customer.location = department.name;
-      }
-    }
 
     // 保存客户信息
     const savedCustomer = await this.customerRepository.save(customer);
