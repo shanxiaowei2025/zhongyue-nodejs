@@ -27,6 +27,11 @@ export class CreateUserDto {
   @IsString({ message: '手机号必须是字符串' })
   phone?: string;
   
+  @ApiProperty({ description: '头像', example: '/uploads/avatar/default.png', required: false })
+  @IsOptional()
+  @IsString({ message: '头像必须是字符串' })
+  avatar?: string;
+  
   @ApiProperty({ description: '身份证号', example: '110101199001011234', required: false })
   @IsOptional()
   @IsString({ message: '身份证号必须是字符串' })

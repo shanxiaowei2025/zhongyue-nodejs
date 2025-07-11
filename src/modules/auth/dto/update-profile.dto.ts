@@ -11,4 +11,9 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsString({ message: '身份证号必须是字符串' })
   idCardNumber?: string;
+  
+  @ApiProperty({ description: '头像', example: '/uploads/avatar/default.png', required: false })
+  @IsOptional()
+  @IsString({ message: '头像必须是字符串' })
+  avatar?: string;
 }

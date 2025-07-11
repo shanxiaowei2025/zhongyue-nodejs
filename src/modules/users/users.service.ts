@@ -58,7 +58,7 @@ export class UsersService {
 
     // 如果有当前用户，检查权限
     if (currentUser) {
-      this.checkUserRolePermission(currentUser.roles, userRoles);
+      this.checkUserRolePermission(currentUser.roles, userRoles, currentUser.id);
     }
 
     const user = this.userRepository.create(createUserDto);
@@ -69,10 +69,17 @@ export class UsersService {
   private checkUserRolePermission(
     currentUserRoles: string[],
     targetUserRoles: string[],
+    currentUserId?: number,
+    targetUserId?: number,
   ): void {
+    // 允许用户修改自己的信息
+    if (currentUserId && targetUserId && currentUserId === targetUserId) {
+      return; // 允许用户修改自己的信息
+    }
+
     // 如果当前用户是超级管理员
     if (currentUserRoles.includes('super_admin')) {
-      // 超级管理员不能操作超级管理员
+      // 超级管理员不能操作其他超级管理员
       if (targetUserRoles.includes('super_admin')) {
         throw new ForbiddenException('超级管理员不能操作其他超级管理员账户');
       }
@@ -190,7 +197,7 @@ export class UsersService {
     }
 
     // 检查是否有权限查看该用户
-    this.checkUserRolePermission(currentUser.roles, user.roles);
+    this.checkUserRolePermission(currentUser.roles, user.roles, currentUser.id, user.id);
 
     return user;
   }
@@ -201,14 +208,20 @@ export class UsersService {
     updateUserDto: UpdateUserDto,
     currentUser: User,
   ): Promise<User> {
-    const user = await this.findOne(id, currentUser);
-
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException(`用户ID ${id} 不存在`);
+    }
+    
     // 如果要修改角色，需要额外检查
     if (
       updateUserDto.roles &&
       !this.compareArrays(user.roles, updateUserDto.roles)
     ) {
-      this.checkUserRolePermission(currentUser.roles, updateUserDto.roles);
+      this.checkUserRolePermission(currentUser.roles, updateUserDto.roles, currentUser.id, user.id);
+    } else {
+      // 检查基本权限
+      this.checkUserRolePermission(currentUser.roles, user.roles, currentUser.id, user.id);
     }
 
     // 如果要更新密码，需要重新加密
@@ -224,7 +237,7 @@ export class UsersService {
   // 更新用户个人资料（只允许更新idCardNumber和phone）
   async updateUserProfile(
     id: number,
-    profileData: { idCardNumber?: string; phone?: string },
+    profileData: { idCardNumber?: string; phone?: string; avatar?: string },
   ): Promise<User> {
     const user = await this.userRepository.findOne({ where: { id } });
     if (!user) {
@@ -242,12 +255,15 @@ export class UsersService {
       }
     }
 
-    // 只更新idCardNumber和phone字段
+    // 更新idCardNumber、phone和avatar字段
     if (profileData.idCardNumber !== undefined) {
       user.idCardNumber = profileData.idCardNumber;
     }
     if (profileData.phone !== undefined) {
       user.phone = profileData.phone;
+    }
+    if (profileData.avatar !== undefined) {
+      user.avatar = profileData.avatar;
     }
 
     return this.userRepository.save(user);
@@ -273,7 +289,14 @@ export class UsersService {
 
   // 删除用户，添加权限检查
   async remove(id: number, currentUser: User): Promise<void> {
-    const user = await this.findOne(id, currentUser);
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException(`用户ID ${id} 不存在`);
+    }
+    
+    // 检查权限
+    this.checkUserRolePermission(currentUser.roles, user.roles, currentUser.id, user.id);
+    
     await this.userRepository.remove(user);
   }
 
@@ -291,7 +314,13 @@ export class UsersService {
     roleNames: string[],
     currentUser: User,
   ): Promise<User> {
-    const user = await this.findOne(userId, currentUser);
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException(`用户ID ${userId} 不存在`);
+    }
+    
+    // 检查权限
+    this.checkUserRolePermission(currentUser.roles, user.roles, currentUser.id, user.id);
 
     // 验证所有角色是否存在
     for (const roleName of roleNames) {
@@ -315,7 +344,13 @@ export class UsersService {
     permissionName: string,
     currentUser: User,
   ): Promise<boolean> {
-    const user = await this.findOne(userId, currentUser);
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException(`用户ID ${userId} 不存在`);
+    }
+    
+    // 检查权限
+    this.checkUserRolePermission(currentUser.roles, user.roles, currentUser.id, user.id);
 
     // 通过角色检查
     if (user.roles && user.roles.length > 0) {

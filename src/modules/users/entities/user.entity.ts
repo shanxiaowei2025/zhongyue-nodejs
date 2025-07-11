@@ -39,6 +39,11 @@ export class User {
   @Column({ nullable: true, length: 100, comment: '手机号码' })
   phone: string;
   
+  @ApiProperty({ description: '头像', example: '/uploads/avatar/default.png', required: false })
+  // 头像URL，可以为空
+  @Column({ nullable: true, length: 255, comment: '头像URL' })
+  avatar: string;
+  
   @ApiProperty({ description: '身份证号', example: '110101199001011234', required: false })
   // 身份证号，可以为空，设为唯一
   @Column({ nullable: true, length: 18, comment: '身份证号', unique: true })

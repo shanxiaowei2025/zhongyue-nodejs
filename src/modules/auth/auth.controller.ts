@@ -66,7 +66,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: '更新当前用户信息',
-    description: '更新当前登录用户的个人资料（邮箱和电话）',
+    description: '更新当前登录用户的个人资料（身份证和手机号）',
   })
   @ApiResponse({ status: 200, description: '成功更新用户信息' })
   @ApiResponse({ status: 401, description: '未授权的访问' })
