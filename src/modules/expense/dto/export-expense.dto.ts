@@ -13,7 +13,10 @@ export class ExportExpenseDto {
   @IsString()
   unifiedSocialCreditCode?: string;
 
-  @ApiProperty({ description: '状态：0-未审核，1-已审核，2-已退回', required: false })
+  @ApiProperty({
+    description: '状态：0-未审核，1-已审核，2-已退回',
+    required: false,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
@@ -33,17 +36,17 @@ export class ExportExpenseDto {
   @IsOptional()
   @IsDateString()
   chargeDateEnd?: string;
-  
+
   @ApiProperty({ description: '企业类型', required: false })
   @IsOptional()
   @IsString()
   companyType?: string;
-  
+
   @ApiProperty({ description: '企业归属地', required: false })
   @IsOptional()
   @IsString()
   companyLocation?: string;
-  
+
   @ApiProperty({ description: '业务类型', required: false })
   @IsOptional()
   @IsString()

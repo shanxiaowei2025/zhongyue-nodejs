@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('sys_expense')
 export class Expense {
@@ -9,37 +15,83 @@ export class Expense {
   @Column({ type: 'varchar', length: 255, nullable: true, comment: '企业名称' })
   companyName: string;
 
-  @Column({ type: 'varchar', length: 100, nullable: true, comment: '统一社会信用代码' })
+  @Column({
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+    comment: '统一社会信用代码',
+  })
   unifiedSocialCreditCode: string;
 
   @Column({ type: 'varchar', length: 100, nullable: true, comment: '企业类型' })
   companyType: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true, comment: '企业归属地' })
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    comment: '企业归属地',
+  })
   companyLocation: string;
 
   @Column({ type: 'varchar', length: 100, nullable: true, comment: '办照类型' })
   licenseType: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '办照费用' })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    comment: '办照费用',
+  })
   licenseFee: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '牌子费' })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    comment: '牌子费',
+  })
   brandFee: number;
-  
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '备案章费用' })
+
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    comment: '备案章费用',
+  })
   recordSealFee: number;
-  
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '一般刻章费用' })
+
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    comment: '一般刻章费用',
+  })
   generalSealFee: number;
 
   @Column({ type: 'varchar', length: 100, nullable: true, comment: '代理类型' })
   agencyType: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '代理费' })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    comment: '代理费',
+  })
   agencyFee: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '记账软件费' })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    comment: '记账软件费',
+  })
   accountingSoftwareFee: number;
 
   @Column({ type: 'date', nullable: true, comment: '记账软件开始日期' })
@@ -48,7 +100,13 @@ export class Expense {
   @Column({ type: 'date', nullable: true, comment: '记账软件结束日期' })
   accountingSoftwareEndDate: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '地址费' })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    comment: '地址费',
+  })
   addressFee: number;
 
   @Column({ type: 'date', nullable: true, comment: '地址费开始日期' })
@@ -73,9 +131,15 @@ export class Expense {
   contractImage: any[];
 
   @Column({ type: 'simple-json', nullable: true, comment: '关联合同' })
-  relatedContract: Array<{ id: number, contractNumber: string }>;
+  relatedContract: Array<{ id: number; contractNumber: string }>;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '开票软件费' })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    comment: '开票软件费',
+  })
   invoiceSoftwareFee: number;
 
   @Column({ type: 'date', nullable: true, comment: '开票软件开始日期' })
@@ -90,10 +154,21 @@ export class Expense {
   @Column({ type: 'int', nullable: true, comment: '参保人数' })
   insuredCount: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '社保代理费' })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    comment: '社保代理费',
+  })
   socialInsuranceAgencyFee: number;
 
-  @Column({ type: 'varchar', length: 100, nullable: true, comment: '社保代理业务类型' })
+  @Column({
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+    comment: '社保代理业务类型',
+  })
   socialInsuranceBusinessType: string;
 
   @Column({ type: 'date', nullable: true, comment: '社保开始日期' })
@@ -101,26 +176,44 @@ export class Expense {
 
   @Column({ type: 'date', nullable: true, comment: '社保结束日期' })
   socialInsuranceEndDate: string;
-  
+
   @Column({ type: 'boolean', default: false, comment: '是否有公积金' })
   hasHousingFund: boolean;
-  
+
   @Column({ type: 'int', nullable: true, comment: '公积金人数' })
   housingFundCount: number;
-  
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '公积金代理费' })
+
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    comment: '公积金代理费',
+  })
   housingFundAgencyFee: number;
-  
+
   @Column({ type: 'date', nullable: true, comment: '公积金开始日期' })
   housingFundStartDate: string;
-  
+
   @Column({ type: 'date', nullable: true, comment: '公积金结束日期' })
   housingFundEndDate: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true, default: '', comment: '赠送代理时长' })
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    default: '',
+    comment: '赠送代理时长',
+  })
   giftAgencyDuration: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '统计局报表费' })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    comment: '统计局报表费',
+  })
   statisticalReportFee: number;
 
   @Column({ type: 'date', nullable: true, comment: '统计开始日期' })
@@ -132,52 +225,89 @@ export class Expense {
   @Column({ type: 'simple-json', nullable: true, comment: '变更业务' })
   changeBusiness: string[];
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '变更收费' })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    comment: '变更收费',
+  })
   changeFee: number;
 
   @Column({ type: 'simple-json', nullable: true, comment: '行政许可' })
   administrativeLicense: string[];
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '行政许可收费' })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    comment: '行政许可收费',
+  })
   administrativeLicenseFee: number;
 
   @Column({ type: 'simple-json', nullable: true, comment: '其他业务(自有)' })
   otherBusiness: string[];
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '其他业务收费(自有)' })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    comment: '其他业务收费(自有)',
+  })
   otherBusinessFee: number;
 
   @Column({ type: 'simple-json', nullable: true, comment: '其他业务(外包)' })
   otherBusinessOutsourcing: string[];
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '其他业务收费(外包)' })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    comment: '其他业务收费(外包)',
+  })
   otherBusinessOutsourcingFee: number;
 
   @Column({ type: 'simple-json', nullable: true, comment: '收费凭证' })
   proofOfCharge: string[];
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '总费用' })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    comment: '总费用',
+  })
   totalFee: number;
 
   @Column({ type: 'varchar', length: 100, nullable: true, comment: '业务员' })
   salesperson: string;
 
-  @Column({ name: 'business_commission', type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '业务提成' })
+  @Column({
+    name: 'business_commission',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    comment: '业务提成',
+  })
   businessCommission: number;
 
   @ApiProperty({ description: '创建时间' })
-  @CreateDateColumn({ 
+  @CreateDateColumn({
     comment: '创建时间',
     type: 'timestamp',
-    precision: 0
+    precision: 0,
   })
   createdAt: Date;
 
   @ApiProperty({ description: '更新时间' })
-  @UpdateDateColumn({ 
+  @UpdateDateColumn({
     comment: '更新时间',
     type: 'timestamp',
-    precision: 0
+    precision: 0,
   })
   updatedAt: Date;
 
@@ -196,7 +326,11 @@ export class Expense {
   @Column({ type: 'date', nullable: true, comment: '审核日期' })
   auditDate: Date;
 
-  @Column({ type: 'int', default: 0, comment: '状态：0-未审核，1-已审核，2-已退回' })
+  @Column({
+    type: 'int',
+    default: 0,
+    comment: '状态：0-未审核，1-已审核，2-已退回',
+  })
   status: number;
 
   @Column({ type: 'text', nullable: true, comment: '审核退回原因' })
@@ -204,7 +338,7 @@ export class Expense {
 
   @Column({ type: 'text', nullable: true, comment: '收据备注' })
   receiptRemarks: string;
-  
+
   @Column({ type: 'text', nullable: true, comment: '内部备注' })
   internalRemarks: string;
-} 
+}

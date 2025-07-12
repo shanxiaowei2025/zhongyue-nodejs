@@ -18,14 +18,11 @@ import { Customer } from '../customer/entities/customer.entity';
       Role,
       Permission,
       Department,
-      Customer
+      Customer,
     ]),
   ],
   controllers: [ExpenseController],
-  providers: [
-    ExpenseService,
-    ExpensePermissionService,
-  ],
+  providers: [ExpenseService, ExpensePermissionService],
   exports: [ExpenseService, ExpensePermissionService],
 })
-export class ExpenseModule {} 
+export class ExpenseModule {}

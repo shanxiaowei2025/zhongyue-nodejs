@@ -1,1 +1,1 @@
-declare module 'cron'; 
+declare module 'cron';

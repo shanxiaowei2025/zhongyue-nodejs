@@ -13,7 +13,7 @@ export class EnterprisePermissionService {
     @InjectRepository(Role)
     private roleRepository: Repository<Role>,
   ) {}
-  
+
   /**
    * 将角色代码(英文)转换为角色名称(中文)
    * @param roleCode 角色代码
@@ -22,21 +22,21 @@ export class EnterprisePermissionService {
   async getRoleNameByCode(roleCode: string): Promise<string> {
     try {
       const role = await this.roleRepository.findOne({
-        where: { code: roleCode }
+        where: { code: roleCode },
       });
-      
+
       if (!role) {
         this.logger.warn(`未找到代码为 ${roleCode} 的角色`);
         return roleCode; // 如果找不到对应角色，返回原代码
       }
-      
+
       return role.name;
     } catch (error) {
       this.logger.error(`获取角色名称失败: ${error.message}`, error.stack);
       return roleCode; // 出错时返回原代码
     }
   }
-  
+
   /**
    * 检查用户是否有权限访问企业服务客户接口
    * @param roleCode 用户角色代码(英文)
@@ -47,28 +47,30 @@ export class EnterprisePermissionService {
       // 先将角色代码转换为角色名称(中文)
       const roleName = await this.getRoleNameByCode(roleCode);
       this.logger.log(`角色代码 ${roleCode} 对应的角色名称: ${roleName}`);
-      
+
       // 检查是否具有创建合同的权限
-      const { permission_value: contractPermission } = await this.permissionService.getPermissionValueByName(
-        roleName,
-        'contract_action_create'
-      );
-      
+      const { permission_value: contractPermission } =
+        await this.permissionService.getPermissionValueByName(
+          roleName,
+          'contract_action_create',
+        );
+
       // 如果有创建合同权限，直接返回true
       if (contractPermission) {
         return true;
       }
-      
+
       // 检查是否具有创建费用的权限
-      const { permission_value: expensePermission } = await this.permissionService.getPermissionValueByName(
-        roleName,
-        'expense_action_create'
-      );
-      
+      const { permission_value: expensePermission } =
+        await this.permissionService.getPermissionValueByName(
+          roleName,
+          'expense_action_create',
+        );
+
       return expensePermission;
     } catch (error) {
       this.logger.error(`检查权限失败: ${error.message}`, error.stack);
       return false;
     }
   }
-} 
+}

@@ -1,5 +1,15 @@
 // 创建客户时的数据结构
-import { IsString, IsOptional, IsNumber, IsDate, IsObject, IsEnum, IsBoolean, IsArray, ValidateNested } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsDate,
+  IsObject,
+  IsEnum,
+  IsBoolean,
+  IsArray,
+  ValidateNested,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { BusinessStatus } from '../enums/customer.enum';
 import { Type } from 'class-transformer';
@@ -64,8 +74,8 @@ export class ActualResponsibleItemDto {
 }
 
 export class CreateCustomerDto {
-  @ApiProperty({ 
-    description: '企业名称（必须唯一，系统会检查是否已存在）'
+  @ApiProperty({
+    description: '企业名称（必须唯一，系统会检查是否已存在）',
   })
   @IsString()
   @IsOptional()
@@ -85,7 +95,7 @@ export class CreateCustomerDto {
   @IsString()
   @IsOptional()
   bookkeepingAccountant?: string;
-  
+
   @ApiPropertyOptional({ description: '开票员' })
   @IsString()
   @IsOptional()
@@ -95,10 +105,10 @@ export class CreateCustomerDto {
   @IsString()
   @IsOptional()
   enterpriseType?: string;
-  
-  @ApiPropertyOptional({ 
+
+  @ApiPropertyOptional({
     description: '统一社会信用代码（必须唯一，系统会检查是否已存在）',
-    example: '91110000100000000A' 
+    example: '91110000100000000A',
   })
   @IsString({ message: '统一社会信用代码必须是字符串' })
   @IsOptional()
@@ -124,7 +134,6 @@ export class CreateCustomerDto {
   @IsOptional()
   taxBureau?: string;
 
-  
   @ApiPropertyOptional({ description: '实际负责人(备注)' })
   @IsString()
   @IsOptional()
@@ -164,7 +173,7 @@ export class CreateCustomerDto {
   @IsString()
   @IsOptional()
   businessPublicationPassword?: string;
-  
+
   @ApiPropertyOptional({ description: '成立日期' })
   @IsDate()
   @IsOptional()
@@ -184,25 +193,26 @@ export class CreateCustomerDto {
   @IsDate()
   @IsOptional()
   capitalContributionDeadline?: Date;
-  
+
   @ApiPropertyOptional({ description: '认缴到期日期2' })
   @IsDate()
   @IsOptional()
   capitalContributionDeadline2?: Date;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: '已实缴金额，数组对象[{姓名, 出资日期, 出资金额, 图片}]',
-    type: [PaidInCapitalItemDto]
+    type: [PaidInCapitalItemDto],
   })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => PaidInCapitalItemDto)
   @IsOptional()
   paidInCapital?: PaidInCapitalItemDto[];
-  
-  @ApiPropertyOptional({ 
-    description: '行政许可，数组对象[{行政许可类型, 行政许可开始日期, 行政许可到期日期, 图片}]',
-    type: [AdministrativeLicenseItemDto]
+
+  @ApiPropertyOptional({
+    description:
+      '行政许可，数组对象[{行政许可类型, 行政许可开始日期, 行政许可到期日期, 图片}]',
+    type: [AdministrativeLicenseItemDto],
   })
   @IsArray()
   @ValidateNested({ each: true })
@@ -219,22 +229,22 @@ export class CreateCustomerDto {
   @IsString()
   @IsOptional()
   bankAccountNumber?: string;
-  
+
   @ApiPropertyOptional({ description: '基本存款账户编号' })
   @IsString()
   @IsOptional()
   basicDepositAccountNumber?: string;
-  
+
   @ApiPropertyOptional({ description: '一般户开户行' })
   @IsString()
   @IsOptional()
   generalAccountBank?: string;
-  
+
   @ApiPropertyOptional({ description: '一般户账号' })
   @IsString()
   @IsOptional()
   generalAccountNumber?: string;
-  
+
   @ApiPropertyOptional({ description: '一般户开户时间' })
   @IsDate()
   @IsOptional()
@@ -264,7 +274,7 @@ export class CreateCustomerDto {
   @IsString()
   @IsOptional()
   legalRepresentativePhone?: string;
-  
+
   @ApiPropertyOptional({ description: '法人电话2' })
   @IsString()
   @IsOptional()
@@ -400,23 +410,23 @@ export class CreateCustomerDto {
   @IsOptional()
   sealStorageNumber?: string;
 
-  @ApiPropertyOptional({ 
-    description: '企业当前的经营状态'
+  @ApiPropertyOptional({
+    description: '企业当前的经营状态',
   })
   @IsString()
   @IsOptional()
   enterpriseStatus?: string;
 
-  @ApiPropertyOptional({ 
-    description: '客户分级'
+  @ApiPropertyOptional({
+    description: '客户分级',
   })
   @IsString()
   @IsOptional()
   customerLevel?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: '当前业务的状态',
-    enum: BusinessStatus 
+    enum: BusinessStatus,
   })
   @IsEnum(BusinessStatus)
   @IsOptional()
@@ -432,9 +442,9 @@ export class CreateCustomerDto {
   @IsOptional()
   remarks?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: '实际负责人，数组对象[{姓名, 电话}]',
-    type: [ActualResponsibleItemDto]
+    type: [ActualResponsibleItemDto],
   })
   @IsArray()
   @ValidateNested({ each: true })

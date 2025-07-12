@@ -1,4 +1,14 @@
-import { IsString, IsNumber, IsOptional, IsArray, IsDateString, IsInt, Min, Max, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsArray,
+  IsDateString,
+  IsInt,
+  Min,
+  Max,
+  IsBoolean,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
@@ -47,12 +57,12 @@ export class CreateExpenseDto {
   // @IsOptional()
   // @IsNumber()
   // sealFee?: number;
-  
+
   @ApiProperty({ description: '备案章费用', required: false })
   @IsOptional()
   @IsNumber()
   recordSealFee?: number;
-  
+
   @ApiProperty({ description: '一般刻章费用', required: false })
   @IsOptional()
   @IsNumber()
@@ -123,18 +133,18 @@ export class CreateExpenseDto {
   @IsArray()
   contractImage?: any[];
 
-  @ApiProperty({ 
-    description: '关联合同', 
-    required: false, 
+  @ApiProperty({
+    description: '关联合同',
+    required: false,
     type: 'array',
     example: [
       { id: 4, contractNumber: '2025052600003' },
-      { id: 5, contractNumber: '2025052600006' }
-    ]
+      { id: 5, contractNumber: '2025052600006' },
+    ],
   })
   @IsOptional()
   @IsArray()
-  relatedContract?: Array<{ id: number, contractNumber: string }>;
+  relatedContract?: Array<{ id: number; contractNumber: string }>;
 
   // @ApiProperty({ description: '开票软件服务商', required: false })
   // @IsOptional()
@@ -191,22 +201,22 @@ export class CreateExpenseDto {
   @IsOptional()
   @IsBoolean()
   hasHousingFund?: boolean;
-  
+
   @ApiProperty({ description: '公积金人数', required: false })
   @IsOptional()
   @IsNumber()
   housingFundCount?: number;
-  
+
   @ApiProperty({ description: '公积金代理费', required: false })
   @IsOptional()
   @IsNumber()
   housingFundAgencyFee?: number;
-  
+
   @ApiProperty({ description: '公积金开始日期', required: false })
   @IsOptional()
   @IsString()
   housingFundStartDate?: string;
-  
+
   @ApiProperty({ description: '公积金结束日期', required: false })
   @IsOptional()
   @IsString()
@@ -315,9 +325,9 @@ export class CreateExpenseDto {
   @IsOptional()
   @IsString()
   receiptRemarks?: string;
-  
+
   @ApiProperty({ description: '内部备注', required: false })
   @IsOptional()
   @IsString()
   internalRemarks?: string;
-} 
+}

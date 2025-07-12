@@ -2,7 +2,12 @@
 // 这些是我们需要用到的工具，就像在工具箱里拿工具一样
 import { NestFactory } from '@nestjs/core'; // 这是创建应用的工厂，就像开厂需要的机器
 import { AppModule } from './app.module'; // 这是我们的主模块，像是产品的设计图
-import { ValidationPipe, Logger, LogLevel, ConsoleLogger } from '@nestjs/common'; // 这些是验证和日志工具
+import {
+  ValidationPipe,
+  Logger,
+  LogLevel,
+  ConsoleLogger,
+} from '@nestjs/common'; // 这些是验证和日志工具
 import { ConfigService } from '@nestjs/config'; // 这是读取配置的工具
 import { TransformInterceptor } from './common/interceptors/transform.interceptor'; // 这是处理返回数据的工具
 import { HttpExceptionFilter } from './common/filters/http-exception.filter'; // 这是处理错误的工具
@@ -26,13 +31,13 @@ async function bootstrap() {
   if (!fs.existsSync(logDir)) {
     fs.mkdirSync(logDir, { recursive: true });
   }
-  
+
   // 创建日志文件流
   const date = new Date();
   const logFileName = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}.log`;
   const logFilePath = path.join(logDir, logFileName);
   const logStream = fs.createWriteStream(logFilePath, { flags: 'a' });
-  
+
   // 自定义日志格式 - 修改为继承ConsoleLogger
   class CustomLogger extends ConsoleLogger {
     log(message: any, context?: string) {
@@ -40,19 +45,19 @@ async function bootstrap() {
       logStream.write(logEntry);
       super.log(message, context);
     }
-    
+
     error(message: any, trace?: string, context?: string) {
       const logEntry = `${new Date().toISOString()} [${context || 'Application'}] [ERROR] ${message}\n${trace ? trace + '\n' : ''}`;
       logStream.write(logEntry);
       super.error(message, trace, context);
     }
-    
+
     warn(message: any, context?: string) {
       const logEntry = `${new Date().toISOString()} [${context || 'Application'}] [WARN] ${message}\n`;
       logStream.write(logEntry);
       super.warn(message, context);
     }
-    
+
     debug(message: any, context?: string) {
       const logEntry = `${new Date().toISOString()} [${context || 'Application'}] [DEBUG] ${message}\n`;
       logStream.write(logEntry);
@@ -74,7 +79,7 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const logLevel = configService.get('app.logger.level') || 'error';
   let activeLogLevels: LogLevel[] = ['error'];
-  
+
   if (logLevel === 'debug') {
     activeLogLevels = logLevels; // 调试模式：显示所有日志
   } else if (logLevel === 'info') {
@@ -85,15 +90,17 @@ async function bootstrap() {
 
   // 创建日志记录器，就像设置一个记录本
   const logger = new Logger('Bootstrap');
-  
+
   // 显式设置NestJS应用的日志级别
-  app.useLogger(activeLogLevels.length === 1 ? 
-    ['error'] : 
-    (activeLogLevels.length === 2 ? 
-      ['error', 'warn'] : 
-      (activeLogLevels.length === 3 ? 
-        ['error', 'warn', 'log'] : 
-        ['error', 'warn', 'log', 'debug'])));
+  app.useLogger(
+    activeLogLevels.length === 1
+      ? ['error']
+      : activeLogLevels.length === 2
+        ? ['error', 'warn']
+        : activeLogLevels.length === 3
+          ? ['error', 'warn', 'log']
+          : ['error', 'warn', 'log', 'debug'],
+  );
 
   // 获取配置服务，用来读取配置文件
   // 设置API前缀，所有接口都会加上 '/api'
@@ -112,19 +119,19 @@ async function bootstrap() {
       },
       skipMissingProperties: true, // 跳过缺失的属性
       disableErrorMessages: false, // 允许错误消息
-      validationError: { 
+      validationError: {
         target: false, // 不返回目标对象
-        value: false   // 不返回值
+        value: false, // 不返回值
       },
       // 自定义错误信息格式
       exceptionFactory: (errors) => {
-        const messages = errors.map(err => {
+        const messages = errors.map((err) => {
           return Object.values(err.constraints).join(', ');
         });
         const error = new Error(messages.join('; '));
-        error['response'] = { 
+        error['response'] = {
           message: messages,
-          statusCode: 400
+          statusCode: 400,
         };
         return error;
       },
@@ -172,13 +179,13 @@ async function bootstrap() {
     const document = SwaggerModule.createDocument(app, config, {
       deepScanRoutes: true, // 确保深度扫描所有路由
       extraModels: [
-        BulkDeleteDto, 
-        SaveSignatureDto, 
-        CreateEmployeeDto, 
-        UpdateEmployeeDto, 
-        QueryEmployeeDto, 
-        Employee
-      ] // 确保包含额外模型
+        BulkDeleteDto,
+        SaveSignatureDto,
+        CreateEmployeeDto,
+        UpdateEmployeeDto,
+        QueryEmployeeDto,
+        Employee,
+      ], // 确保包含额外模型
     });
 
     // 设置文档访问路径为 /api/docs
@@ -190,13 +197,15 @@ async function bootstrap() {
   // 配置文件上传大小限制
   app.use('/api/storage/upload', (req, res, next) => {
     logger.log('文件上传请求拦截');
-    
+
     // 检查query参数中是否有token，如果有就添加到headers中方便守卫获取
     if (req.query && req.query.token) {
-      logger.debug(`在请求query中找到token: ${req.query.token}, 将其添加到headers中`);
+      logger.debug(
+        `在请求query中找到token: ${req.query.token}, 将其添加到headers中`,
+      );
       req.headers['contract-token'] = req.query.token as string;
     }
-    
+
     next();
   });
 
@@ -217,7 +226,7 @@ async function bootstrap() {
   if (configService.get('app.env') !== 'production') {
     logger.log(`API文档地址: http://localhost:${port}/api/docs`);
   }
-  
+
   // 处理程序退出时关闭日志流
   process.on('exit', () => {
     logStream.end();

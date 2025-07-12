@@ -13,7 +13,10 @@ export class QueryExpenseDto {
   @IsString()
   unifiedSocialCreditCode?: string;
 
-  @ApiProperty({ description: '状态：0-未审核，1-已审核，2-已退回', required: false })
+  @ApiProperty({
+    description: '状态：0-未审核，1-已审核，2-已退回',
+    required: false,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()

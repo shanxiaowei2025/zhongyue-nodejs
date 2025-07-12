@@ -6,12 +6,9 @@ import { FinancialSelfInspection } from './entities/financial-self-inspection.en
 import { AuthModule } from '../../auth/auth.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([FinancialSelfInspection]),
-    AuthModule
-  ],
+  imports: [TypeOrmModule.forFeature([FinancialSelfInspection]), AuthModule],
   controllers: [FinancialSelfInspectionController],
   providers: [FinancialSelfInspectionService],
   exports: [FinancialSelfInspectionService],
 })
-export class FinancialSelfInspectionModule {} 
+export class FinancialSelfInspectionModule {}

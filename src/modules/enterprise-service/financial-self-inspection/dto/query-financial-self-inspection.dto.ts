@@ -47,4 +47,4 @@ export class QueryFinancialSelfInspectionDto {
   @IsOptional()
   @Type(() => Number)
   pageSize?: number = 10;
-} 
+}

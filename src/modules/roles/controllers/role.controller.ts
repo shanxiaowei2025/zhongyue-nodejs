@@ -1,7 +1,19 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { RoleService } from '../services/role.service';
-import { CreateRoleDto, UpdateRoleDto, UpdateRolePermissionDto } from '../dto/role.dto';
+import {
+  CreateRoleDto,
+  UpdateRoleDto,
+  UpdateRolePermissionDto,
+} from '../dto/role.dto';
 import { Role } from '../entities/role.entity';
 
 @ApiTags('角色管理')
@@ -43,7 +55,10 @@ export class RoleController {
   @ApiOperation({ summary: '批量更新角色权限' })
   @ApiParam({ name: 'id', description: '角色ID' })
   @ApiResponse({ status: 200, description: '更新成功', type: Role })
-  updatePermissions(@Param('id') id: string, @Body() updateDto: UpdateRolePermissionDto) {
+  updatePermissions(
+    @Param('id') id: string,
+    @Body() updateDto: UpdateRolePermissionDto,
+  ) {
     return this.roleService.updatePermissions(+id, updateDto);
   }
 
@@ -54,4 +69,4 @@ export class RoleController {
   remove(@Param('id') id: string) {
     return this.roleService.remove(+id);
   }
-} 
+}

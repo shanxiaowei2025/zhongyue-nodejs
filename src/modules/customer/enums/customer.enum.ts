@@ -16,9 +16,9 @@
 
 // 正常、已注销、注销中、已流失、等待转出
 export enum BusinessStatus {
-  NORMAL = 'normal', 
+  NORMAL = 'normal',
   LOGGED_OUT = 'logged_out',
   LOGGING_OUT = 'logging_out',
   LOST = 'lost',
-  WAITING_TRANSFER = 'waiting_transfer'
-} 
+  WAITING_TRANSFER = 'waiting_transfer',
+}

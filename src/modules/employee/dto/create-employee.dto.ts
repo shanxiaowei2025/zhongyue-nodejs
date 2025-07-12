@@ -1,4 +1,12 @@
-import { IsString, IsOptional, IsNumber, IsDate, IsObject, IsArray, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsDate,
+  IsObject,
+  IsArray,
+  IsBoolean,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -24,7 +32,12 @@ export class CreateEmployeeDto {
    * 角色
    * @example ['销售专员', '顾问会计']
    */
-  @ApiProperty({ description: '角色', example: ['销售专员', '顾问会计'], required: false, type: [String] })
+  @ApiProperty({
+    description: '角色',
+    example: ['销售专员', '顾问会计'],
+    required: false,
+    type: [String],
+  })
   @IsArray()
   @IsOptional()
   roles?: string[];
@@ -42,7 +55,11 @@ export class CreateEmployeeDto {
    * 提成比率职位
    * @example '高级顾问'
    */
-  @ApiProperty({ description: '提成比率职位', example: '高级顾问', required: false })
+  @ApiProperty({
+    description: '提成比率职位',
+    example: '高级顾问',
+    required: false,
+  })
   @IsString()
   @IsOptional()
   commissionRatePosition?: string;
@@ -78,11 +95,19 @@ export class CreateEmployeeDto {
    * 简历内容
    * @example [{"fileName": "简历.pdf", "fileUrl": "https://example.com/resume.pdf"}]
    */
-  @ApiProperty({ 
-    description: '简历信息', 
-    example: [{"fileName": "简历.pdf", "fileUrl": "https://example.com/resume.pdf", "fileSize": 1024, "fileType": "application/pdf", "uploadTime": "2023-01-01T00:00:00Z"}],
+  @ApiProperty({
+    description: '简历信息',
+    example: [
+      {
+        fileName: '简历.pdf',
+        fileUrl: 'https://example.com/resume.pdf',
+        fileSize: 1024,
+        fileType: 'application/pdf',
+        uploadTime: '2023-01-01T00:00:00Z',
+      },
+    ],
     required: false,
-    isArray: true
+    isArray: true,
   })
   @IsOptional()
   resume?: any;
@@ -101,7 +126,11 @@ export class CreateEmployeeDto {
    * 实际生日
    * @example '农历1990年正月初一'
    */
-  @ApiProperty({ description: '实际生日', example: '农历1990年正月初一', required: false })
+  @ApiProperty({
+    description: '实际生日',
+    example: '农历1990年正月初一',
+    required: false,
+  })
   @IsString()
   @IsOptional()
   actualBirthday?: string;
@@ -110,7 +139,11 @@ export class CreateEmployeeDto {
    * 身份证号
    * @example '110101199001011234'
    */
-  @ApiProperty({ description: '身份证号', example: '110101199001011234', required: false })
+  @ApiProperty({
+    description: '身份证号',
+    example: '110101199001011234',
+    required: false,
+  })
   @IsString()
   @IsOptional()
   idCardNumber?: string;
@@ -119,7 +152,11 @@ export class CreateEmployeeDto {
    * 银行卡号
    * @example '6225888888888888'
    */
-  @ApiProperty({ description: '银行卡号', example: '6225888888888888', required: false })
+  @ApiProperty({
+    description: '银行卡号',
+    example: '6225888888888888',
+    required: false,
+  })
   @IsString()
   @IsOptional()
   bankCardNumber?: string;
@@ -128,7 +165,11 @@ export class CreateEmployeeDto {
    * 入职时间
    * @example '2023-01-01'
    */
-  @ApiProperty({ description: '入职时间', example: '2023-01-01', required: false })
+  @ApiProperty({
+    description: '入职时间',
+    example: '2023-01-01',
+    required: false,
+  })
   @IsDate()
   @Type(() => Date)
   @IsOptional()
@@ -142,4 +183,4 @@ export class CreateEmployeeDto {
   @IsNumber()
   @IsOptional()
   workYears?: number;
-} 
+}

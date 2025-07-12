@@ -14,7 +14,10 @@ export class UpdateExpenseDto extends PartialType(CreateExpenseDto) {
   @IsString()
   auditDate?: string;
 
-  @ApiProperty({ description: '状态：0-未审核，1-已审核，2-已拒绝', required: false })
+  @ApiProperty({
+    description: '状态：0-未审核，1-已审核，2-已拒绝',
+    required: false,
+  })
   @IsOptional()
   @IsNumber()
   status?: number;
@@ -23,4 +26,4 @@ export class UpdateExpenseDto extends PartialType(CreateExpenseDto) {
   @IsOptional()
   @IsString()
   rejectReason?: string;
-} 
+}

@@ -1,4 +1,10 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('sys_financial_self_inspection')
 export class FinancialSelfInspection {
@@ -11,7 +17,12 @@ export class FinancialSelfInspection {
   @Column({ type: 'varchar', length: 255, nullable: true, comment: '企业名称' })
   companyName: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true, comment: '统一社会信用代码' })
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    comment: '统一社会信用代码',
+  })
   unifiedSocialCreditCode: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true, comment: '记账会计' })
@@ -46,4 +57,4 @@ export class FinancialSelfInspection {
 
   @UpdateDateColumn({ comment: '更新时间' })
   updatedAt: Date;
-} 
+}

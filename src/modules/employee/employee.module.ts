@@ -5,11 +5,9 @@ import { EmployeeService } from './employee.service';
 import { Employee } from './entities/employee.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Employee]),
-  ],
+  imports: [TypeOrmModule.forFeature([Employee])],
   controllers: [EmployeeController],
   providers: [EmployeeService],
   exports: [EmployeeService],
 })
-export class EmployeeModule {} 
+export class EmployeeModule {}

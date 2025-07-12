@@ -46,7 +46,7 @@ export class UsersService {
     // 检查身份证号是否已存在（如果提供了身份证号）
     if (createUserDto.idCardNumber) {
       const existingUserWithIdCard = await this.userRepository.findOne({
-        where: { idCardNumber: createUserDto.idCardNumber }
+        where: { idCardNumber: createUserDto.idCardNumber },
       });
       if (existingUserWithIdCard) {
         throw new BadRequestException('身份证号已存在');
@@ -58,7 +58,11 @@ export class UsersService {
 
     // 如果有当前用户，检查权限
     if (currentUser) {
-      this.checkUserRolePermission(currentUser.roles, userRoles, currentUser.id);
+      this.checkUserRolePermission(
+        currentUser.roles,
+        userRoles,
+        currentUser.id,
+      );
     }
 
     const user = this.userRepository.create(createUserDto);
@@ -139,13 +143,16 @@ export class UsersService {
   }
 
   // 搜索用户（支持用户名模糊查询）
-  async searchUsers(query: { username?: string; page?: number; limit?: number }, currentUser: User) {
+  async searchUsers(
+    query: { username?: string; page?: number; limit?: number },
+    currentUser: User,
+  ) {
     const page = query.page || 1;
     const limit = query.limit || 10;
-    
+
     // 创建查询构建器
     let queryBuilder = this.userRepository.createQueryBuilder('user');
-    
+
     // 根据当前用户角色过滤可见用户
     if (currentUser.roles.includes('super_admin')) {
       // 超级管理员可以看到除超级管理员外的所有用户
@@ -161,24 +168,24 @@ export class UsersService {
       // 普通用户不能看到任何用户列表
       throw new ForbiddenException('没有权限查看用户列表');
     }
-    
+
     // 添加用户名模糊查询条件
     if (query.username) {
       queryBuilder = queryBuilder.andWhere('user.username LIKE :username', {
-        username: `%${query.username}%`
+        username: `%${query.username}%`,
       });
     }
-    
+
     // 计算总数
     const total = await queryBuilder.getCount();
-    
+
     // 添加排序和分页
     const users = await queryBuilder
       .orderBy('user.createdAt', 'DESC')
       .skip((page - 1) * limit)
       .take(limit)
       .getMany();
-    
+
     return {
       items: users,
       meta: {
@@ -197,7 +204,12 @@ export class UsersService {
     }
 
     // 检查是否有权限查看该用户
-    this.checkUserRolePermission(currentUser.roles, user.roles, currentUser.id, user.id);
+    this.checkUserRolePermission(
+      currentUser.roles,
+      user.roles,
+      currentUser.id,
+      user.id,
+    );
 
     return user;
   }
@@ -212,16 +224,26 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException(`用户ID ${id} 不存在`);
     }
-    
+
     // 如果要修改角色，需要额外检查
     if (
       updateUserDto.roles &&
       !this.compareArrays(user.roles, updateUserDto.roles)
     ) {
-      this.checkUserRolePermission(currentUser.roles, updateUserDto.roles, currentUser.id, user.id);
+      this.checkUserRolePermission(
+        currentUser.roles,
+        updateUserDto.roles,
+        currentUser.id,
+        user.id,
+      );
     } else {
       // 检查基本权限
-      this.checkUserRolePermission(currentUser.roles, user.roles, currentUser.id, user.id);
+      this.checkUserRolePermission(
+        currentUser.roles,
+        user.roles,
+        currentUser.id,
+        user.id,
+      );
     }
 
     // 如果要更新密码，需要重新加密
@@ -245,10 +267,12 @@ export class UsersService {
     }
 
     // 检查身份证号是否已存在（如果要修改身份证号）
-    if (profileData.idCardNumber !== undefined && 
-        profileData.idCardNumber !== user.idCardNumber) {
+    if (
+      profileData.idCardNumber !== undefined &&
+      profileData.idCardNumber !== user.idCardNumber
+    ) {
       const existingUserWithIdCard = await this.userRepository.findOne({
-        where: { idCardNumber: profileData.idCardNumber }
+        where: { idCardNumber: profileData.idCardNumber },
       });
       if (existingUserWithIdCard) {
         throw new BadRequestException('身份证号已存在');
@@ -279,7 +303,7 @@ export class UsersService {
     // 加密新密码
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
-    
+
     // 更新密码修改时间
     user.passwordUpdatedAt = new Date();
 
@@ -293,10 +317,15 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException(`用户ID ${id} 不存在`);
     }
-    
+
     // 检查权限
-    this.checkUserRolePermission(currentUser.roles, user.roles, currentUser.id, user.id);
-    
+    this.checkUserRolePermission(
+      currentUser.roles,
+      user.roles,
+      currentUser.id,
+      user.id,
+    );
+
     await this.userRepository.remove(user);
   }
 
@@ -318,9 +347,14 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException(`用户ID ${userId} 不存在`);
     }
-    
+
     // 检查权限
-    this.checkUserRolePermission(currentUser.roles, user.roles, currentUser.id, user.id);
+    this.checkUserRolePermission(
+      currentUser.roles,
+      user.roles,
+      currentUser.id,
+      user.id,
+    );
 
     // 验证所有角色是否存在
     for (const roleName of roleNames) {
@@ -348,9 +382,14 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException(`用户ID ${userId} 不存在`);
     }
-    
+
     // 检查权限
-    this.checkUserRolePermission(currentUser.roles, user.roles, currentUser.id, user.id);
+    this.checkUserRolePermission(
+      currentUser.roles,
+      user.roles,
+      currentUser.id,
+      user.id,
+    );
 
     // 通过角色检查
     if (user.roles && user.roles.length > 0) {

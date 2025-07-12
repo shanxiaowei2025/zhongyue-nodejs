@@ -64,7 +64,10 @@ export class QueryEmployeeDto extends PaginationDto {
    * 实际生日
    * @example '农历1990年正月初一'
    */
-  @ApiPropertyOptional({ description: '实际生日', example: '农历1990年正月初一' })
+  @ApiPropertyOptional({
+    description: '实际生日',
+    example: '农历1990年正月初一',
+  })
   @IsString()
   @IsOptional()
   actualBirthday?: string;
@@ -73,8 +76,11 @@ export class QueryEmployeeDto extends PaginationDto {
    * 身份证号
    * @example '110101199001011234'
    */
-  @ApiPropertyOptional({ description: '身份证号', example: '110101199001011234' })
+  @ApiPropertyOptional({
+    description: '身份证号',
+    example: '110101199001011234',
+  })
   @IsString()
   @IsOptional()
   idCardNumber?: string;
-} 
+}

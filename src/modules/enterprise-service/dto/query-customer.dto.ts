@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsNumber, Min, IsPositive } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  Min,
+  IsPositive,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class QueryCustomerDto {
@@ -71,4 +77,4 @@ export class QueryCustomerDto {
   @IsOptional()
   @IsString()
   customerLevel?: string;
-} 
+}

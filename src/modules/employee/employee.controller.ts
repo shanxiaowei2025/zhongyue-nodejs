@@ -25,9 +25,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 export class EmployeeController {
   private readonly logger = new Logger(EmployeeController.name);
 
-  constructor(
-    private readonly employeeService: EmployeeService,
-  ) {}
+  constructor(private readonly employeeService: EmployeeService) {}
 
   @Post()
   @ApiOperation({ summary: '创建员工' })
@@ -58,16 +56,21 @@ export class EmployeeController {
   @ApiParam({ name: 'id', description: '员工ID' })
   @ApiResponse({ status: HttpStatus.OK, description: '更新成功' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: '员工不存在' })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: '参数错误，包括尝试修改身份证号' })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: '参数错误，包括尝试修改身份证号',
+  })
   update(
     @Param('id') id: string,
     @Body() updateEmployeeDto: UpdateEmployeeDto,
   ) {
     if ('idCardNumber' in updateEmployeeDto) {
-      this.logger.warn(`控制器拦截到修改身份证号请求: ${JSON.stringify(updateEmployeeDto)}`);
+      this.logger.warn(
+        `控制器拦截到修改身份证号请求: ${JSON.stringify(updateEmployeeDto)}`,
+      );
       throw new BadRequestException('身份证号码不可以修改');
     }
-    
+
     return this.employeeService.update(+id, updateEmployeeDto);
   }
 
@@ -79,4 +82,4 @@ export class EmployeeController {
   remove(@Param('id') id: string) {
     return this.employeeService.remove(+id);
   }
-} 
+}

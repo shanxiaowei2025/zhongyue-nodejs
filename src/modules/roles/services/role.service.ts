@@ -1,9 +1,17 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Role } from '../entities/role.entity';
 import { Permission } from '../../permissions/entities/permission.entity';
-import { CreateRoleDto, UpdateRoleDto, UpdateRolePermissionDto } from '../dto/role.dto';
+import {
+  CreateRoleDto,
+  UpdateRoleDto,
+  UpdateRolePermissionDto,
+} from '../dto/role.dto';
 import { User } from '../../users/entities/user.entity';
 
 @Injectable()
@@ -18,22 +26,19 @@ export class RoleService {
 
   async create(createRoleDto: CreateRoleDto): Promise<Role> {
     // 检查角色名称和代码是否已存在
-    const existingRole = await this.roleRepository.findOne({ 
-      where: [
-        { name: createRoleDto.name },
-        { code: createRoleDto.code }
-      ]
+    const existingRole = await this.roleRepository.findOne({
+      where: [{ name: createRoleDto.name }, { code: createRoleDto.code }],
     });
-  
+
     if (existingRole) {
       throw new ConflictException('角色名称或代码已存在');
     }
-  
+
     // 使用事务来确保角色和权限的创建是原子操作
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
-  
+
     try {
       // 创建新角色
       const role = this.roleRepository.create({
@@ -42,9 +47,9 @@ export class RoleService {
         status: createRoleDto.status ?? 1,
         remark: createRoleDto.remark,
       });
-  
+
       const savedRole = await queryRunner.manager.save(role);
-  
+
       // 创建所有系统权限对应的记录，设置为false
       try {
         // 获取系统中所有唯一的权限定义
@@ -53,26 +58,26 @@ export class RoleService {
           .select([
             'permission.page_name',
             'permission.permission_name',
-            'permission.description'
+            'permission.description',
           ])
           .groupBy('permission.page_name')
           .addGroupBy('permission.permission_name')
           .addGroupBy('permission.description')
           .getRawMany();
-  
+
         if (existingPermissions.length > 0) {
           // 为新角色创建所有权限记录，默认值为false
-          const permissionsToInsert = existingPermissions.map(perm => 
+          const permissionsToInsert = existingPermissions.map((perm) =>
             this.permissionRepository.create({
               role: savedRole,
               role_name: savedRole.name,
               page_name: perm.permission_page_name,
               permission_name: perm.permission_permission_name,
-              permission_value: false,  // 明确设置为false
-              description: perm.permission_description
-            })
+              permission_value: false, // 明确设置为false
+              description: perm.permission_description,
+            }),
           );
-          
+
           // 批量保存权限
           await queryRunner.manager.save(permissionsToInsert);
         }
@@ -80,9 +85,9 @@ export class RoleService {
         console.error('创建默认权限失败:', error.message);
         // 记录错误但继续流程，不影响角色创建
       }
-  
+
       await queryRunner.commitTransaction();
-      
+
       // 返回包含权限的完整角色
       return this.findOne(savedRole.id);
     } catch (error) {
@@ -96,14 +101,14 @@ export class RoleService {
   async findAll(): Promise<Role[]> {
     return this.roleRepository.find({
       relations: ['permissions'],
-      order: { id: 'DESC' }
+      order: { id: 'DESC' },
     });
   }
 
   async findOne(id: number): Promise<Role> {
     const role = await this.roleRepository.findOne({
       where: { id },
-      relations: ['permissions']
+      relations: ['permissions'],
     });
 
     if (!role) {
@@ -115,34 +120,34 @@ export class RoleService {
 
   async update(id: number, updateRoleDto: UpdateRoleDto): Promise<Role> {
     const role = await this.findOne(id);
-    
+
     // 如果更新角色名称，需要同步更新所有权限记录的角色名称
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
-    
+
     try {
       // 更新角色基本信息
       if (updateRoleDto.name) role.name = updateRoleDto.name;
       if (updateRoleDto.code) role.code = updateRoleDto.code;
-      if (updateRoleDto.status !== undefined) role.status = updateRoleDto.status;
-      if (updateRoleDto.remark !== undefined) role.remark = updateRoleDto.remark;
-      
+      if (updateRoleDto.status !== undefined)
+        role.status = updateRoleDto.status;
+      if (updateRoleDto.remark !== undefined)
+        role.remark = updateRoleDto.remark;
+
       await queryRunner.manager.save(role);
-      
+
       // 如果更新角色名称，同步更新权限记录中的角色名称
       if (updateRoleDto.name) {
         await queryRunner.manager.update(
           Permission,
           { role: { id } },
-          { role_name: updateRoleDto.name }
+          { role_name: updateRoleDto.name },
         );
       }
-      
 
-      
       await queryRunner.commitTransaction();
-      
+
       // 返回更新后的角色
       return this.findOne(id);
     } catch (error) {
@@ -153,31 +158,34 @@ export class RoleService {
     }
   }
 
-  async updatePermissions(id: number, updateDto: UpdateRolePermissionDto): Promise<Role> {
+  async updatePermissions(
+    id: number,
+    updateDto: UpdateRolePermissionDto,
+  ): Promise<Role> {
     const role = await this.findOne(id);
-    
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
-    
+
     try {
       // 批量更新权限
       for (const perm of updateDto.permissions) {
         await queryRunner.manager.update(
           Permission,
-          { 
+          {
             role: { id },
             page_name: perm.page_name,
-            permission_name: perm.permission_name
+            permission_name: perm.permission_name,
           },
-          { 
-            permission_value: perm.permission_value
-          }
+          {
+            permission_value: perm.permission_value,
+          },
         );
       }
-      
+
       await queryRunner.commitTransaction();
-      
+
       // 返回更新后的角色
       return this.findOne(id);
     } catch (error) {
@@ -190,12 +198,12 @@ export class RoleService {
 
   async remove(id: number): Promise<void> {
     const role = await this.findOne(id);
-    
+
     // 使用事务确保数据一致性
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
-    
+
     try {
       // 查找所有包含此角色代码的用户
       const userRepository = this.dataSource.getRepository(User);
@@ -204,16 +212,16 @@ export class RoleService {
         .where(`JSON_CONTAINS(user.roles, :roleCode)`)
         .setParameter('roleCode', JSON.stringify(role.code))
         .getMany();
-      
+
       // 从每个用户的角色列表中移除该角色代码
       for (const user of users) {
-        user.roles = user.roles.filter(roleCode => roleCode !== role.code);
+        user.roles = user.roles.filter((roleCode) => roleCode !== role.code);
         await queryRunner.manager.save(user);
       }
-      
+
       // 删除角色（由于设置了级联删除，权限也会自动删除）
       await queryRunner.manager.remove(role);
-      
+
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -230,10 +238,10 @@ export class RoleService {
     description: string;
   }): Promise<void> {
     const roles = await this.roleRepository.find();
-    
+
     if (roles.length === 0) return;
-    
-    const permissions = roles.map(role => 
+
+    const permissions = roles.map((role) =>
       this.permissionRepository.create({
         role,
         role_name: role.name,
@@ -241,9 +249,9 @@ export class RoleService {
         permission_name: permissionData.permission_name,
         permission_value: false, // 默认不赋予权限
         description: permissionData.description,
-      })
+      }),
     );
-    
+
     await this.permissionRepository.save(permissions);
   }
 
@@ -255,17 +263,17 @@ export class RoleService {
     const count = await this.permissionRepository.count({
       where: {
         page_name: permissionData.page_name,
-        permission_name: permissionData.permission_name
-      }
+        permission_name: permissionData.permission_name,
+      },
     });
-    
+
     return count > 0;
   }
 
   async findByName(name: string): Promise<Role> {
     const role = await this.roleRepository.findOne({
       where: { name },
-      relations: ['permissions']
+      relations: ['permissions'],
     });
 
     if (!role) {
@@ -278,7 +286,7 @@ export class RoleService {
   async findByCode(code: string): Promise<Role> {
     const role = await this.roleRepository.findOne({
       where: { code },
-      relations: ['permissions']
+      relations: ['permissions'],
     });
 
     if (!role) {
@@ -287,4 +295,4 @@ export class RoleService {
 
     return role;
   }
-} 
+}

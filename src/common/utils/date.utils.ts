@@ -34,8 +34,8 @@ export class DateUtils {
         date.getDate(),
         date.getHours(),
         date.getMinutes(),
-        date.getSeconds()
-      )
+        date.getSeconds(),
+      ),
     );
   }
 
