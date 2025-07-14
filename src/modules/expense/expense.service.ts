@@ -1607,6 +1607,8 @@ export class ExpenseService {
       statisticalReportFee: '统计局报表费',
       totalFeeExcludeRecordSeal: '总费用（除备案章费用）',
       businessType: '业务类型',
+      giftAgencyDuration: '赠送代理时长',
+      createdAt: '创建时间'
     };
 
     // 处理导出数据
@@ -1618,6 +1620,12 @@ export class ExpenseService {
       const totalFee = parseFloat(item.totalFee) || 0;
       const recordSealFee = parseFloat(item.recordSealFee) || 0;
       item.totalFeeExcludeRecordSeal = totalFee - recordSealFee;
+      
+      // 格式化创建时间为YYYY-MM-DD
+      if (item.createdAt) {
+        const date = new Date(item.createdAt);
+        item.createdAt = date.toISOString().split('T')[0];
+      }
 
       // 处理字符串数组类型字段
       ['otherBusiness', 'otherBusinessOutsourcing'].forEach((field) => {
