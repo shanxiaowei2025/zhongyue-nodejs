@@ -20,7 +20,8 @@ import { ContractModule } from './modules/contract/contract.module'; // 新增�
 import { CombinedAuthGuard } from './modules/auth/guards/combined-auth.guard';
 import { EnterpriseServiceModule } from './modules/enterprise-service/enterprise-service.module'; // 新增企业服务模块
 import { EmployeeModule } from './modules/employee/employee.module'; // 新增员工模块
-// import { SalaryModule } from './modules/salary/salary.module'; // 新增薪资模块
+import { SalaryModule } from './modules/salary/salary.module'; // 新增薪资模块
+import { AttendanceModule } from './modules/attendance/attendance.module'; // 新增考勤模块
 
 // 导入各种配置文件
 import appConfig from './config/app.config'; // 应用配置
@@ -43,8 +44,20 @@ import { ChangeHistory } from './modules/enterprise-service/change-history/entit
 import { FinancialSelfInspection } from './modules/enterprise-service/financial-self-inspection/entities/financial-self-inspection.entity'; // 财务自检实体
 import { TaxVerification } from './modules/enterprise-service/tax-verification/entities/tax-verification.entity'; // 税务核验实体
 import { Employee } from './modules/employee/entities/employee.entity'; // 新增员工实体
-// import { Salary } from './modules/salary/entities/salary.entity'; // 新增薪资实体
-// import { SalaryModule } from './modules/salary/salary.module'; // 新增薪资模块
+import { Salary } from './modules/salary/entities/salary.entity'; // 新增薪资实体
+import { SubsidySummary } from './modules/salary/subsidy-summary/entities/subsidy-summary.entity'; // 新增补贴合计表实体
+import { FriendCirclePayment } from './modules/salary/friend-circle-payment/entities/friend-circle-payment.entity'; // 新增朋友圈扣款表实体
+import { SocialInsurance } from './modules/salary/social-insurance/entities/social-insurance.entity'; // 新增社保信息表实体
+import { AttendanceDeduction } from './modules/salary/attendance-deduction/entities/attendance-deduction.entity'; // 新增考勤扣款表实体
+import { Attendance } from './modules/attendance/entities/attendance.entity'; // 新增考勤实体
+import { SalaryBaseHistory } from './modules/salary/salary-base-history/entities/salary-base-history.entity'; // 新增工资基数历程表实体
+import { 
+  AgencyCommission, 
+  BusinessSalesCommission, 
+  BusinessConsultantCommission, 
+  BusinessOtherCommission,
+  PerformanceCommission
+} from './modules/salary/commission/entities'; // 新增提成表实体
 
 @Module({
   imports: [
@@ -70,6 +83,11 @@ import { Employee } from './modules/employee/entities/employee.entity'; // 新�
         // JWT配置
         JWT_SECRET: Joi.string().required(), // JWT密钥（必填）
         JWT_EXPIRES_IN: Joi.string().default('1d'), // Token过期时间，默认1天
+
+        // 企业微信API配置
+        CORPID: Joi.string().required(), // 企业微信企业ID
+        CORPSECRETA: Joi.string().required(), // 企业微信应用密钥A
+        CORPSECRETB: Joi.string().required(), // 企业微信应用密钥B
 
         // 其他配置
         LOG_LEVEL: Joi.string()
@@ -103,7 +121,18 @@ import { Employee } from './modules/employee/entities/employee.entity'; // 新�
           FinancialSelfInspection,
           TaxVerification,
           Employee, // 新增员工实体
-          // Salary, // 新增薪资实体
+          Salary, // 新增薪资实体
+          SubsidySummary, // 新增补贴合计表实体
+          FriendCirclePayment, // 新增朋友圈扣款表实体
+          SocialInsurance, // 新增社保信息表实体
+          AttendanceDeduction, // 新增考勤扣款表实体
+          Attendance, // 新增考勤实体
+          SalaryBaseHistory, // 新增工资基数历程表实体
+          AgencyCommission, // 新增代理费提成表实体
+          BusinessSalesCommission, // 新增业务提成表销售实体
+          BusinessConsultantCommission, // 新增业务提成表顾问实体
+          BusinessOtherCommission, // 新增业务提成表其他实体
+          PerformanceCommission, // 新增绩效提成表实体
         ],
         synchronize: configService.get('DB_SYNCHRONIZE', 'false') === 'true',
         logging: configService.get('DB_LOGGING', 'false') === 'true',
@@ -123,7 +152,8 @@ import { Employee } from './modules/employee/entities/employee.entity'; // 新�
     ContractModule, // 合同管理模块：处理合同相关的功能
     EnterpriseServiceModule, // 企业服务模块：处理企业服务相关的功能
     EmployeeModule, // 员工模块：处理员工相关的功能
-    // SalaryModule, // 薪资模块：处理薪资相关的功能
+    SalaryModule, // 薪资模块：处理薪资相关的功能
+    AttendanceModule, // 考勤模块：处理考勤同步相关的功能
   ],
   controllers: [AppController], // 控制器：负责接收请求，像前台接待
   providers: [

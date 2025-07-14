@@ -38,6 +38,10 @@ export class Employee {
   @ApiProperty({ description: '职位', required: false })
   position: string;
 
+  @Column({ length: 50, nullable: true, comment: '职级' })
+  @ApiProperty({ description: '职级', required: false })
+  rank: string;
+
   @Column({ type: 'boolean', default: false, comment: '是否离职' })
   @ApiProperty({ description: '是否离职', default: false })
   isResigned: boolean;

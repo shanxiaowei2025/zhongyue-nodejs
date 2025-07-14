@@ -11,6 +11,7 @@ import {
   HttpStatus,
   Logger,
   BadRequestException,
+  Req,
 } from '@nestjs/common';
 import { EmployeeService } from './employee.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
@@ -18,6 +19,7 @@ import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { QueryEmployeeDto } from './dto/query-employee.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { Request } from 'express';
 
 @ApiTags('员工管理')
 @Controller('employee')
@@ -62,13 +64,14 @@ export class EmployeeController {
   update(
     @Param('id') id: string,
     @Body() updateEmployeeDto: UpdateEmployeeDto,
+    @Req() req: Request,
   ) {
     if ('idCardNumber' in updateEmployeeDto) {
       this.logger.warn(`控制器拦截到修改身份证号请求: ${JSON.stringify(updateEmployeeDto)}`);
       throw new BadRequestException('身份证号码不可以修改');
     }
     
-    return this.employeeService.update(+id, updateEmployeeDto);
+    return this.employeeService.update(+id, updateEmployeeDto, req);
   }
 
   @Delete(':id')
