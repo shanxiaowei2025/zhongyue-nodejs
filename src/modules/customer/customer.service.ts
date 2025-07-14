@@ -139,6 +139,23 @@ export class CustomerService {
     // 创建查询构建器
     const queryBuilder = this.customerRepository.createQueryBuilder('customer');
 
+    // 首先检查用户是否是管理员或超级管理员
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      select: ['id', 'username', 'roles']
+    });
+    
+    const isAdmin = user && user.roles && 
+      (user.roles.includes('admin') || user.roles.includes('super_admin'));
+    
+    // 如果不是管理员，添加状态过滤条件
+    if (!isAdmin) {
+      queryBuilder.andWhere('(customer.businessStatus != :lostStatus OR customer.businessStatus IS NULL)', 
+        { lostStatus: 'lost' });
+      queryBuilder.andWhere('(customer.enterpriseStatus != :cancelledStatus OR customer.enterpriseStatus IS NULL)', 
+        { cancelledStatus: 'cancelled' });
+    }
+
     // 添加基础查询条件
     if (keyword) {
       queryBuilder.andWhere('customer.companyName LIKE :keyword', {
@@ -312,70 +329,71 @@ export class CustomerService {
 
   // 查询单个客户
   async findOne(id: number, userId: number) {
+    // 检查用户是否是管理员或超级管理员
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      select: ['id', 'username', 'roles']
+    });
+    
+    const isAdmin = user && user.roles && 
+      (user.roles.includes('admin') || user.roles.includes('super_admin'));
+
     // 先检查用户是否有权限查看任何客户
     const permissionConditions =
       await this.customerPermissionService.buildCustomerQueryFilter(userId);
 
-    console.log('查询单个客户的权限条件:', permissionConditions);
-
-    // 如果权限条件是 {id: -1}，说明用户没有任何查看权限
     if (
-      !Array.isArray(permissionConditions) && 
+      !Array.isArray(permissionConditions) &&
       permissionConditions.id === -1
     ) {
-      throw new ForbiddenException('您没有查看客户的权限');
+      // 如果权限条件是 {id: -1}，说明用户没有任何查看权限
+      throw new ForbiddenException('您没有权限查看客户信息');
     }
 
-    // 创建查询构建器
-    const queryBuilder = this.customerRepository.createQueryBuilder('customer');
+    // 查询客户信息
+    const customer = await this.customerRepository.findOne({
+      where: { id },
+    });
 
-    // 添加 ID 条件
-    queryBuilder.where('customer.id = :id', { id });
+    if (!customer) {
+      throw new NotFoundException('客户不存在');
+    }
 
-    // 处理权限条件
+    // 如果不是管理员，检查是否可以查看该状态的客户
+    if (!isAdmin && 
+        (customer.businessStatus === 'lost' || customer.enterpriseStatus === 'cancelled')) {
+      throw new ForbiddenException('您没有权限查看该客户信息');
+    }
+
+    // 根据权限过滤条件检查用户是否有权限查看此客户
     if (Array.isArray(permissionConditions)) {
-      // 如果是数组，说明有多个 OR 条件
-      // 检查是否包含空对象（表示无限制条件）
-      if (
-        !permissionConditions.some(
-          (condition) => Object.keys(condition).length === 0,
-        )
-      ) {
-        // 如果没有空对象，添加权限条件
-        const allParams = {};
-        const orConditions = permissionConditions.map((condition, index) => {
-          const conditions = [];
-
-          Object.entries(condition).forEach(([key, value]) => {
-            const paramKey = `perm_${key}_${index}`;
-            allParams[paramKey] = value;
-            conditions.push(`customer.${key} = :${paramKey}`);
-          });
-
-          return conditions.join(' AND ');
-        });
-
-        if (orConditions.length > 0) {
-          queryBuilder.andWhere(`(${orConditions.join(' OR ')})`);
-          queryBuilder.setParameters(allParams);
-          console.log('设置的参数:', allParams);
+      // 如果有多个条件，检查是否至少满足一个
+      const hasPermission = permissionConditions.some((condition) => {
+        // 空对象条件表示无限制，直接通过
+        if (Object.keys(condition).length === 0) {
+          return true;
         }
+
+        // 检查是否满足所有子条件
+        return Object.entries(condition).every(
+          ([key, value]) => customer[key] === value,
+        );
+      });
+
+      if (!hasPermission) {
+        throw new ForbiddenException('您没有权限查看此客户');
       }
     } else if (Object.keys(permissionConditions).length > 0) {
-      // 如果不是数组且不是空对象，添加权限条件
-      Object.entries(permissionConditions).forEach(([key, value]) => {
-        queryBuilder.andWhere(`customer.${key} = :${key}`, { [key]: value });
-      });
+      // 如果只有一个条件对象，检查是否满足所有子条件
+      const hasPermission = Object.entries(permissionConditions).every(
+        ([key, value]) => customer[key] === value,
+      );
+
+      if (!hasPermission) {
+        throw new ForbiddenException('您没有权限查看此客户');
+      }
     }
 
-    console.log('最终SQL:', queryBuilder.getSql());
-    console.log('最终参数:', queryBuilder.getParameters());
-
-    // 执行查询
-    const customer = await queryBuilder.getOne();
-    if (!customer) {
-      throw new NotFoundException(`客户ID ${id} 不存在或您无权查看`);
-    }
     return customer;
   }
 
@@ -508,8 +526,25 @@ export class CustomerService {
         throw new ForbiddenException('您没有权限导出客户数据');
       }
       
+      // 检查用户是否是管理员或超级管理员
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+        select: ['id', 'username', 'roles']
+      });
+      
+      const isAdmin = user && user.roles && 
+        (user.roles.includes('admin') || user.roles.includes('super_admin'));
+      
       // 创建查询构建器
       const queryBuilder = this.customerRepository.createQueryBuilder('customer');
+      
+      // 如果不是管理员，添加状态过滤条件
+      if (!isAdmin) {
+        queryBuilder.andWhere('(customer.businessStatus != :lostStatus OR customer.businessStatus IS NULL)', 
+          { lostStatus: 'lost' });
+        queryBuilder.andWhere('(customer.enterpriseStatus != :cancelledStatus OR customer.enterpriseStatus IS NULL)', 
+          { cancelledStatus: 'cancelled' });
+      }
       
       // 添加过滤条件，参考findAll方法的查询条件部分
       if (query.keyword) {
