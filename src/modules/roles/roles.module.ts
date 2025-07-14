@@ -7,9 +7,14 @@ import { Permission } from '../permissions/entities/permission.entity';
 import { RolePermissionHooks } from './hooks/role-permission.hooks';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Role, Permission])],
+  imports: [
+    TypeOrmModule.forFeature([Role, Permission]),
+  ],
   controllers: [RoleController],
-  providers: [RoleService, RolePermissionHooks],
+  providers: [
+    RoleService, 
+    RolePermissionHooks
+  ],
   exports: [RoleService],
 })
-export class RolesModule {}
+export class RolesModule {} 

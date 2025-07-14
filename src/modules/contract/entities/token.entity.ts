@@ -22,10 +22,10 @@ export class Token {
   @ManyToOne(() => Contract, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'contractId' })
   contract: Contract;
-
+  
   @CreateDateColumn({ comment: '创建时间' })
   createdAt: Date;
-
+  
   @Column({ type: 'datetime', nullable: true, comment: '过期时间' })
   expiredAt: Date;
-}
+} 

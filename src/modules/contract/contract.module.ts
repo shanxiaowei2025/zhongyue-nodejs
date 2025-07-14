@@ -1,6 +1,6 @@
 /**
  * 合同管理模块
- *
+ * 
  * 实现功能：
  * 1. 合同基础CRUD操作
  * 2. 合同签署功能
@@ -39,7 +39,15 @@ import { Expense } from '../expense/entities/expense.entity';
     StorageModule,
   ],
   controllers: [ContractController, ContractTokenController],
-  providers: [ContractService, ContractPermissionService, TokenService],
-  exports: [ContractService, ContractPermissionService, TokenService],
+  providers: [
+    ContractService,
+    ContractPermissionService,
+    TokenService,
+  ],
+  exports: [
+    ContractService,
+    ContractPermissionService,
+    TokenService,
+  ],
 })
-export class ContractModule {}
+export class ContractModule {} 

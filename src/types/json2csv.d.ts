@@ -17,8 +17,5 @@ declare module 'json2csv' {
   }
 
   export function parse<T = any>(data: T[] | T, options?: Options<T>): string;
-  export function parseAsync<T = any>(
-    data: T[] | T,
-    options?: Options<T>,
-  ): Promise<string>;
-}
+  export function parseAsync<T = any>(data: T[] | T, options?: Options<T>): Promise<string>;
+} 

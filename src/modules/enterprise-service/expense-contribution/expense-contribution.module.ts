@@ -10,4 +10,4 @@ import { Expense } from '../../expense/entities/expense.entity';
   providers: [ExpenseContributionService],
   exports: [ExpenseContributionService],
 })
-export class ExpenseContributionModule {}
+export class ExpenseContributionModule {} 

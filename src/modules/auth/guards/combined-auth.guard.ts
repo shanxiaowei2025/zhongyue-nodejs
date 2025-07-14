@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  ExecutionContext,
-  UnauthorizedException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, ExecutionContext, UnauthorizedException, Logger } from '@nestjs/common';
 import { CanActivate } from '@nestjs/common';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { ContractTokenAuthGuard } from './contract-token-auth.guard';
@@ -26,7 +21,7 @@ export class CombinedAuthGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-
+    
     // 如果是公共路由，直接允许访问
     if (isPublic) {
       return true;
@@ -34,8 +29,7 @@ export class CombinedAuthGuard implements CanActivate {
 
     try {
       // 先尝试合同令牌认证
-      const isContractTokenValid =
-        await this.contractTokenAuthGuard.canActivate(context);
+      const isContractTokenValid = await this.contractTokenAuthGuard.canActivate(context);
       if (isContractTokenValid) {
         this.logger.debug('合同令牌认证成功');
         return true;
@@ -59,4 +53,4 @@ export class CombinedAuthGuard implements CanActivate {
       throw new UnauthorizedException('认证过程中发生错误');
     }
   }
-}
+} 

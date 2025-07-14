@@ -1,11 +1,5 @@
 // 查询客户时的参数结构
-import {
-  IsOptional,
-  IsString,
-  IsDate,
-  IsNumber,
-  IsEnum,
-} from 'class-validator';
+import { IsOptional, IsString, IsDate, IsNumber, IsEnum } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { BusinessStatus } from '../enums/customer.enum';
 
@@ -94,7 +88,7 @@ export class QueryCustomerDto {
   @IsOptional()
   @IsString()
   remarks?: string;
-
+  
   @ApiPropertyOptional({ description: '归属地' })
   @IsOptional()
   @IsString()

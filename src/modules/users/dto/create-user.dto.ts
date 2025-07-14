@@ -1,13 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  MinLength,
-  IsBoolean,
-  IsArray,
-  IsNumber,
-} from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, MinLength, IsBoolean, IsArray, IsNumber } from 'class-validator';
 
 export class CreateUserDto {
   @ApiProperty({ description: '用户名', example: '张三' })
@@ -30,29 +22,17 @@ export class CreateUserDto {
   @IsBoolean({ message: '启用状态必须是布尔值' })
   isActive?: boolean;
 
-  @ApiProperty({
-    description: '手机号码',
-    example: '13800138000',
-    required: false,
-  })
+  @ApiProperty({ description: '手机号码', example: '13800138000', required: false })
   @IsOptional()
   @IsString({ message: '手机号必须是字符串' })
   phone?: string;
-
-  @ApiProperty({
-    description: '头像',
-    example: '/uploads/avatar/default.png',
-    required: false,
-  })
+  
+  @ApiProperty({ description: '头像', example: '/uploads/avatar/default.png', required: false })
   @IsOptional()
   @IsString({ message: '头像必须是字符串' })
   avatar?: string;
-
-  @ApiProperty({
-    description: '身份证号',
-    example: '110101199001011234',
-    required: false,
-  })
+  
+  @ApiProperty({ description: '身份证号', example: '110101199001011234', required: false })
   @IsOptional()
   @IsString({ message: '身份证号必须是字符串' })
   idCardNumber?: string;
@@ -61,4 +41,4 @@ export class CreateUserDto {
   @IsOptional()
   @IsArray({ message: '角色必须是数组' })
   roles?: string[];
-}
+} 

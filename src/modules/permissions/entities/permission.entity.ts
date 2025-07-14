@@ -1,13 +1,4 @@
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  ManyToOne,
-  JoinColumn,
-  Unique,
-  BeforeInsert,
-  BeforeUpdate,
-} from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, Unique, BeforeInsert, BeforeUpdate } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Role } from '../../roles/entities/role.entity';
 
@@ -18,7 +9,7 @@ export class Permission {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Role, (role) => role.permissions, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Role, role => role.permissions, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'role_id' })
   role: Role;
 
@@ -35,15 +26,14 @@ export class Permission {
   permission_name: string;
 
   @ApiProperty({ description: '权限值' })
-  @Column({
-    type: 'boolean', // 明确指定类型
-    transformer: {
-      // 自定义转换器
-      to: (value: boolean) => (value ? 1 : 0),
-      from: (value: number) => Boolean(value),
+  @Column({ 
+    type: 'boolean', // 明确指定类型 
+    transformer: { // 自定义转换器
+      to: (value: boolean) => value ? 1 : 0,
+      from: (value: number) => Boolean(value)
     },
-    default: false,
-    comment: '是否拥有该权限',
+    default: false, 
+    comment: '是否拥有该权限' 
   })
   permission_value: boolean;
 
@@ -59,4 +49,4 @@ export class Permission {
       this.role_name = this.role.name;
     }
   }
-}
+} 

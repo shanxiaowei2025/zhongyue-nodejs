@@ -31,4 +31,4 @@ export class ServiceHistory {
 
   @Column({ comment: '更新时间', nullable: true })
   updatedAt: Date;
-}
+} 

@@ -1,13 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import {
-  IsString,
-  IsBoolean,
-  IsNumber,
-  IsOptional,
-  IsArray,
-  ValidateNested,
-} from 'class-validator';
+import { IsString, IsBoolean, IsNumber, IsOptional, IsArray, ValidateNested } from 'class-validator';
 
 // export class CreatePermissionDto {
 //   @ApiProperty({ description: '角色ID' })
@@ -38,9 +31,9 @@ export class UpdatePermissionDto {
 }
 
 // export class BatchCreatePermissionDto {
-//     @ApiProperty({
+//     @ApiProperty({ 
 //       description: '权限记录列表',
-//       type: [CreatePermissionDto]
+//       type: [CreatePermissionDto] 
 //     })
 //     @IsArray()
 //     @ValidateNested({ each: true })
@@ -68,4 +61,4 @@ export class GetPermissionByNameDto {
   @ApiProperty({ description: '权限名称', example: 'customer_action_create' })
   @IsString()
   permission_name: string;
-}
+} 

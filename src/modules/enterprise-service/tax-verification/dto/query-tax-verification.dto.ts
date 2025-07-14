@@ -42,4 +42,4 @@ export class QueryTaxVerificationDto {
   @Type(() => Number)
   @IsOptional()
   pageSize?: number = 10;
-}
+} 

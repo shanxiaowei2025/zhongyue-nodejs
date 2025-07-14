@@ -27,8 +27,11 @@ import { Role } from '../roles/entities/role.entity';
   providers: [
     EnterpriseServiceService,
     EnterprisePermissionService,
-    EnterprisePermissionGuard,
+    EnterprisePermissionGuard
   ],
-  exports: [EnterpriseServiceService, EnterprisePermissionService],
+  exports: [
+    EnterpriseServiceService,
+    EnterprisePermissionService
+  ],
 })
-export class EnterpriseServiceModule {}
+export class EnterpriseServiceModule {} 

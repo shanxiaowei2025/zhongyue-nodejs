@@ -20,11 +20,11 @@ export class ExpenseContributionService {
   ): Promise<ExpenseSummaryDto> {
     // 构建查询条件
     const whereCondition = [];
-
+    
     if (companyName) {
       whereCondition.push({ companyName });
     }
-
+    
     if (unifiedSocialCreditCode) {
       whereCondition.push({ unifiedSocialCreditCode });
     }
@@ -39,14 +39,12 @@ export class ExpenseContributionService {
     // 计算总费用
     const totalAmount = expenses.reduce((sum, expense) => {
       // 确保将totalFee转换为数字类型再进行加法运算
-      const feeAmount = expense.totalFee
-        ? parseFloat(expense.totalFee.toString())
-        : 0;
+      const feeAmount = expense.totalFee ? parseFloat(expense.totalFee.toString()) : 0;
       return sum + feeAmount;
     }, 0);
 
     // 构建返回数据
-    const expenseItems: ExpenseItemDto[] = expenses.map((expense) => ({
+    const expenseItems: ExpenseItemDto[] = expenses.map(expense => ({
       id: expense.id,
       chargeDate: expense.chargeDate,
       receiptNo: expense.receiptNo || '',
@@ -58,4 +56,4 @@ export class ExpenseContributionService {
       totalAmount,
     };
   }
-}
+} 

@@ -60,10 +60,7 @@ export class StorageController {
 
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
-  @ApiOperation({
-    summary: '上传文件',
-    description: '上传文件到MinIO存储，支持JWT认证或合同令牌认证',
-  })
+  @ApiOperation({ summary: '上传文件', description: '上传文件到MinIO存储，支持JWT认证或合同令牌认证' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -75,8 +72,7 @@ export class StorageController {
         },
         token: {
           type: 'string',
-          description:
-            '合同令牌(可选)，如果提供则使用合同令牌认证，否则使用JWT认证',
+          description: '合同令牌(可选)，如果提供则使用合同令牌认证，否则使用JWT认证',
         },
       },
     },
@@ -107,16 +103,14 @@ export class StorageController {
 
     // 优先使用查询参数中的token，其次使用请求体中的token
     const token = queryToken || bodyToken;
-
+    
     // 记录认证信息
     this.logger.log(
-      `接收到文件上传请求: ${file.originalname}, 大小: ${file.size} 字节, 认证方式: ${token ? '合同令牌' : 'JWT认证'}`,
+      `接收到文件上传请求: ${file.originalname}, 大小: ${file.size} 字节, 认证方式: ${token ? '合同令牌' : 'JWT认证'}`
     );
-
+    
     if (token) {
-      this.logger.debug(
-        `使用合同令牌认证，token: ${token.substring(0, 10)}...`,
-      );
+      this.logger.debug(`使用合同令牌认证，token: ${token.substring(0, 10)}...`);
     }
 
     try {
@@ -125,13 +119,11 @@ export class StorageController {
 
       // 获取原始文件名
       const originalName = file.originalname;
-
+      
       // 原始文件名已经包含在上传的文件名中（格式为 "原始文件名_时间戳"）
       // 所以这里直接使用fileName即可
-
-      this.logger.log(
-        `文件上传成功: ${fileName}, URL: ${url}, 原始文件名: ${originalName}`,
-      );
+      
+      this.logger.log(`文件上传成功: ${fileName}, URL: ${url}, 原始文件名: ${originalName}`);
       return {
         fileName, // 返回存储的文件名（原始文件名_时间戳格式）
         url,
@@ -209,7 +201,7 @@ export class StorageController {
       this.logger.log(`接收到获取文件URL请求: ${fileName}`);
       const url = await this.storageService.getFileUrl(fileName);
       this.logger.log(`获取文件URL成功: ${fileName}`);
-
+      
       // 尝试获取文件元数据以检查是否有原始文件名
       let originalFileName = fileName;
       try {
@@ -227,33 +219,26 @@ export class StorageController {
           `获取文件元数据失败，使用默认文件名: ${metaError.message}`,
         );
       }
-
+      
       // 从存储的文件名中提取时间戳和扩展名
       const lastDotIndex = fileName.lastIndexOf('.');
-      const fileNameWithoutExt =
-        lastDotIndex !== -1 ? fileName.substring(0, lastDotIndex) : fileName;
-      const extension =
-        lastDotIndex !== -1 ? fileName.substring(lastDotIndex) : ''; // 包含点号
-
+      const fileNameWithoutExt = lastDotIndex !== -1 ? fileName.substring(0, lastDotIndex) : fileName;
+      const extension = lastDotIndex !== -1 ? fileName.substring(lastDotIndex) : ''; // 包含点号
+      
       // 分离原始文件名部分和时间戳部分
       const lastUnderscoreIndex = fileNameWithoutExt.lastIndexOf('_');
-      const timestamp =
-        lastUnderscoreIndex !== -1
-          ? fileNameWithoutExt.substring(lastUnderscoreIndex + 1)
-          : '';
-
+      const timestamp = lastUnderscoreIndex !== -1 ? fileNameWithoutExt.substring(lastUnderscoreIndex + 1) : '';
+      
       // 从原始文件名(originalFileName)中提取不带扩展名的部分
       const origLastDotIndex = originalFileName.lastIndexOf('.');
-      const origNameWithoutExt =
-        origLastDotIndex !== -1
-          ? originalFileName.substring(0, origLastDotIndex)
-          : originalFileName;
-
+      const origNameWithoutExt = origLastDotIndex !== -1 ? 
+          originalFileName.substring(0, origLastDotIndex) : originalFileName;
+      
       // 构建新的下载文件名格式："原始文件名_时间戳.扩展名"
       const downloadFileName = `${origNameWithoutExt}_${timestamp}${extension}`;
-
+      
       this.logger.debug(`下载文件名: ${downloadFileName}`);
-
+      
       return {
         fileName: downloadFileName,
         url,

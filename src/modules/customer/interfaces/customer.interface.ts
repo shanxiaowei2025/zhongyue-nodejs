@@ -20,4 +20,4 @@ export interface ITaxPerson {
   phone: string;
   idNumber: string;
   taxPassword: string;
-}
+} 

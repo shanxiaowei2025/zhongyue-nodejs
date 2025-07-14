@@ -1,11 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsString,
-  IsOptional,
-  IsDateString,
-  IsNumber,
-  Min,
-} from 'class-validator';
+import { IsString, IsOptional, IsDateString, IsNumber, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class QueryContractDto {
@@ -112,4 +106,4 @@ export class QueryContractDto {
   @IsDateString()
   @IsOptional()
   entrustmentEndDate?: string;
-}
+} 

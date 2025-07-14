@@ -1,10 +1,4 @@
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity('sys_tax_verification')
 export class TaxVerification {
@@ -35,10 +29,10 @@ export class TaxVerification {
   @Column({ comment: '解决方法', type: 'text', nullable: true })
   solution: string;
 
-  @Column({
-    comment: '说明(附件信息)',
-    type: 'simple-json',
-    nullable: true,
+  @Column({ 
+    comment: '说明(附件信息)', 
+    type: 'simple-json', 
+    nullable: true
   })
   attachments: any;
-}
+} 

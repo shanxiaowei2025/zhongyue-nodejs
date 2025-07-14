@@ -59,9 +59,9 @@ export class ExportCustomerDto {
   @Type(() => Date)
   @IsDate()
   endDate?: Date;
-
+  
   @ApiProperty({ description: '归属地', required: false })
   @IsOptional()
   @IsString()
   location?: string;
-}
+} 

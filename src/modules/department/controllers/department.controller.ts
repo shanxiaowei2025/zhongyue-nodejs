@@ -1,28 +1,7 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  Query,
-  HttpCode,
-} from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiParam,
-  ApiQuery,
-} from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, HttpCode } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { DepartmentService } from '../services/department.service';
-import {
-  CreateDepartmentDto,
-  UpdateDepartmentDto,
-  DepartmentTreeNode,
-  DepartmentQueryDto,
-} from '../dto/department.dto';
+import { CreateDepartmentDto, UpdateDepartmentDto, DepartmentTreeNode, DepartmentQueryDto } from '../dto/department.dto';
 import { Department } from '../entities/department.entity';
 import { BulkDeleteDto } from '../dto/department.dto';
 
@@ -47,11 +26,7 @@ export class DepartmentController {
 
   @Get('tree')
   @ApiOperation({ summary: '获取部门树形结构' })
-  @ApiResponse({
-    status: 200,
-    description: '获取成功',
-    type: [DepartmentTreeNode],
-  })
+  @ApiResponse({ status: 200, description: '获取成功', type: [DepartmentTreeNode] })
   getTreeList() {
     return this.departmentService.getTreeList();
   }
@@ -76,10 +51,7 @@ export class DepartmentController {
   @ApiOperation({ summary: '更新部门' })
   @ApiParam({ name: 'id', description: '部门ID' })
   @ApiResponse({ status: 200, description: '更新成功', type: Department })
-  update(
-    @Param('id') id: string,
-    @Body() updateDepartmentDto: UpdateDepartmentDto,
-  ) {
+  update(@Param('id') id: string, @Body() updateDepartmentDto: UpdateDepartmentDto) {
     return this.departmentService.update(+id, updateDepartmentDto);
   }
 
@@ -94,15 +66,15 @@ export class DepartmentController {
   @Post('bulk-delete')
   @HttpCode(200)
   @ApiOperation({ summary: '批量删除部门' })
-  @ApiResponse({
-    status: 200,
+  @ApiResponse({ 
+    status: 200, 
     description: '批量删除结果',
     schema: {
       properties: {
         success: { type: 'number', description: '成功删除的数量' },
-        failed: { type: 'number', description: '删除失败的数量' },
-      },
-    },
+        failed: { type: 'number', description: '删除失败的数量' }
+      }
+    }
   })
   bulkRemove(@Body() bulkDeleteDto: BulkDeleteDto) {
     return this.departmentService.bulkRemove(bulkDeleteDto.ids);

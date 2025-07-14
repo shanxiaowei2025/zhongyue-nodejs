@@ -11,4 +11,4 @@ import { Customer } from '../../customer/entities/customer.entity';
   providers: [TaxVerificationService],
   exports: [TaxVerificationService],
 })
-export class TaxVerificationModule {}
+export class TaxVerificationModule {} 

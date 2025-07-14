@@ -8,27 +8,17 @@ export class QueryUserDto {
   @IsString()
   username?: string;
 
-  @ApiProperty({
-    description: '当前页码',
-    minimum: 1,
-    default: 1,
-    required: false,
-  })
+  @ApiProperty({ description: '当前页码', minimum: 1, default: 1, required: false })
   @IsOptional()
   @IsInt()
   @Min(1)
   @Type(() => Number)
   page?: number = 1;
 
-  @ApiProperty({
-    description: '每页记录数',
-    minimum: 1,
-    default: 10,
-    required: false,
-  })
+  @ApiProperty({ description: '每页记录数', minimum: 1, default: 10, required: false })
   @IsOptional()
   @IsInt()
   @Min(1)
   @Type(() => Number)
   limit?: number = 10;
-}
+} 
