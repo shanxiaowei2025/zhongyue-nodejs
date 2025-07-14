@@ -642,7 +642,9 @@ export class CustomerService {
         unifiedSocialCreditCode: '统一社会信用代码',
         taxBureau: '所属分局',
         enterpriseStatus: '企业状态',
-        customerLevel: '客户分级'
+        customerLevel: '客户分级',
+        sealStorageNumber: '章存放编号',
+        paperArchiveNumber: '纸质资料档案编号'
       };
       
       // 处理导出数据，确保JSON字段正确转换
@@ -1019,96 +1021,66 @@ export class CustomerService {
    * 此方法不进行任何权限检查，只负责执行脚本并返回结果
    */
   async executeUpdateScript(scriptPath: string, filePath: string): Promise<{ stdout: string; stderr: string }> {
-    this.logger.log('开始执行Python批量更新脚本');
     try {
-      // 使用相对命令，让系统在PATH中查找Python
-      this.logger.log('尝试执行Python脚本');
-      
-      // 从配置服务获取数据库连接信息
-      const dbConfig = {
-        DB_HOST: this.configService.get('DB_HOST') || 'host.docker.internal',
-        DB_PORT: this.configService.get('DB_PORT') || '3306',
-        DB_DATABASE: this.configService.get('DB_DATABASE'),
-        DB_USERNAME: this.configService.get('DB_USERNAME'),
-        DB_PASSWORD: this.configService.get('DB_PASSWORD')
+      this.logger.log(`执行更新脚本: ${scriptPath}`);
+      this.logger.log(`输入文件: ${filePath}`);
+
+      // 获取环境变量
+      const env: Record<string, string> = { 
+        ...process.env as Record<string, string>,
+        // 设置环境变量，告知脚本如果记录不存在则创建新记录
+        CREATE_IF_NOT_EXISTS: 'true'
       };
-      
-      this.logger.log(`数据库连接配置: Host=${dbConfig.DB_HOST}, Port=${dbConfig.DB_PORT}, Name=${dbConfig.DB_DATABASE}, User=${dbConfig.DB_USERNAME}`);
-      
-      // 构建环境变量对象，供Python脚本使用
-      const env = { 
-        ...process.env, 
-        ...dbConfig,
-        PYTHONUNBUFFERED: '1' // 确保Python输出不被缓冲
-      };
-      
-      // 验证脚本是否存在
-      if (!fs.existsSync(scriptPath)) {
-        throw new Error(`Python脚本文件不存在: ${scriptPath}`);
+
+      // 获取数据库配置
+      const dbConfig = this.configService.get('database');
+      if (!dbConfig) {
+        throw new Error('数据库配置不存在');
       }
 
-      // 验证输入文件是否存在
-      if (!fs.existsSync(filePath)) {
-        throw new Error(`文件不存在: ${filePath}`);
-      }
+      // 添加数据库连接信息到环境变量
+      env.DB_HOST = dbConfig.host;
+      env.DB_PORT = dbConfig.port.toString();
+      env.DB_DATABASE = dbConfig.database;
+      env.DB_USERNAME = dbConfig.username;
+      env.DB_PASSWORD = dbConfig.password;
 
-      // 打印脚本路径与文件路径
-      this.logger.log(`脚本路径: ${scriptPath}`);
-      this.logger.log(`文件路径: ${filePath}`);
-      this.logger.log(`环境变量DB_HOST: ${env.DB_HOST}`);
-      this.logger.log(`环境变量DB_PORT: ${env.DB_PORT}`);
-      this.logger.log(`环境变量DB_DATABASE: ${env.DB_DATABASE}`);
-      this.logger.log(`环境变量DB_USERNAME: ${env.DB_USERNAME}`);
-      this.logger.log(`环境变量DB_PASSWORD长度: ${env.DB_PASSWORD ? env.DB_PASSWORD.length : 0}`);
-
-      // 使用spawn代替exec，可以更好地处理输出
-      const { spawn } = require('child_process');
-      
+      // 执行 Python 脚本
       return new Promise((resolve, reject) => {
-        // 使用spawn执行Python脚本
-        const pythonProcess = spawn('python3', [scriptPath, '--file', filePath], { 
-          env,
-          shell: true // 在shell中执行，可能有助于解决一些路径问题
-        });
+        // 构建Python命令
+        const pythonCommand = process.platform === 'win32' ? 'python' : 'python3';
         
-        let stdout = '';
-        let stderr = '';
+        // 记录执行的命令（不含密码）
+        this.logger.log(`执行命令: ${pythonCommand} ${scriptPath} ${filePath}`);
         
-        // 收集标准输出
-        pythonProcess.stdout.on('data', (data) => {
-          const output = data.toString();
-          stdout += output;
-          this.logger.debug(`Python输出: ${output}`);
-        });
-        
-        // 收集错误输出
-        pythonProcess.stderr.on('data', (data) => {
-          const error = data.toString();
-          stderr += error;
-          this.logger.error(`Python错误: ${error}`);
-        });
-        
-        // 处理完成事件
-        pythonProcess.on('close', (code) => {
-          this.logger.log(`Python进程退出，退出码: ${code}`);
-          
-          if (code === 0) {
-            resolve({ stdout, stderr });
-          } else {
-            if (stderr) {
-              this.logger.error(`Python脚本执行失败，错误信息: ${stderr}`);
+        // 启动Python进程
+        const pythonProcess = exec(
+          `${pythonCommand} "${scriptPath}" --file "${filePath}"`,
+          { env },
+          (error, stdout, stderr) => {
+            if (error === null || error.code === 0) {
+              this.logger.log('Python脚本执行成功');
+              resolve({ stdout, stderr });
+            } else {
+              this.logger.error(`Python脚本执行失败: ${error.message}`);
+              if (stderr) {
+                this.logger.error(`Python错误输出: ${stderr}`);
+              }
+              if (stdout) {
+                this.logger.log(`Python标准输出: ${stdout}`);
+              }
+              reject(new Error(`Python脚本执行失败，退出码: ${error.code}\n${stderr}`));
             }
-            if (stdout) {
-              this.logger.log(`Python脚本标准输出: ${stdout}`);
-            }
-            reject(new Error(`Python脚本执行失败，退出码: ${code}\n${stderr}`));
           }
-        });
+        );
         
-        // 处理错误事件
-        pythonProcess.on('error', (err) => {
-          this.logger.error(`启动Python进程失败: ${err.message}`);
-          reject(err);
+        // 处理进程退出
+        pythonProcess.on('exit', (code) => {
+          if (code !== 0) {
+            this.logger.error(`Python进程非正常退出，退出码: ${code}`);
+            // stderr和stdout在这里的作用域不可访问，因为它们在回调函数中
+            // 但是Python进程退出会在回调中处理，所以这里不需要重复处理
+          }
         });
       });
     } catch (error) {
@@ -1122,6 +1094,7 @@ export class CustomerService {
     success: boolean; 
     message: string; 
     count?: number; 
+    createdCount?: number; // 新增返回值：创建的记录数量
     failedRecords?: Array<{
       row: number;
       companyName: string;
@@ -1184,21 +1157,38 @@ export class CustomerService {
       let updateResult: any = null;
       try {
         // 查找并解析更新结果JSON
-        const updateResultMatch = stdout.match(/UPDATE_RESULT_JSON: (\{.*\})/);
+        const updateResultMatch = stdout.match(/UPDATE_RESULT_JSON: (\{.*\})/s); // 添加's'标志使.匹配换行符
         if (updateResultMatch && updateResultMatch[1]) {
-          updateResult = JSON.parse(updateResultMatch[1]);
-          this.logger.log(`成功解析更新结果: ${JSON.stringify(updateResult)}`);
+          // 尝试解析更新结果JSON
+          try {
+            updateResult = JSON.parse(updateResultMatch[1]);
+            this.logger.log(`成功解析更新结果: ${JSON.stringify(updateResult)}`);
+          } catch (parseError) {
+            // 捕获JSON解析错误，记录具体错误信息
+            this.logger.error(`解析更新结果JSON失败: ${parseError.message}`);
+            this.logger.error(`问题JSON字符串: ${updateResultMatch[1]}`);
+            // 不抛出错误，继续尝试其他解析方法
+          }
+        } else {
+          this.logger.warn(`在输出中未找到UPDATE_RESULT_JSON格式的结果`);
         }
       } catch (error) {
-        this.logger.error(`解析更新结果JSON失败: ${error.message}`);
+        this.logger.error(`匹配更新结果JSON失败: ${error.message}`);
       }
 
       // 如果找到了解析结果，使用它
       if (updateResult) {
-        const { success, updated_count, failed_count, failed_records, error_message } = updateResult;
+        const { 
+          success, 
+          updated_count, 
+          created_count, // 新增字段：创建的记录数量
+          failed_count, 
+          failed_records, 
+          error_message 
+        } = updateResult;
         
         // 记录更新结果
-        this.logger.log(`更新结果: 成功=${success}, 更新=${updated_count}, 失败=${failed_count}`);
+        this.logger.log(`更新结果: 成功=${success}, 更新=${updated_count}, 创建=${created_count}, 失败=${failed_count}`);
         
         // 检查是否所有失败记录都是因为重复
         const allDuplicates = failed_records && failed_records.length > 0 && 
@@ -1210,6 +1200,9 @@ export class CustomerService {
         
         if (success) {
           message = `成功更新${updated_count}条客户记录`;
+          if (created_count > 0) {
+            message += `，新创建${created_count}条客户记录`;
+          }
           if (failed_count > 0) {
             message += `，${failed_count}条记录更新失败`;
           }
@@ -1229,6 +1222,7 @@ export class CustomerService {
           success: resultSuccess,
           message,
           count: updated_count > 0 ? updated_count : undefined,
+          createdCount: created_count > 0 ? created_count : undefined, // 新增返回值
           failedRecords: failed_records && failed_records.length > 0 ? failed_records : undefined
         };
       }
@@ -1236,19 +1230,38 @@ export class CustomerService {
       // 尝试从错误信息中解析JSON
       try {
         // 查找并解析错误信息JSON
-        const errorInfoMatch = stdout.match(/ERROR_INFO_JSON: (\{.*\})/);
+        const errorInfoMatch = stdout.match(/ERROR_INFO_JSON: (\{.*\})/s); // 添加's'标志使.匹配换行符
         if (errorInfoMatch && errorInfoMatch[1]) {
-          const errorInfo = JSON.parse(errorInfoMatch[1]);
-          this.logger.log(`解析到错误信息: ${JSON.stringify(errorInfo)}`);
-          
-          return {
-            success: false,
-            message: errorInfo.error_message || '更新失败',
-            failedRecords: errorInfo.failed_records
-          };
+          try {
+            const errorInfo = JSON.parse(errorInfoMatch[1]);
+            this.logger.log(`解析到错误信息: ${JSON.stringify(errorInfo)}`);
+            
+            return {
+              success: false,
+              message: errorInfo.error_message || '更新失败',
+              failedRecords: errorInfo.failed_records
+            };
+          } catch (parseError) {
+            this.logger.error(`解析错误信息JSON失败: ${parseError.message}`);
+            this.logger.error(`问题JSON字符串: ${errorInfoMatch[1]}`);
+            // 继续尝试其他解析方法
+          }
         }
       } catch (error) {
-        this.logger.error(`解析错误信息JSON失败: ${error.message}`);
+        this.logger.error(`匹配错误信息JSON失败: ${error.message}`);
+      }
+      
+      // 检查输出中是否包含未找到记录的信息
+      const notFoundMatch = stdout.match(/有 (\d+) 条记录在数据库中未找到/);
+      if (notFoundMatch && parseInt(notFoundMatch[1]) > 0) {
+        const notFoundCount = parseInt(notFoundMatch[1]);
+        this.logger.warn(`检测到${notFoundCount}条记录在数据库中未找到`);
+        
+        // 如果有未找到的记录但JSON解析失败，构造一个基本的错误消息
+        return {
+          success: false,
+          message: `更新失败：有${notFoundCount}条记录的统一社会信用代码在数据库中不存在`,
+        };
       }
 
       // 如果没有找到JSON结果，尝试使用老方法解析
@@ -1266,6 +1279,26 @@ export class CustomerService {
           success: true, // 重复数据视为业务上的"成功"
           message: `所有记录(${duplicateCount}条)均为重复数据，无需更新`,
         };
+      }
+
+      // 在所有解析方法都失败的情况下，检查是否有成功更新的记录
+      if (stdout.includes("成功更新") && !updateCount) {
+        // 尝试从Python输出中找到更新数量
+        const outputLines = stdout.split('\n');
+        for (const line of outputLines) {
+          if (line.includes("成功更新") && line.includes("条记录")) {
+            const match = line.match(/(\d+)/);
+            if (match) {
+              const extractedCount = parseInt(match[1], 10);
+              this.logger.log(`从输出中提取到更新数量: ${extractedCount}`);
+              return {
+                success: true,
+                message: `成功更新${extractedCount}条客户记录`,
+                count: extractedCount
+              };
+            }
+          }
+        }
       }
 
       this.logger.log(`更新完成，共更新${count}条记录`);

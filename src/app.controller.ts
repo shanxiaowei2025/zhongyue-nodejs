@@ -1,6 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AppService } from './app.service';
+import { Public } from './modules/auth/decorators/public.decorator';
 
 @ApiTags('系统')
 @Controller()
@@ -8,6 +9,7 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
+  @Public()
   @ApiOperation({ summary: '欢迎信息', description: '返回系统欢迎信息' })
   @ApiResponse({ status: 200, description: '成功返回欢迎信息' })
   getHello(): string {
@@ -15,6 +17,7 @@ export class AppController {
   }
   
   @Get('health')
+  @Public()
   @ApiOperation({ summary: '健康检查', description: '检查系统是否正常运行' })
   @ApiResponse({ 
     status: 200, 

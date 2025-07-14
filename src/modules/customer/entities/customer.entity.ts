@@ -254,7 +254,11 @@ export class Customer {
     comment: '企业当前的经营状态' 
   })
   enterpriseStatus: string;
-
+  // normal: '工商正常',
+  // abnormal: '工商异常',
+  // cancelled: '已注销',
+  // revoked: '已吊销',
+  
   @Column({ 
     nullable: true,
     type: 'varchar',
