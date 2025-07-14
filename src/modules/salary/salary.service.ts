@@ -50,7 +50,6 @@ export class SalaryService {
     const totalSubsidy = Number(result.totalSubsidy || 0);
     const seniority = Number(result.seniority || 0);
     const agencyFeeCommission = Number(result.agencyFeeCommission || 0);
-    const performanceCommission = Number(result.performanceCommission || 0);
     const businessCommission = Number(result.businessCommission || 0);
     const otherDeductions = Number(result.otherDeductions || 0);
     const personalInsuranceTotal = Number(result.personalInsuranceTotal || 0);
@@ -59,6 +58,21 @@ export class SalaryService {
     const other = Number(result.other || 0);
     const bankCardOrWechat = Number(result.bankCardOrWechat || 0);
     const cashPaid = Number(result.cashPaid || 0);
+    
+    // 计算绩效扣除总额
+    let performanceDeductionTotal = 0;
+    if (result.performanceDeductions && Array.isArray(result.performanceDeductions)) {
+      performanceDeductionTotal = result.performanceDeductions.reduce((sum, deduction) => sum + Number(deduction || 0), 0);
+      
+      // 如果绩效扣除总额大于1，则重置为1
+      if (performanceDeductionTotal > 1) {
+        performanceDeductionTotal = 1;
+      }
+    }
+    
+    // 计算绩效佣金 = 原始绩效佣金 * (1 - 绩效扣除总额)
+    const originalPerformanceCommission = Number(result.performanceCommission || 0);
+    result.performanceCommission = originalPerformanceCommission * (1 - performanceDeductionTotal);
     
     // 计算应发基本工资
     const basicSalaryPayable = baseSalary + temporaryIncrease - attendanceDeduction;
@@ -70,7 +84,7 @@ export class SalaryService {
       totalSubsidy + 
       seniority + 
       agencyFeeCommission + 
-      performanceCommission + 
+      result.performanceCommission + 
       businessCommission - 
       otherDeductions - 
       personalInsuranceTotal - 

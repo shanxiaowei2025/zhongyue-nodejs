@@ -15,6 +15,71 @@ export class SalaryAutoUpdateService {
     private dataSource: DataSource
   ) {}
 
+  // 导入SalaryService以使用其calculateDerivedFields方法
+  private calculateDerivedFields<T extends Partial<Salary>>(salaryData: T): T {
+    const result = { ...salaryData };
+    
+    // 基本字段值处理，确保是数字
+    const baseSalary = Number(result.baseSalary || 0);
+    const temporaryIncrease = Number(result.temporaryIncrease || 0);
+    const attendanceDeduction = Number(result.attendanceDeduction || 0);
+    const fullAttendance = Number(result.fullAttendance || 0);
+    const totalSubsidy = Number(result.totalSubsidy || 0);
+    const seniority = Number(result.seniority || 0);
+    const agencyFeeCommission = Number(result.agencyFeeCommission || 0);
+    const businessCommission = Number(result.businessCommission || 0);
+    const otherDeductions = Number(result.otherDeductions || 0);
+    const personalInsuranceTotal = Number(result.personalInsuranceTotal || 0);
+    const depositDeduction = Number(result.depositDeduction || 0);
+    const personalIncomeTax = Number(result.personalIncomeTax || 0);
+    const other = Number(result.other || 0);
+    const bankCardOrWechat = Number(result.bankCardOrWechat || 0);
+    const cashPaid = Number(result.cashPaid || 0);
+    
+    // 计算绩效扣除总额
+    let performanceDeductionTotal = 0;
+    if (result.performanceDeductions && Array.isArray(result.performanceDeductions)) {
+      performanceDeductionTotal = result.performanceDeductions.reduce((sum, deduction) => sum + Number(deduction || 0), 0);
+      
+      // 如果绩效扣除总额大于1，则重置为1
+      if (performanceDeductionTotal > 1) {
+        performanceDeductionTotal = 1;
+      }
+    }
+    
+    // 计算绩效佣金 = 原始绩效佣金 * (1 - 绩效扣除总额)
+    const originalPerformanceCommission = Number(result.performanceCommission || 0);
+    result.performanceCommission = originalPerformanceCommission * (1 - performanceDeductionTotal);
+    
+    // 计算应发基本工资
+    const basicSalaryPayable = baseSalary + temporaryIncrease - attendanceDeduction;
+    result.basicSalaryPayable = basicSalaryPayable;
+    
+    // 计算应发合计
+    const totalPayable = basicSalaryPayable + 
+      fullAttendance + 
+      totalSubsidy + 
+      seniority + 
+      agencyFeeCommission + 
+      result.performanceCommission + 
+      businessCommission - 
+      otherDeductions - 
+      personalInsuranceTotal - 
+      depositDeduction - 
+      personalIncomeTax - 
+      other;
+    result.totalPayable = totalPayable;
+    
+    // 计算对公金额
+    const corporatePayment = totalPayable - bankCardOrWechat - cashPaid;
+    result.corporatePayment = corporatePayment;
+    
+    // 计算个税申报
+    result.taxDeclaration = corporatePayment + personalInsuranceTotal;
+    
+    return result;
+  }
+
   /**
    * 每月13号凌晨2点自动执行
    */
@@ -447,6 +512,33 @@ export class SalaryAutoUpdateService {
           lastDayOfLastMonth
         );
 
+        // 查询员工的绩效信息
+        let performanceCommission = 0;
+        if (employee.rank && employee.position === '记账会计') {
+          // 从rank中解析P级和档级
+          const rankMatch = employee.rank.match(/^(P\d+)-(\d+)$/);
+          if (rankMatch) {
+            const pLevel = rankMatch[1]; // 例如 P3
+            const gradeLevel = rankMatch[2]; // 例如 2
+            
+            try {
+              // 查询匹配的绩效提成记录
+              const performanceCommissionResults = await this.dataSource.query(`
+                SELECT * FROM sys_performance_commission 
+                WHERE pLevel = ? AND gradeLevel = ? 
+                LIMIT 1
+              `, [pLevel, gradeLevel]);
+              
+              if (performanceCommissionResults.length > 0) {
+                performanceCommission = Number(performanceCommissionResults[0].performance || 0);
+                this.logger.debug(`员工 ${employee.name} 匹配到绩效: ${performanceCommission}`);
+              }
+            } catch (error) {
+              this.logger.error(`查询员工 ${employee.name} 的绩效提成记录出错: ${error.message}`, error.stack);
+            }
+          }
+        }
+
         // 准备薪资数据
         const salaryData: any = {
           name: employee.name,
@@ -463,7 +555,8 @@ export class SalaryAutoUpdateService {
           totalSubsidy: subsidySummary?.totalSubsidy || 0,
           seniority: (employee.workYears || 0) * 100,
           agencyFeeCommission: agencyFeeCommission,
-          performanceCommission: 0, // 暂时填充固定值
+          performanceCommission: performanceCommission,
+          performanceDeductions: existingSalary?.performanceDeductions || [],
           businessCommission: businessCommissionResult.businessCommission,
           otherDeductions: friendCirclePayment?.payment || 0,
           personalMedical: socialInsurance?.personalMedical || 0,
@@ -479,52 +572,19 @@ export class SalaryAutoUpdateService {
           bankCardOrWechat: existingSalary?.bankCardOrWechat || 0,
           cashPaid: existingSalary?.cashPaid || 0,
           yearMonth: new Date(firstDayOfLastMonth),
-          basicSalaryPayable: 0, // 初始化为0，后面会计算
-          totalPayable: 0, // 初始化为0，后面会计算
-          corporatePayment: 0, // 初始化为0，后面会计算
-          taxDeclaration: 0 // 初始化为0，后面会计算
         };
-
-        // 计算应发基本工资
-        salaryData.basicSalaryPayable = 
-          Number(salaryData.baseSalary) + 
-          Number(salaryData.temporaryIncrease) - 
-          Number(salaryData.attendanceDeduction);
         
-        // 计算应发合计
-        salaryData.totalPayable = 
-          Number(salaryData.basicSalaryPayable) + 
-          Number(salaryData.fullAttendance) + 
-          Number(salaryData.totalSubsidy) + 
-          Number(salaryData.seniority) + 
-          Number(salaryData.agencyFeeCommission) + 
-          Number(salaryData.performanceCommission) + 
-          Number(salaryData.businessCommission) - 
-          Number(salaryData.otherDeductions) - 
-          Number(salaryData.personalInsuranceTotal) - 
-          Number(salaryData.depositDeduction) - 
-          Number(salaryData.personalIncomeTax) - 
-          Number(salaryData.other);
-
-        // 计算对公金额
-        salaryData.corporatePayment = 
-          Number(salaryData.totalPayable) - 
-          Number(salaryData.bankCardOrWechat) - 
-          Number(salaryData.cashPaid);
-        
-        // 计算个税申报
-        salaryData.taxDeclaration = 
-          Number(salaryData.corporatePayment) + 
-          Number(salaryData.personalInsuranceTotal);
+        // 使用calculateDerivedFields方法计算所有衍生字段，包括绩效佣金
+        const processedSalaryData = this.calculateDerivedFields(salaryData);
 
         if (existingSalary) {
           // 更新现有记录
-          await this.salaryRepository.update(existingSalary.id, salaryData);
+          await this.salaryRepository.update(existingSalary.id, processedSalaryData);
           updated++;
           this.logger.debug(`更新员工 ${employee.name} 的薪资记录`);
         } else {
           // 创建新记录
-          await this.salaryRepository.save(salaryData);
+          await this.salaryRepository.save(processedSalaryData);
           created++;
           this.logger.debug(`创建员工 ${employee.name} 的薪资记录`);
         }

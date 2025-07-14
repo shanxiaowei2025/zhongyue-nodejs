@@ -44,6 +44,9 @@ export class Salary {
   @Column({ comment: '绩效提成', type: 'decimal', precision: 10, scale: 2, default: 0 })
   performanceCommission: number;
 
+  @Column({ comment: '绩效扣除', type: 'simple-json', nullable: true })
+  performanceDeductions: number[];
+
   @Column({ comment: '业务提成', type: 'decimal', precision: 10, scale: 2, default: 0 })
   businessCommission: number;
 

@@ -53,6 +53,9 @@ export class CreateSalaryDto {
   @IsOptional()
   performanceCommission: number;
 
+  @IsOptional()
+  performanceDeductions: number[];
+
   @IsNumber()
   @IsOptional()
   businessCommission: number;

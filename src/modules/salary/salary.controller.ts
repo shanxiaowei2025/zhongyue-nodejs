@@ -362,7 +362,7 @@ export class SalaryController {
       return this.salaryAutoUpdateService.manualGenerateSalaries(month);
     } catch (error) {
       throw new HttpException(
-        error.message || '自动生成薪资数据失败',
+        error.message || '手动生成薪资失败',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
