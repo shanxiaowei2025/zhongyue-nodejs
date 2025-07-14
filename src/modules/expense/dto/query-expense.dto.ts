@@ -82,6 +82,16 @@ export class QueryExpenseDto {
   @IsString()
   payee?: string;
 
+  @ApiProperty({ description: '创建开始日期（筛选创建时间）', required: false, example: '2023-01-01' })
+  @IsOptional()
+  @IsDateString()
+  startDate?: string;
+
+  @ApiProperty({ description: '创建结束日期（筛选创建时间）', required: false, example: '2023-12-31' })
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
+
   // 保留原有的分页参数
   @ApiProperty({ description: '页码', required: false, default: 1 })
   @IsOptional()

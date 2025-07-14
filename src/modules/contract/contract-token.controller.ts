@@ -29,7 +29,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import axios from 'axios';
-import * as sharp from 'sharp';
+import sharp from 'sharp';
 
 @ApiTags('合同令牌')
 @Controller('contract-token')

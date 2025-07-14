@@ -190,7 +190,7 @@ export class ExpenseService {
 
     const expense = this.expenseRepository.create({
       ...createExpenseDto,
-      salesperson: username,
+      // 删除自动设置 salesperson 的代码
     });
 
     // 如果有收费日期，则生成收据编号

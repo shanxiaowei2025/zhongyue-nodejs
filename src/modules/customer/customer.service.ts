@@ -96,9 +96,6 @@ export class CustomerService {
     // 创建客户实体
     const customer = this.customerRepository.create(createCustomerDto);
 
-    // 无论什么角色，submitter字段都设置为当前用户名
-    customer.submitter = user.username;
-
     // 保存客户信息
     const savedCustomer = await this.customerRepository.save(customer);
     
@@ -459,9 +456,6 @@ export class CustomerService {
     if (!user) {
       throw new ForbiddenException('用户不存在');
     }
-
-    // 更新submitter字段为当前用户
-    updateCustomerDto.submitter = user.username;
 
     // 检查关键字段是否有变化，以决定是否需要创建服务历程记录
     const needCreateServiceHistory = 
