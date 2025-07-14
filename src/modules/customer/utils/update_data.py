@@ -287,13 +287,8 @@ def update_excel_data(file_path):
             
             debug_print(f"数据库中找到 {len(existing_codes_map)} 个匹配的统一社会信用代码记录")
             
-            # 检查环境变量，如果不存在的记录是否创建新客户
-            create_if_not_exists = os.environ.get('CREATE_IF_NOT_EXISTS', '').lower() == 'true'
-            debug_print(f"如果记录不存在则创建新客户: {create_if_not_exists}")
-
             # 筛选出存在和不存在的记录
             records_to_update = []
-            records_to_create = []
             
             if not db_data.empty:
                 for index, row in db_data.iterrows():
@@ -305,24 +300,17 @@ def update_excel_data(file_path):
                         row_dict['id'] = existing_codes_map[code]
                         records_to_update.append(row_dict)
                     else:
-                        # 如果启用了创建新记录功能
-                        if create_if_not_exists:
-                            # 将不存在的记录标记为需要创建
-                            records_to_create.append(row.to_dict())
-                        else:
-                            not_found_records.append({
-                                'index': index,
-                                'row': index + 2,  # 文件行号从1开始，且有标题行
-                                'companyName': row.get('companyName', '未知企业'),
-                                'unifiedSocialCreditCode': code,
-                                'reason': '统一社会信用代码在数据库中不存在'
-                            })
+                        not_found_records.append({
+                            'index': index,
+                            'row': index + 2,  # 文件行号从1开始，且有标题行
+                            'companyName': row.get('companyName', '未知企业'),
+                            'unifiedSocialCreditCode': code,
+                            'reason': '统一社会信用代码在数据库中不存在'
+                        })
             
             # 输出待更新和未找到的记录信息
             print(f"找到 {len(records_to_update)} 条可更新记录")
             print(f"有 {len(not_found_records)} 条记录在数据库中未找到")
-            if create_if_not_exists:
-                print(f"将为 {len(records_to_create)} 条记录创建新客户")
             
             # 所有错误记录
             failed_records = validation_errors + not_found_records
@@ -331,8 +319,7 @@ def update_excel_data(file_path):
             success = True
             error_message = ""
             updated_count = 0
-            created_count = 0
-
+            
             if not records_to_update:
                 print("没有可更新的记录")
             else:
@@ -437,127 +424,12 @@ def update_excel_data(file_path):
                     print(f"批量更新数据失败: {error_message}")
                     traceback.print_exc()
             
-            # 处理创建新客户的逻辑
-            if records_to_create and create_if_not_exists:
-                try:
-                    print(f"开始创建 {len(records_to_create)} 条新客户记录")
-                    
-                    # 添加创建和更新时间
-                    current_time = datetime.now()
-                    
-                    # 逐条创建记录
-                    with engine.connect() as conn:
-                        for record in records_to_create:
-                            # 排除为None的字段
-                            create_fields = {k: v for k, v in record.items() if v is not None}
-                            
-                            # 添加创建和更新时间
-                            create_fields['createTime'] = current_time
-                            create_fields['updateTime'] = current_time
-                            
-                            if not create_fields:  # 如果没有需要创建的字段，跳过此记录
-                                continue
-                            
-                            try:
-                                # 构建INSERT SQL
-                                fields = ', '.join(create_fields.keys())
-                                placeholders = ', '.join([f":{key}" for key in create_fields.keys()])
-                                insert_sql = f"INSERT INTO sys_customer ({fields}) VALUES ({placeholders})"
-                                
-                                # 执行插入
-                                result = conn.execute(text(insert_sql), create_fields)
-                                created_count += 1
-                                
-                                # 尝试获取新插入记录的ID
-                                try:
-                                    # 查询刚插入的记录ID
-                                    new_id_query = f"SELECT LAST_INSERT_ID()"
-                                    new_id_result = conn.execute(text(new_id_query))
-                                    new_id = next(new_id_result)[0]
-                                    
-                                    # 为新创建的客户添加服务历程记录
-                                    service_history_fields = {
-                                        'companyName': record.get('companyName'),
-                                        'unifiedSocialCreditCode': record.get('unifiedSocialCreditCode'),
-                                        'consultantAccountant': record.get('consultantAccountant'),
-                                        'bookkeepingAccountant': record.get('bookkeepingAccountant'),
-                                        'invoiceOfficer': record.get('invoiceOfficer'),
-                                        'enterpriseStatus': record.get('enterpriseStatus'),
-                                        'businessStatus': record.get('businessStatus'),
-                                        'createdAt': current_time,
-                                        'updatedAt': current_time
-                                    }
-                                    
-                                    # 移除None值
-                                    service_history_fields = {k: v for k, v in service_history_fields.items() if v is not None}
-                                    
-                                    # 检查是否有关键字段
-                                    has_key_field = any(key in service_history_fields for key in [
-                                        'consultantAccountant', 'bookkeepingAccountant', 
-                                        'invoiceOfficer', 'enterpriseStatus', 'businessStatus'
-                                    ])
-                                    
-                                    # 只有在包含必要字段且有关键字段时才创建记录
-                                    if ('companyName' in service_history_fields or 'unifiedSocialCreditCode' in service_history_fields) and has_key_field:
-                                        # 构建INSERT SQL
-                                        sh_fields = ', '.join(service_history_fields.keys())
-                                        sh_placeholders = ', '.join([f":{key}" for key in service_history_fields.keys()])
-                                        sh_insert_sql = f"INSERT INTO sys_service_history ({sh_fields}) VALUES ({sh_placeholders})"
-                                        
-                                        # 执行插入
-                                        conn.execute(text(sh_insert_sql), service_history_fields)
-                                except Exception as sh_error:
-                                    print(f"为新客户创建服务历程记录时出错: {str(sh_error)}")
-                                    # 不影响主流程，继续执行
-                                
-                            except Exception as e:
-                                print(f"创建新客户记录时出错: {str(e)}")
-                                failed_records.append({
-                                    'companyName': record.get('companyName', '未知企业'),
-                                    'unifiedSocialCreditCode': record.get('unifiedSocialCreditCode', ''),
-                                    'reason': f"创建失败: {str(e)}"
-                                })
-                        
-                        # 提交事务
-                        conn.commit()
-                    
-                    print(f"成功创建 {created_count} 条新客户记录!")
-                    
-                except Exception as e:
-                    success = False
-                    error_message = str(e)
-                    print(f"批量创建新客户数据失败: {error_message}")
-                    traceback.print_exc()
-
             # 准备结果对象
-            # 确保所有值都是有效的JSON值
-            sanitized_failed_records = []
-            for record in failed_records:
-                # 确保所有值都是JSON兼容的
-                sanitized_record = {}
-                for key, value in record.items():
-                    # 对NaN、无穷大等进行特殊处理
-                    if key == 'index' or key == 'row':
-                        sanitized_record[key] = int(value) if value is not None and not pd.isna(value) else 0
-                    elif key == 'unifiedSocialCreditCode':
-                        sanitized_record[key] = str(value) if value is not None and not pd.isna(value) else ""
-                    elif key == 'companyName':
-                        sanitized_record[key] = str(value) if value is not None and not pd.isna(value) else "未知企业"
-                    elif key == 'reason':
-                        sanitized_record[key] = str(value) if value is not None and not pd.isna(value) else "未知原因"
-                    elif key == 'id':
-                        sanitized_record[key] = int(value) if value is not None and not pd.isna(value) else 0
-                    else:
-                        # 其他字段转换为字符串
-                        sanitized_record[key] = str(value) if value is not None and not pd.isna(value) else None
-                sanitized_failed_records.append(sanitized_record)
-                
             result = {
-                'success': success and (updated_count > 0 or created_count > 0),
+                'success': success and updated_count > 0,
                 'updated_count': updated_count,
-                'created_count': created_count,  # 新增字段
-                'failed_count': len(sanitized_failed_records),
-                'failed_records': sanitized_failed_records,
+                'failed_count': len(failed_records),
+                'failed_records': failed_records,
                 'error_message': error_message
             }
             
@@ -573,32 +445,11 @@ def update_excel_data(file_path):
             traceback.print_exc()
             
             # 返回详细错误信息
-            sanitized_failed_records = []
-            for record in error_info.get('failed_records', []):
-                # 确保所有值都是JSON兼容的
-                sanitized_record = {}
-                for key, value in record.items():
-                    # 对NaN、无穷大等进行特殊处理
-                    if key == 'index' or key == 'row':
-                        sanitized_record[key] = int(value) if value is not None and not pd.isna(value) else 0
-                    elif key == 'unifiedSocialCreditCode':
-                        sanitized_record[key] = str(value) if value is not None and not pd.isna(value) else ""
-                    elif key == 'companyName':
-                        sanitized_record[key] = str(value) if value is not None and not pd.isna(value) else "未知企业"
-                    elif key == 'reason':
-                        sanitized_record[key] = str(value) if value is not None and not pd.isna(value) else "未知原因"
-                    elif key == 'id':
-                        sanitized_record[key] = int(value) if value is not None and not pd.isna(value) else 0
-                    else:
-                        # 其他字段转换为字符串
-                        sanitized_record[key] = str(value) if value is not None and not pd.isna(value) else None
-                sanitized_failed_records.append(sanitized_record)
-                
             error_info = {
                 "success": False,
                 "error_type": "processing_error",
                 "error_message": error_msg,
-                "failed_records": sanitized_failed_records
+                "failed_records": []
             }
             print(f"ERROR_INFO_JSON: {json.dumps(error_info)}")
             return False
