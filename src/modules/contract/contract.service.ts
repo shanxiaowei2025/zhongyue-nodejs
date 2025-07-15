@@ -356,14 +356,22 @@ export class ContractService {
       
       // 甲方签订日期范围查询
       if (query.partyASignDateStart && query.partyASignDateEnd) {
-        conditions.partyASignDate = Between(
-          new Date(query.partyASignDateStart),
-          new Date(query.partyASignDateEnd)
-        );
+        // 创建日期对象
+        const startDate = new Date(query.partyASignDateStart);
+        // 对于结束日期，设置为当天的23:59:59.999，以包含整天
+        const endDate = new Date(query.partyASignDateEnd);
+        endDate.setHours(23, 59, 59, 999);
+        
+        conditions.partyASignDate = Between(startDate, endDate);
+        
+        this.logger.debug(`甲方签订日期查询范围: ${startDate.toISOString()} - ${endDate.toISOString()}`);
       } else if (query.partyASignDateStart) {
         conditions.partyASignDate = MoreThanOrEqual(new Date(query.partyASignDateStart));
       } else if (query.partyASignDateEnd) {
-        conditions.partyASignDate = LessThanOrEqual(new Date(query.partyASignDateEnd));
+        // 如果只有结束日期，也设置为当天的23:59:59.999
+        const endDate = new Date(query.partyASignDateEnd);
+        endDate.setHours(23, 59, 59, 999);
+        conditions.partyASignDate = LessThanOrEqual(endDate);
       }
       
       // 委托日期范围查询
@@ -376,14 +384,22 @@ export class ContractService {
       
       // 创建时间范围查询
       if (query.createTimeStart && query.createTimeEnd) {
-        conditions.createTime = Between(
-          new Date(query.createTimeStart),
-          new Date(query.createTimeEnd)
-        );
+        // 创建日期对象
+        const startDate = new Date(query.createTimeStart);
+        // 对于结束日期，设置为当天的23:59:59.999，以包含整天
+        const endDate = new Date(query.createTimeEnd);
+        endDate.setHours(23, 59, 59, 999);
+        
+        conditions.createTime = Between(startDate, endDate);
+        
+        this.logger.debug(`合同查询日期范围: ${startDate.toISOString()} - ${endDate.toISOString()}`);
       } else if (query.createTimeStart) {
         conditions.createTime = MoreThanOrEqual(new Date(query.createTimeStart));
       } else if (query.createTimeEnd) {
-        conditions.createTime = LessThanOrEqual(new Date(query.createTimeEnd));
+        // 如果只有结束日期，也设置为当天的23:59:59.999
+        const endDate = new Date(query.createTimeEnd);
+        endDate.setHours(23, 59, 59, 999);
+        conditions.createTime = LessThanOrEqual(endDate);
       }
     };
 

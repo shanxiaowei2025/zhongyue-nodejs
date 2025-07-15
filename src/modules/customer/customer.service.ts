@@ -251,13 +251,21 @@ export class CustomerService {
     }
 
     if (startDate && endDate) {
+      // 创建日期对象
+      const start = new Date(startDate);
+      // 对于结束日期，设置为当天的23:59:59.999，以包含整天
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      
       queryBuilder.andWhere(
         'customer.createTime BETWEEN :startDate AND :endDate',
         {
-          startDate,
-          endDate,
+          startDate: start,
+          endDate: end,
         },
       );
+      
+      console.log(`客户查询日期范围: ${start.toISOString()} - ${end.toISOString()}`);
     }
 
     // 获取权限过滤条件
@@ -608,13 +616,21 @@ export class CustomerService {
       }
 
       if (query.startDate && query.endDate) {
+        // 创建日期对象
+        const start = new Date(query.startDate);
+        // 对于结束日期，设置为当天的23:59:59.999，以包含整天
+        const end = new Date(query.endDate);
+        end.setHours(23, 59, 59, 999);
+        
         queryBuilder.andWhere(
           'customer.createTime BETWEEN :startDate AND :endDate',
           {
-            startDate: query.startDate,
-            endDate: query.endDate,
+            startDate: start,
+            endDate: end,
           },
         );
+        
+        console.log(`客户导出日期范围: ${start.toISOString()} - ${end.toISOString()}`);
       }
       
       // 处理权限条件

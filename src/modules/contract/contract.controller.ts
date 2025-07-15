@@ -111,7 +111,10 @@ export class ContractController {
   @Get()
   @ApiBearerAuth() // 需要登录才能访问
   @UseGuards(JwtAuthGuard, RolesGuard) // 使用JWT认证和角色守卫
-  @ApiOperation({ summary: '获取合同列表' })
+  @ApiOperation({ 
+    summary: '获取合同列表',
+    description: '通过各种条件筛选合同列表。使用createTimeStart和createTimeEnd参数可以按创建日期范围筛选，partyASignDateStart和partyASignDateEnd参数可以按甲方签订日期范围筛选。如果使用相同的日期（如createTimeStart=2023-01-01&createTimeEnd=2023-01-01），查询将返回该整天的数据。'
+  })
   @ApiResponse({ status: 200, description: '获取合同列表成功' })
   @ApiResponse({ status: 403, description: '没有查看合同的权限' })
   async findAll(

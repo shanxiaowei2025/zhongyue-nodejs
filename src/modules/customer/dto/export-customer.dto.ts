@@ -48,17 +48,23 @@ export class ExportCustomerDto {
   @IsString()
   customerLevel?: string;
 
-  @ApiProperty({ description: '开始日期', required: false })
+  @ApiProperty({ 
+    description: '创建开始日期（筛选创建时间开始日期，格式：YYYY-MM-DD）', 
+    required: false,
+    example: '2023-01-01'
+  })
   @IsOptional()
-  @Type(() => Date)
-  @IsDate()
-  startDate?: Date;
+  @IsString()
+  startDate?: string;
 
-  @ApiProperty({ description: '结束日期', required: false })
+  @ApiProperty({ 
+    description: '创建结束日期（筛选创建时间结束日期，当与startDate相同时，会导出整天的数据，格式：YYYY-MM-DD）', 
+    required: false,
+    example: '2023-12-31' 
+  })
   @IsOptional()
-  @Type(() => Date)
-  @IsDate()
-  endDate?: Date;
+  @IsString()
+  endDate?: string;
   
   @ApiProperty({ description: '归属地', required: false })
   @IsOptional()

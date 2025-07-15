@@ -47,22 +47,38 @@ export class QueryContractDto {
   @IsOptional()
   contractStatus?: string;
 
-  @ApiProperty({ description: '甲方签订日期-开始', required: false })
+  @ApiProperty({ 
+    description: '甲方签订日期-开始（当与甲方签订日期-结束相同时，会查询整天的数据）', 
+    required: false,
+    example: '2023-01-01'
+  })
   @IsDateString()
   @IsOptional()
   partyASignDateStart?: string;
 
-  @ApiProperty({ description: '甲方签订日期-结束', required: false })
+  @ApiProperty({ 
+    description: '甲方签订日期-结束（当与甲方签订日期-开始相同时，会查询整天的数据）', 
+    required: false,
+    example: '2023-01-31'
+  })
   @IsDateString()
   @IsOptional()
   partyASignDateEnd?: string;
 
-  @ApiProperty({ description: '创建日期-开始', required: false })
+  @ApiProperty({ 
+    description: '创建日期-开始（当与创建日期-结束相同时，会查询整天的数据）', 
+    required: false,
+    example: '2023-01-01'
+  })
   @IsDateString()
   @IsOptional()
   createTimeStart?: string;
 
-  @ApiProperty({ description: '创建日期-结束', required: false })
+  @ApiProperty({ 
+    description: '创建日期-结束（当与创建日期-开始相同时，会查询整天的数据）', 
+    required: false,
+    example: '2023-01-31'
+  })
   @IsDateString()
   @IsOptional()
   createTimeEnd?: string;

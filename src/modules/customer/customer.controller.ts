@@ -79,9 +79,12 @@ export class CustomerController {
   }
 
   @Get()
-  @ApiOperation({ summary: '获取客户列表' })
-  @ApiResponse({ status: 200, description: '获取客户列表成功' })
-  findAll(@Query() query: QueryCustomerDto, @Request() req) {
+  @ApiOperation({ 
+    summary: '获取客户列表',
+    description: '通过各种条件筛选客户列表。使用startDate和endDate参数可以按创建日期范围筛选，如果使用相同的日期（如startDate=2023-01-01&endDate=2023-01-01），查询将返回该整天的数据。'
+  })
+  @ApiResponse({ status: 200, description: '成功获取客户列表' })
+  findAll(@Query() query: QueryCustomerDto, @Req() req) {
     if (!req.user || !req.user.id) {
       throw new ForbiddenException('未能获取有效的用户身份');
     }
@@ -128,7 +131,10 @@ export class CustomerController {
   }
 
   @Get('export/csv')
-  @ApiOperation({ summary: '导出客户数据为CSV' })
+  @ApiOperation({ 
+    summary: '导出客户数据为CSV',
+    description: '导出符合筛选条件的客户数据。使用startDate和endDate参数可以按创建日期范围筛选，如果使用相同的日期（如startDate=2023-01-01&endDate=2023-01-01），将导出该整天的数据。'
+  })
   @ApiResponse({ status: 200, description: '导出成功' })
   async exportToCsv(
     @Query() query: ExportCustomerDto,
