@@ -586,13 +586,21 @@ export class ExpenseService {
     }
 
     if (query.startDate && query.endDate) {
+      // 创建日期对象
+      const startDate = new Date(query.startDate);
+      // 对于结束日期，设置为当天的23:59:59.999，以包含整天
+      const endDate = new Date(query.endDate);
+      endDate.setHours(23, 59, 59, 999);
+      
       queryBuilder.andWhere(
         'expense.createdAt BETWEEN :createdStartDate AND :createdEndDate',
         {
-          createdStartDate: new Date(query.startDate),
-          createdEndDate: new Date(query.endDate),
+          createdStartDate: startDate,
+          createdEndDate: endDate,
         },
       );
+      
+      console.log(`日期查询范围: ${startDate.toISOString()} - ${endDate.toISOString()}`);
     }
 
     // 修改排序逻辑：首先按照创建时间降序排序
@@ -1578,6 +1586,25 @@ export class ExpenseService {
       queryBuilder.andWhere('expense.chargeDate <= :endDate', {
         endDate: query.chargeDateEnd,
       });
+    }
+    
+    // 添加对创建日期范围的处理
+    if (query.startDate && query.endDate) {
+      // 创建日期对象
+      const startDate = new Date(query.startDate);
+      // 对于结束日期，设置为当天的23:59:59.999，以包含整天
+      const endDate = new Date(query.endDate);
+      endDate.setHours(23, 59, 59, 999);
+      
+      queryBuilder.andWhere(
+        'expense.createdAt BETWEEN :createdStartDate AND :createdEndDate',
+        {
+          createdStartDate: startDate,
+          createdEndDate: endDate,
+        },
+      );
+      
+      console.log(`导出日期查询范围: ${startDate.toISOString()} - ${endDate.toISOString()}`);
     }
 
     // 查询数据

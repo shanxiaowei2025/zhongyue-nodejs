@@ -168,7 +168,10 @@ export class ExpenseController {
   }
 
   @Get('export/csv')
-  @ApiOperation({ summary: '导出费用记录为CSV' })
+  @ApiOperation({
+    summary: '导出费用记录为CSV',
+    description: '导出符合筛选条件的费用记录。使用startDate和endDate参数可以按创建日期范围筛选，如果使用相同的日期（如startDate=2023-01-01&endDate=2023-01-01），将导出该整天的数据。',
+  })
   @ApiResponse({ status: 200, description: '导出成功' })
   async exportToCsv(
     @Query() query: ExportExpenseDto,
@@ -195,7 +198,10 @@ export class ExpenseController {
   }
 
   @Get()
-  @ApiOperation({ summary: '获取费用列表' })
+  @ApiOperation({
+    summary: '获取费用列表',
+    description: '通过各种条件筛选费用列表。使用startDate和endDate参数可以按创建日期范围筛选，如果使用相同的日期（如startDate=2023-01-01&endDate=2023-01-01），查询将返回该整天的数据。',
+  })
   @ApiResponse({ status: 200, description: '成功获取费用列表' })
   findAll(@Query() query: QueryExpenseDto, @Req() req) {
     const { page, pageSize, ...filters } = query;
