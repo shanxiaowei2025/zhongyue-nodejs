@@ -758,4 +758,116 @@ export class FinancialSelfInspectionService {
       totalPages: Math.ceil(total / pageSize)
     };
   }
+
+  /**
+   * 统计当前用户作为抽查人的记录数量
+   * @param username 当前用户名
+   * @param startDate 抽查人确认开始日期
+   * @param endDate 抽查人确认结束日期
+   * @param isAdmin 是否管理员
+   * @returns 记录数量
+   */
+  async countAsInspector(username: string, startDate?: string, endDate?: string, isAdmin: boolean = false): Promise<{ count: number }> {
+    // 构建查询条件
+    const queryBuilder = this.financialSelfInspectionRepository.createQueryBuilder('record');
+    
+    // 非管理员只能查看自己的记录
+    if (!isAdmin) {
+      queryBuilder.where('record.inspector = :username', { username });
+    } else {
+      // 管理员可以查看所有记录，但如果提供了用户名，则按该用户名筛选
+      queryBuilder.where('1=1'); // 默认条件，相当于不加条件
+    }
+    
+    // 筛选有抽查人确认日期的记录
+    queryBuilder.andWhere('record.inspectorConfirmation IS NOT NULL');
+    
+    // 添加日期范围条件
+    if (startDate && endDate) {
+      // 创建日期对象
+      const start = new Date(startDate);
+      // 对于结束日期，设置为当天的23:59:59.999，以包含整天
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      
+      queryBuilder.andWhere('record.inspectorConfirmation BETWEEN :start AND :end', {
+        start,
+        end
+      });
+      
+      this.logger.debug(`抽查人统计日期范围: ${start.toISOString()} - ${end.toISOString()}`);
+    } else if (startDate) {
+      queryBuilder.andWhere('record.inspectorConfirmation >= :start', {
+        start: new Date(startDate)
+      });
+    } else if (endDate) {
+      // 如果只有结束日期，也设置为当天的23:59:59.999
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      queryBuilder.andWhere('record.inspectorConfirmation <= :end', {
+        end
+      });
+    }
+    
+    // 计算符合条件的记录数量
+    const count = await queryBuilder.getCount();
+    
+    return { count };
+  }
+
+  /**
+   * 统计当前用户作为复查人的记录数量
+   * @param username 当前用户名
+   * @param startDate 复查人确认开始日期
+   * @param endDate 复查人确认结束日期
+   * @param isAdmin 是否管理员
+   * @returns 记录数量
+   */
+  async countAsReviewer(username: string, startDate?: string, endDate?: string, isAdmin: boolean = false): Promise<{ count: number }> {
+    // 构建查询条件
+    const queryBuilder = this.financialSelfInspectionRepository.createQueryBuilder('record');
+    
+    // 非管理员只能查看自己的记录
+    if (!isAdmin) {
+      queryBuilder.where('record.reviewer = :username', { username });
+    } else {
+      // 管理员可以查看所有记录，但如果提供了用户名，则按该用户名筛选
+      queryBuilder.where('1=1'); // 默认条件，相当于不加条件
+    }
+    
+    // 筛选有复查人确认日期的记录
+    queryBuilder.andWhere('record.reviewerConfirmation IS NOT NULL');
+    
+    // 添加日期范围条件
+    if (startDate && endDate) {
+      // 创建日期对象
+      const start = new Date(startDate);
+      // 对于结束日期，设置为当天的23:59:59.999，以包含整天
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      
+      queryBuilder.andWhere('record.reviewerConfirmation BETWEEN :start AND :end', {
+        start,
+        end
+      });
+      
+      this.logger.debug(`复查人统计日期范围: ${start.toISOString()} - ${end.toISOString()}`);
+    } else if (startDate) {
+      queryBuilder.andWhere('record.reviewerConfirmation >= :start', {
+        start: new Date(startDate)
+      });
+    } else if (endDate) {
+      // 如果只有结束日期，也设置为当天的23:59:59.999
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      queryBuilder.andWhere('record.reviewerConfirmation <= :end', {
+        end
+      });
+    }
+    
+    // 计算符合条件的记录数量
+    const count = await queryBuilder.getCount();
+    
+    return { count };
+  }
 } 

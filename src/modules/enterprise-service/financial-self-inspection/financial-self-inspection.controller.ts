@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, Patch, Param, Query, UseGuards, Request } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { FinancialSelfInspectionService } from './financial-self-inspection.service';
 import { CreateFinancialSelfInspectionDto } from './dto/create-financial-self-inspection.dto';
 import { CreateFinancialSelfInspectionRestrictedDto } from './dto/create-financial-self-inspection-restricted.dto';
@@ -9,6 +9,9 @@ import { InspectorConfirmationDto } from './dto/inspector-confirmation.dto';
 import { ReviewerConfirmationDto } from './dto/reviewer-confirmation.dto';
 import { ReviewerRectificationCompletionDto } from './dto/reviewer-rectification-completion.dto';
 import { UpdateReviewerFieldsDto } from './dto/update-reviewer-fields.dto';
+import { QueryInspectorCountDto } from './dto/query-inspector-count.dto';
+import { QueryReviewerCountDto } from './dto/query-reviewer-count.dto';
+import { CountResponseDto } from './dto/count-response.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
@@ -134,5 +137,73 @@ export class FinancialSelfInspectionController {
     const roles = req.user.roles || [];
     const isAdmin = roles.includes('admin') || roles.includes('super_admin');
     return this.financialSelfInspectionService.updateReviewerFields(+id, dto, username, isAdmin);
+  }
+
+  @Get('count-as-inspector')
+  @ApiOperation({ 
+    summary: '统计当前用户作为抽查人的记录数量',
+    description: '根据日期范围统计当前用户作为抽查人的记录数量，返回符合条件的记录总数。如果使用相同的开始日期和结束日期，会统计整天的数据。'
+  })
+  @ApiQuery({ 
+    name: 'startDate', 
+    required: false, 
+    description: '抽查人确认开始日期（格式：YYYY-MM-DD）',
+    example: '2023-01-01'
+  })
+  @ApiQuery({ 
+    name: 'endDate', 
+    required: false, 
+    description: '抽查人确认结束日期（格式：YYYY-MM-DD）',
+    example: '2023-12-31'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: '统计成功', 
+    type: CountResponseDto 
+  })
+  countAsInspector(@Query() queryDto: QueryInspectorCountDto, @Request() req) {
+    const username = req.user.username;
+    const roles = req.user.roles || [];
+    const isAdmin = roles.includes('admin') || roles.includes('super_admin');
+    return this.financialSelfInspectionService.countAsInspector(
+      username, 
+      queryDto.startDate, 
+      queryDto.endDate, 
+      isAdmin
+    );
+  }
+
+  @Get('count-as-reviewer')
+  @ApiOperation({ 
+    summary: '统计当前用户作为复查人的记录数量',
+    description: '根据日期范围统计当前用户作为复查人的记录数量，返回符合条件的记录总数。如果使用相同的开始日期和结束日期，会统计整天的数据。'
+  })
+  @ApiQuery({ 
+    name: 'startDate', 
+    required: false, 
+    description: '复查人确认开始日期（格式：YYYY-MM-DD）',
+    example: '2023-01-01'
+  })
+  @ApiQuery({ 
+    name: 'endDate', 
+    required: false, 
+    description: '复查人确认结束日期（格式：YYYY-MM-DD）',
+    example: '2023-12-31'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: '统计成功', 
+    type: CountResponseDto 
+  })
+  countAsReviewer(@Query() queryDto: QueryReviewerCountDto, @Request() req) {
+    const username = req.user.username;
+    const roles = req.user.roles || [];
+    const isAdmin = roles.includes('admin') || roles.includes('super_admin');
+    return this.financialSelfInspectionService.countAsReviewer(
+      username, 
+      queryDto.startDate, 
+      queryDto.endDate, 
+      isAdmin
+    );
   }
 } 
