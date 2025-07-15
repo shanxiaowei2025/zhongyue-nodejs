@@ -203,6 +203,22 @@ export class ExpenseController {
     description: '通过各种条件筛选费用列表。使用startDate和endDate参数可以按创建日期范围筛选，如果使用相同的日期（如startDate=2023-01-01&endDate=2023-01-01），查询将返回该整天的数据。',
   })
   @ApiResponse({ status: 200, description: '成功获取费用列表' })
+  @ApiQuery({ name: 'companyName', required: false, description: '企业名称' })
+  @ApiQuery({ name: 'unifiedSocialCreditCode', required: false, description: '统一社会信用代码' })
+  @ApiQuery({ name: 'status', required: false, description: '状态：0-未审核，1-已审核，2-已退回' })
+  @ApiQuery({ name: 'salesperson', required: false, description: '业务员' })
+  @ApiQuery({ name: 'chargeDateStart', required: false, description: '收费开始日期' })
+  @ApiQuery({ name: 'chargeDateEnd', required: false, description: '收费结束日期' })
+  @ApiQuery({ name: 'companyType', required: false, description: '企业类型' })
+  @ApiQuery({ name: 'companyLocation', required: false, description: '企业所在地' })
+  @ApiQuery({ name: 'businessType', required: false, description: '业务类型' })
+  @ApiQuery({ name: 'chargeMethod', required: false, description: '收费方式' })
+  @ApiQuery({ name: 'receiptNo', required: false, description: '收据编号' })
+  @ApiQuery({ name: 'auditor', required: false, description: '审核人' })
+  @ApiQuery({ name: 'startDate', required: false, description: '创建开始日期（筛选创建时间开始日期）', example: '2023-01-01' })
+  @ApiQuery({ name: 'endDate', required: false, description: '创建结束日期（筛选创建时间结束日期，当与startDate相同时，会查询整天的数据）', example: '2023-12-31' })
+  @ApiQuery({ name: 'page', required: false, description: '页码', example: 1 })
+  @ApiQuery({ name: 'pageSize', required: false, description: '每页数量', example: 10 })
   findAll(@Query() query: QueryExpenseDto, @Req() req) {
     const { page, pageSize, ...filters } = query;
     const pagination = { page, pageSize };

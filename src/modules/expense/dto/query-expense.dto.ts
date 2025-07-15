@@ -52,20 +52,10 @@ export class QueryExpenseDto {
   @IsString()
   businessType?: string;
 
-  @ApiProperty({ description: '支付方式', required: false })
+  @ApiProperty({ description: '收费方式', required: false })
   @IsOptional()
   @IsString()
-  paymentMethod?: string;
-
-  @ApiProperty({ description: '备注', required: false })
-  @IsOptional()
-  @IsString()
-  remarks?: string;
-
-  @ApiProperty({ description: '服务期限', required: false })
-  @IsOptional()
-  @IsString()
-  servicePeriod?: string;
+  chargeMethod?: string;
 
   @ApiProperty({ description: '收据编号', required: false })
   @IsOptional()
@@ -76,11 +66,6 @@ export class QueryExpenseDto {
   @IsOptional()
   @IsString()
   auditor?: string;
-
-  @ApiProperty({ description: '收款人', required: false })
-  @IsOptional()
-  @IsString()
-  payee?: string;
 
   @ApiProperty({ 
     description: '创建开始日期（筛选创建时间开始日期）', 

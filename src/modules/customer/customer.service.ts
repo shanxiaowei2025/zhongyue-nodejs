@@ -156,7 +156,7 @@ export class CustomerService {
     // 添加基础查询条件
     if (keyword !== undefined) {
       if (keyword === '') {
-        queryBuilder.andWhere('customer.companyName IS NULL');
+        queryBuilder.andWhere('(customer.companyName IS NULL OR customer.companyName = \'\')');
       } else {
         queryBuilder.andWhere('customer.companyName LIKE :keyword', {
           keyword: `%${keyword}%`,
@@ -166,7 +166,7 @@ export class CustomerService {
 
     if (unifiedSocialCreditCode !== undefined) {
       if (unifiedSocialCreditCode === '') {
-        queryBuilder.andWhere('customer.unifiedSocialCreditCode IS NULL');
+        queryBuilder.andWhere('(customer.unifiedSocialCreditCode IS NULL OR customer.unifiedSocialCreditCode = \'\')');
       } else {
         queryBuilder.andWhere('customer.unifiedSocialCreditCode LIKE :unifiedSocialCreditCode', {
           unifiedSocialCreditCode: `%${unifiedSocialCreditCode}%`,
@@ -176,7 +176,7 @@ export class CustomerService {
 
     if (consultantAccountant !== undefined) {
       if (consultantAccountant === '') {
-        queryBuilder.andWhere('customer.consultantAccountant IS NULL');
+        queryBuilder.andWhere('(customer.consultantAccountant IS NULL OR customer.consultantAccountant = \'\')');
       } else {
         queryBuilder.andWhere(
           'customer.consultantAccountant LIKE :consultantAccountant',
@@ -189,7 +189,7 @@ export class CustomerService {
 
     if (bookkeepingAccountant !== undefined) {
       if (bookkeepingAccountant === '') {
-        queryBuilder.andWhere('customer.bookkeepingAccountant IS NULL');
+        queryBuilder.andWhere('(customer.bookkeepingAccountant IS NULL OR customer.bookkeepingAccountant = \'\')');
       } else {
         queryBuilder.andWhere(
           'customer.bookkeepingAccountant LIKE :bookkeepingAccountant',
@@ -202,7 +202,7 @@ export class CustomerService {
 
     if (taxBureau !== undefined) {
       if (taxBureau === '') {
-        queryBuilder.andWhere('customer.taxBureau IS NULL');
+        queryBuilder.andWhere('(customer.taxBureau IS NULL OR customer.taxBureau = \'\')');
       } else {
         queryBuilder.andWhere('customer.taxBureau LIKE :taxBureau', {
           taxBureau: `%${taxBureau}%`,
@@ -213,7 +213,7 @@ export class CustomerService {
     if (enterpriseType !== undefined) {
       if (enterpriseType === '') {
         // 如果参数值为空字符串，则查询字段为 NULL 的记录
-        queryBuilder.andWhere('customer.enterpriseType IS NULL');
+        queryBuilder.andWhere('(customer.enterpriseType IS NULL OR customer.enterpriseType = \'\')');
       } else {
         // 否则按照原来的方式查询
         queryBuilder.andWhere('customer.enterpriseType LIKE :enterpriseType', {
@@ -224,7 +224,7 @@ export class CustomerService {
 
     if (industryCategory !== undefined) {
       if (industryCategory === '') {
-        queryBuilder.andWhere('customer.industryCategory IS NULL');
+        queryBuilder.andWhere('(customer.industryCategory IS NULL OR customer.industryCategory = \'\')');
       } else {
         queryBuilder.andWhere(
           'customer.industryCategory LIKE :industryCategory',
@@ -237,7 +237,7 @@ export class CustomerService {
 
     if (enterpriseStatus !== undefined) {
       if (enterpriseStatus === '') {
-        queryBuilder.andWhere('customer.enterpriseStatus IS NULL');
+        queryBuilder.andWhere('(customer.enterpriseStatus IS NULL OR customer.enterpriseStatus = \'\')');
       } else {
         queryBuilder.andWhere('customer.enterpriseStatus = :enterpriseStatus', {
           enterpriseStatus,
@@ -247,7 +247,7 @@ export class CustomerService {
 
     if (customerLevel !== undefined) {
       if (customerLevel === '') {
-        queryBuilder.andWhere('customer.customerLevel IS NULL');
+        queryBuilder.andWhere('(customer.customerLevel IS NULL OR customer.customerLevel = \'\')');
       } else {
         queryBuilder.andWhere('customer.customerLevel = :customerLevel', {
           customerLevel,
@@ -263,7 +263,7 @@ export class CustomerService {
 
     if (location !== undefined) {
       if (location === '') {
-        queryBuilder.andWhere('customer.location IS NULL');
+        queryBuilder.andWhere('(customer.location IS NULL OR customer.location = \'\')');
       } else {
         queryBuilder.andWhere('customer.location LIKE :location', {
           location: `%${location}%`,
@@ -274,7 +274,7 @@ export class CustomerService {
     // 添加对JSON字段的搜索条件
     if (contributorName !== undefined) {
       if (contributorName === '') {
-        queryBuilder.andWhere('customer.paidInCapital IS NULL OR JSON_LENGTH(customer.paidInCapital) = 0');
+        queryBuilder.andWhere('(customer.paidInCapital IS NULL OR JSON_LENGTH(customer.paidInCapital) = 0 OR customer.paidInCapital = \'\')');
       } else {
         // MySQL中搜索JSON数组中的对象字段
         queryBuilder.andWhere(
@@ -288,7 +288,7 @@ export class CustomerService {
 
     if (licenseType !== undefined) {
       if (licenseType === '') {
-        queryBuilder.andWhere('customer.administrativeLicense IS NULL OR JSON_LENGTH(customer.administrativeLicense) = 0');
+        queryBuilder.andWhere('(customer.administrativeLicense IS NULL OR JSON_LENGTH(customer.administrativeLicense) = 0 OR customer.administrativeLicense = \'\')');
       } else {
         // MySQL中搜索JSON数组中的对象字段
         queryBuilder.andWhere(
@@ -601,7 +601,7 @@ export class CustomerService {
       // 添加过滤条件，参考findAll方法的查询条件部分
       if (query.keyword !== undefined) {
         if (query.keyword === '') {
-          queryBuilder.andWhere('customer.companyName IS NULL');
+          queryBuilder.andWhere('(customer.companyName IS NULL OR customer.companyName = \'\')');
         } else {
           queryBuilder.andWhere(
             '(customer.companyName LIKE :keyword OR customer.unifiedSocialCreditCode LIKE :keyword)',
@@ -614,7 +614,7 @@ export class CustomerService {
 
       if (query.unifiedSocialCreditCode !== undefined) {
         if (query.unifiedSocialCreditCode === '') {
-          queryBuilder.andWhere('customer.unifiedSocialCreditCode IS NULL');
+          queryBuilder.andWhere('(customer.unifiedSocialCreditCode IS NULL OR customer.unifiedSocialCreditCode = \'\')');
         } else {
           queryBuilder.andWhere('customer.unifiedSocialCreditCode LIKE :unifiedSocialCreditCode', {
             unifiedSocialCreditCode: `%${query.unifiedSocialCreditCode}%`,
@@ -624,7 +624,7 @@ export class CustomerService {
 
       if (query.consultantAccountant !== undefined) {
         if (query.consultantAccountant === '') {
-          queryBuilder.andWhere('customer.consultantAccountant IS NULL');
+          queryBuilder.andWhere('(customer.consultantAccountant IS NULL OR customer.consultantAccountant = \'\')');
         } else {
           queryBuilder.andWhere('customer.consultantAccountant = :consultantAccountant', {
             consultantAccountant: query.consultantAccountant,
@@ -634,7 +634,7 @@ export class CustomerService {
 
       if (query.bookkeepingAccountant !== undefined) {
         if (query.bookkeepingAccountant === '') {
-          queryBuilder.andWhere('customer.bookkeepingAccountant IS NULL');
+          queryBuilder.andWhere('(customer.bookkeepingAccountant IS NULL OR customer.bookkeepingAccountant = \'\')');
         } else {
           queryBuilder.andWhere('customer.bookkeepingAccountant = :bookkeepingAccountant', {
             bookkeepingAccountant: query.bookkeepingAccountant,
@@ -644,7 +644,7 @@ export class CustomerService {
 
       if (query.taxBureau !== undefined) {
         if (query.taxBureau === '') {
-          queryBuilder.andWhere('customer.taxBureau IS NULL');
+          queryBuilder.andWhere('(customer.taxBureau IS NULL OR customer.taxBureau = \'\')');
         } else {
           queryBuilder.andWhere('customer.taxBureau LIKE :taxBureau', {
             taxBureau: `%${query.taxBureau}%`,
@@ -655,7 +655,7 @@ export class CustomerService {
       if (query.enterpriseType !== undefined) {
         if (query.enterpriseType === '') {
           // 如果参数值为空字符串，则查询字段为 NULL 的记录
-          queryBuilder.andWhere('customer.enterpriseType IS NULL');
+          queryBuilder.andWhere('(customer.enterpriseType IS NULL OR customer.enterpriseType = \'\')');
         } else {
           // 否则按照原来的方式查询
           queryBuilder.andWhere('customer.enterpriseType LIKE :enterpriseType', {
@@ -666,7 +666,7 @@ export class CustomerService {
 
       if (query.industryCategory !== undefined) {
         if (query.industryCategory === '') {
-          queryBuilder.andWhere('customer.industryCategory IS NULL');
+          queryBuilder.andWhere('(customer.industryCategory IS NULL OR customer.industryCategory = \'\')');
         } else {
           queryBuilder.andWhere(
             'customer.industryCategory LIKE :industryCategory',
@@ -679,7 +679,7 @@ export class CustomerService {
 
       if (query.enterpriseStatus !== undefined) {
         if (query.enterpriseStatus === '') {
-          queryBuilder.andWhere('customer.enterpriseStatus IS NULL');
+          queryBuilder.andWhere('(customer.enterpriseStatus IS NULL OR customer.enterpriseStatus = \'\')');
         } else {
           queryBuilder.andWhere('customer.enterpriseStatus = :enterpriseStatus', {
             enterpriseStatus: query.enterpriseStatus,
@@ -689,7 +689,7 @@ export class CustomerService {
 
       if (query.customerLevel !== undefined) {
         if (query.customerLevel === '') {
-          queryBuilder.andWhere('customer.customerLevel IS NULL');
+          queryBuilder.andWhere('(customer.customerLevel IS NULL OR customer.customerLevel = \'\')');
         } else {
           queryBuilder.andWhere('customer.customerLevel = :customerLevel', {
             customerLevel: query.customerLevel,
@@ -699,7 +699,7 @@ export class CustomerService {
 
       if (query.location !== undefined) {
         if (query.location === '') {
-          queryBuilder.andWhere('customer.location IS NULL');
+          queryBuilder.andWhere('(customer.location IS NULL OR customer.location = \'\')');
         } else {
           queryBuilder.andWhere('customer.location LIKE :location', {
             location: `%${query.location}%`,

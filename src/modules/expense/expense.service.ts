@@ -491,35 +491,55 @@ export class ExpenseService {
     }
 
     // 然后在权限过滤的基础上应用查询参数
-    if (query.companyName) {
+    if (query.companyName !== undefined) {
+      if (query.companyName === '') {
+        queryBuilder.andWhere('(expense.companyName IS NULL OR expense.companyName = \'\')');
+      } else {
       queryBuilder.andWhere('expense.companyName LIKE :companyName', {
         companyName: `%${query.companyName}%`,
       });
+      }
     }
 
-    if (query.unifiedSocialCreditCode) {
+    if (query.unifiedSocialCreditCode !== undefined) {
+      if (query.unifiedSocialCreditCode === '') {
+        queryBuilder.andWhere('(expense.unifiedSocialCreditCode IS NULL OR expense.unifiedSocialCreditCode = \'\')');
+      } else {
       queryBuilder.andWhere(
         'expense.unifiedSocialCreditCode LIKE :unifiedSocialCreditCode',
         { unifiedSocialCreditCode: `%${query.unifiedSocialCreditCode}%` },
       );
+      }
     }
 
-    if (query.companyType) {
+    if (query.companyType !== undefined) {
+      if (query.companyType === '') {
+        queryBuilder.andWhere('(expense.companyType IS NULL OR expense.companyType = \'\')');
+      } else {
       queryBuilder.andWhere('expense.companyType LIKE :companyType', {
         companyType: `%${query.companyType}%`,
       });
+      }
     }
 
-    if (query.companyLocation) {
+    if (query.companyLocation !== undefined) {
+      if (query.companyLocation === '') {
+        queryBuilder.andWhere('(expense.companyLocation IS NULL OR expense.companyLocation = \'\')');
+      } else {
       queryBuilder.andWhere('expense.companyLocation LIKE :companyLocation', {
         companyLocation: `%${query.companyLocation}%`,
       });
+      }
     }
 
-    if (query.businessType) {
+    if (query.businessType !== undefined) {
+      if (query.businessType === '') {
+        queryBuilder.andWhere('(expense.businessType IS NULL OR expense.businessType = \'\')');
+      } else {
       queryBuilder.andWhere('expense.businessType LIKE :businessType', {
         businessType: `%${query.businessType}%`,
       });
+      }
     }
 
     if (query.status !== undefined) {
@@ -528,46 +548,44 @@ export class ExpenseService {
       });
     }
 
-    if (query.salesperson) {
+    if (query.salesperson !== undefined) {
+      if (query.salesperson === '') {
+        queryBuilder.andWhere('(expense.salesperson IS NULL OR expense.salesperson = \'\')');
+      } else {
       queryBuilder.andWhere('expense.salesperson LIKE :salesperson', {
         salesperson: `%${query.salesperson}%`,
       });
     }
-
-    if (query.paymentMethod) {
-      queryBuilder.andWhere('expense.paymentMethod LIKE :paymentMethod', {
-        paymentMethod: `%${query.paymentMethod}%`,
-      });
     }
 
-    if (query.remarks) {
-      queryBuilder.andWhere('expense.remarks LIKE :remarks', {
-        remarks: `%${query.remarks}%`,
+    if (query.chargeMethod !== undefined) {
+      if (query.chargeMethod === '') {
+        queryBuilder.andWhere('(expense.chargeMethod IS NULL OR expense.chargeMethod = \'\')');
+      } else {
+        queryBuilder.andWhere('expense.chargeMethod LIKE :chargeMethod', {
+          chargeMethod: `%${query.chargeMethod}%`,
       });
+      }
     }
 
-    if (query.servicePeriod) {
-      queryBuilder.andWhere('expense.servicePeriod LIKE :servicePeriod', {
-        servicePeriod: `%${query.servicePeriod}%`,
-      });
-    }
-
-    if (query.receiptNo) {
+    if (query.receiptNo !== undefined) {
+      if (query.receiptNo === '') {
+        queryBuilder.andWhere('(expense.receiptNo IS NULL OR expense.receiptNo = \'\')');
+      } else {
       queryBuilder.andWhere('expense.receiptNo LIKE :receiptNo', {
         receiptNo: `%${query.receiptNo}%`,
       });
+      }
     }
 
-    if (query.auditor) {
+    if (query.auditor !== undefined) {
+      if (query.auditor === '') {
+        queryBuilder.andWhere('(expense.auditor IS NULL OR expense.auditor = \'\')');
+      } else {
       queryBuilder.andWhere('expense.auditor LIKE :auditor', {
         auditor: `%${query.auditor}%`,
       });
     }
-
-    if (query.payee) {
-      queryBuilder.andWhere('expense.payee LIKE :payee', {
-        payee: `%${query.payee}%`,
-      });
     }
 
     if (query.chargeDateStart && query.chargeDateEnd) {
@@ -1530,35 +1548,55 @@ export class ExpenseService {
     }
 
     // 然后在权限过滤的基础上应用查询参数
-    if (query.companyName) {
+    if (query.companyName !== undefined) {
+      if (query.companyName === '') {
+        queryBuilder.andWhere('(expense.companyName IS NULL OR expense.companyName = \'\')');
+      } else {
       queryBuilder.andWhere('expense.companyName LIKE :companyName', {
         companyName: `%${query.companyName}%`,
       });
+      }
     }
 
-    if (query.unifiedSocialCreditCode) {
+    if (query.unifiedSocialCreditCode !== undefined) {
+      if (query.unifiedSocialCreditCode === '') {
+        queryBuilder.andWhere('(expense.unifiedSocialCreditCode IS NULL OR expense.unifiedSocialCreditCode = \'\')');
+      } else {
       queryBuilder.andWhere(
         'expense.unifiedSocialCreditCode LIKE :unifiedSocialCreditCode',
         { unifiedSocialCreditCode: `%${query.unifiedSocialCreditCode}%` },
       );
+      }
     }
 
-    if (query.companyType) {
+    if (query.companyType !== undefined) {
+      if (query.companyType === '') {
+        queryBuilder.andWhere('(expense.companyType IS NULL OR expense.companyType = \'\')');
+      } else {
       queryBuilder.andWhere('expense.companyType = :companyType', {
         companyType: query.companyType,
       });
+      }
     }
 
-    if (query.companyLocation) {
+    if (query.companyLocation !== undefined) {
+      if (query.companyLocation === '') {
+        queryBuilder.andWhere('(expense.companyLocation IS NULL OR expense.companyLocation = \'\')');
+      } else {
       queryBuilder.andWhere('expense.companyLocation = :companyLocation', {
         companyLocation: query.companyLocation,
       });
+      }
     }
 
-    if (query.businessType) {
+    if (query.businessType !== undefined) {
+      if (query.businessType === '') {
+        queryBuilder.andWhere('(expense.businessType IS NULL OR expense.businessType = \'\')');
+      } else {
       queryBuilder.andWhere('expense.businessType = :businessType', {
         businessType: query.businessType,
       });
+      }
     }
 
     if (query.status !== undefined) {
@@ -1567,10 +1605,44 @@ export class ExpenseService {
       });
     }
 
-    if (query.salesperson) {
+    if (query.salesperson !== undefined) {
+      if (query.salesperson === '') {
+        queryBuilder.andWhere('(expense.salesperson IS NULL OR expense.salesperson = \'\')');
+      } else {
       queryBuilder.andWhere('expense.salesperson LIKE :salesperson', {
         salesperson: `%${query.salesperson}%`,
       });
+      }
+    }
+
+    if (query.chargeMethod !== undefined) {
+      if (query.chargeMethod === '') {
+        queryBuilder.andWhere('(expense.chargeMethod IS NULL OR expense.chargeMethod = \'\')');
+      } else {
+        queryBuilder.andWhere('expense.chargeMethod LIKE :chargeMethod', {
+          chargeMethod: `%${query.chargeMethod}%`,
+        });
+      }
+    }
+
+    if (query.receiptNo !== undefined) {
+      if (query.receiptNo === '') {
+        queryBuilder.andWhere('(expense.receiptNo IS NULL OR expense.receiptNo = \'\')');
+      } else {
+        queryBuilder.andWhere('expense.receiptNo LIKE :receiptNo', {
+          receiptNo: `%${query.receiptNo}%`,
+        });
+      }
+    }
+
+    if (query.auditor !== undefined) {
+      if (query.auditor === '') {
+        queryBuilder.andWhere('(expense.auditor IS NULL OR expense.auditor = \'\')');
+      } else {
+        queryBuilder.andWhere('expense.auditor LIKE :auditor', {
+          auditor: `%${query.auditor}%`,
+        });
+      }
     }
 
     if (query.chargeDateStart && query.chargeDateEnd) {
