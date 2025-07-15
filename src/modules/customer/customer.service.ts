@@ -154,100 +154,150 @@ export class CustomerService {
     }
 
     // 添加基础查询条件
-    if (keyword) {
-      queryBuilder.andWhere('customer.companyName LIKE :keyword', {
-        keyword: `%${keyword}%`,
-      });
+    if (keyword !== undefined) {
+      if (keyword === '') {
+        queryBuilder.andWhere('customer.companyName IS NULL');
+      } else {
+        queryBuilder.andWhere('customer.companyName LIKE :keyword', {
+          keyword: `%${keyword}%`,
+        });
+      }
     }
 
-    if (unifiedSocialCreditCode) {
-      queryBuilder.andWhere('customer.unifiedSocialCreditCode LIKE :unifiedSocialCreditCode', {
-        unifiedSocialCreditCode: `%${unifiedSocialCreditCode}%`,
-      });
+    if (unifiedSocialCreditCode !== undefined) {
+      if (unifiedSocialCreditCode === '') {
+        queryBuilder.andWhere('customer.unifiedSocialCreditCode IS NULL');
+      } else {
+        queryBuilder.andWhere('customer.unifiedSocialCreditCode LIKE :unifiedSocialCreditCode', {
+          unifiedSocialCreditCode: `%${unifiedSocialCreditCode}%`,
+        });
+      }
     }
 
-    if (consultantAccountant) {
-      queryBuilder.andWhere(
-        'customer.consultantAccountant LIKE :consultantAccountant',
-        {
-          consultantAccountant: `%${consultantAccountant}%`,
-        },
-      );
+    if (consultantAccountant !== undefined) {
+      if (consultantAccountant === '') {
+        queryBuilder.andWhere('customer.consultantAccountant IS NULL');
+      } else {
+        queryBuilder.andWhere(
+          'customer.consultantAccountant LIKE :consultantAccountant',
+          {
+            consultantAccountant: `%${consultantAccountant}%`,
+          },
+        );
+      }
     }
 
-    if (bookkeepingAccountant) {
-      queryBuilder.andWhere(
-        'customer.bookkeepingAccountant LIKE :bookkeepingAccountant',
-        {
-          bookkeepingAccountant: `%${bookkeepingAccountant}%`,
-        },
-      );
+    if (bookkeepingAccountant !== undefined) {
+      if (bookkeepingAccountant === '') {
+        queryBuilder.andWhere('customer.bookkeepingAccountant IS NULL');
+      } else {
+        queryBuilder.andWhere(
+          'customer.bookkeepingAccountant LIKE :bookkeepingAccountant',
+          {
+            bookkeepingAccountant: `%${bookkeepingAccountant}%`,
+          },
+        );
+      }
     }
 
-    if (taxBureau) {
-      queryBuilder.andWhere('customer.taxBureau LIKE :taxBureau', {
-        taxBureau: `%${taxBureau}%`,
-      });
+    if (taxBureau !== undefined) {
+      if (taxBureau === '') {
+        queryBuilder.andWhere('customer.taxBureau IS NULL');
+      } else {
+        queryBuilder.andWhere('customer.taxBureau LIKE :taxBureau', {
+          taxBureau: `%${taxBureau}%`,
+        });
+      }
     }
 
-    if (enterpriseType) {
-      queryBuilder.andWhere('customer.enterpriseType LIKE :enterpriseType', {
-        enterpriseType: `%${enterpriseType}%`,
-      });
+    if (enterpriseType !== undefined) {
+      if (enterpriseType === '') {
+        // 如果参数值为空字符串，则查询字段为 NULL 的记录
+        queryBuilder.andWhere('customer.enterpriseType IS NULL');
+      } else {
+        // 否则按照原来的方式查询
+        queryBuilder.andWhere('customer.enterpriseType LIKE :enterpriseType', {
+          enterpriseType: `%${enterpriseType}%`,
+        });
+      }
     }
 
-    if (industryCategory) {
-      queryBuilder.andWhere(
-        'customer.industryCategory LIKE :industryCategory',
-        {
-          industryCategory: `%${industryCategory}%`,
-        },
-      );
+    if (industryCategory !== undefined) {
+      if (industryCategory === '') {
+        queryBuilder.andWhere('customer.industryCategory IS NULL');
+      } else {
+        queryBuilder.andWhere(
+          'customer.industryCategory LIKE :industryCategory',
+          {
+            industryCategory: `%${industryCategory}%`,
+          },
+        );
+      }
     }
 
-    if (enterpriseStatus) {
-      queryBuilder.andWhere('customer.enterpriseStatus = :enterpriseStatus', {
-        enterpriseStatus,
-      });
+    if (enterpriseStatus !== undefined) {
+      if (enterpriseStatus === '') {
+        queryBuilder.andWhere('customer.enterpriseStatus IS NULL');
+      } else {
+        queryBuilder.andWhere('customer.enterpriseStatus = :enterpriseStatus', {
+          enterpriseStatus,
+        });
+      }
     }
 
-    if (customerLevel) {
-      queryBuilder.andWhere('customer.customerLevel = :customerLevel', {
-        customerLevel,
-      });
+    if (customerLevel !== undefined) {
+      if (customerLevel === '') {
+        queryBuilder.andWhere('customer.customerLevel IS NULL');
+      } else {
+        queryBuilder.andWhere('customer.customerLevel = :customerLevel', {
+          customerLevel,
+        });
+      }
     }
 
-    if (businessStatus) {
+    if (businessStatus !== undefined) {
       queryBuilder.andWhere('customer.businessStatus = :businessStatus', {
         businessStatus,
       });
     }
 
-    if (location) {
-      queryBuilder.andWhere('customer.location LIKE :location', {
-        location: `%${location}%`,
-      });
+    if (location !== undefined) {
+      if (location === '') {
+        queryBuilder.andWhere('customer.location IS NULL');
+      } else {
+        queryBuilder.andWhere('customer.location LIKE :location', {
+          location: `%${location}%`,
+        });
+      }
     }
 
     // 添加对JSON字段的搜索条件
-    if (contributorName) {
-      // MySQL中搜索JSON数组中的对象字段
-      queryBuilder.andWhere(
-        `JSON_SEARCH(JSON_EXTRACT(customer.paidInCapital, '$[*].name'), 'one', :contributorName) IS NOT NULL`,
-        {
-          contributorName: `%${contributorName}%`,
-        },
-      );
+    if (contributorName !== undefined) {
+      if (contributorName === '') {
+        queryBuilder.andWhere('customer.paidInCapital IS NULL OR JSON_LENGTH(customer.paidInCapital) = 0');
+      } else {
+        // MySQL中搜索JSON数组中的对象字段
+        queryBuilder.andWhere(
+          `JSON_SEARCH(JSON_EXTRACT(customer.paidInCapital, '$[*].name'), 'one', :contributorName) IS NOT NULL`,
+          {
+            contributorName: `%${contributorName}%`,
+          },
+        );
+      }
     }
 
-    if (licenseType) {
-      // MySQL中搜索JSON数组中的对象字段
-      queryBuilder.andWhere(
-        `JSON_SEARCH(JSON_EXTRACT(customer.administrativeLicense, '$[*].licenseType'), 'one', :licenseType) IS NOT NULL`,
-        {
-          licenseType: `%${licenseType}%`,
-        },
-      );
+    if (licenseType !== undefined) {
+      if (licenseType === '') {
+        queryBuilder.andWhere('customer.administrativeLicense IS NULL OR JSON_LENGTH(customer.administrativeLicense) = 0');
+      } else {
+        // MySQL中搜索JSON数组中的对象字段
+        queryBuilder.andWhere(
+          `JSON_SEARCH(JSON_EXTRACT(customer.administrativeLicense, '$[*].licenseType'), 'one', :licenseType) IS NOT NULL`,
+          {
+            licenseType: `%${licenseType}%`,
+          },
+        );
+      }
     }
 
     if (startDate && endDate) {
@@ -549,70 +599,112 @@ export class CustomerService {
       }
       
       // 添加过滤条件，参考findAll方法的查询条件部分
-      if (query.keyword) {
-        queryBuilder.andWhere(
-          '(customer.companyName LIKE :keyword OR customer.unifiedSocialCreditCode LIKE :keyword)',
-          {
-            keyword: `%${query.keyword}%`,
-          },
-        );
+      if (query.keyword !== undefined) {
+        if (query.keyword === '') {
+          queryBuilder.andWhere('customer.companyName IS NULL');
+        } else {
+          queryBuilder.andWhere(
+            '(customer.companyName LIKE :keyword OR customer.unifiedSocialCreditCode LIKE :keyword)',
+            {
+              keyword: `%${query.keyword}%`,
+            },
+          );
+        }
       }
 
-      if (query.unifiedSocialCreditCode) {
-        queryBuilder.andWhere('customer.unifiedSocialCreditCode LIKE :unifiedSocialCreditCode', {
-          unifiedSocialCreditCode: `%${query.unifiedSocialCreditCode}%`,
-        });
+      if (query.unifiedSocialCreditCode !== undefined) {
+        if (query.unifiedSocialCreditCode === '') {
+          queryBuilder.andWhere('customer.unifiedSocialCreditCode IS NULL');
+        } else {
+          queryBuilder.andWhere('customer.unifiedSocialCreditCode LIKE :unifiedSocialCreditCode', {
+            unifiedSocialCreditCode: `%${query.unifiedSocialCreditCode}%`,
+          });
+        }
       }
 
-      if (query.consultantAccountant) {
-        queryBuilder.andWhere('customer.consultantAccountant = :consultantAccountant', {
-          consultantAccountant: query.consultantAccountant,
-        });
+      if (query.consultantAccountant !== undefined) {
+        if (query.consultantAccountant === '') {
+          queryBuilder.andWhere('customer.consultantAccountant IS NULL');
+        } else {
+          queryBuilder.andWhere('customer.consultantAccountant = :consultantAccountant', {
+            consultantAccountant: query.consultantAccountant,
+          });
+        }
       }
 
-      if (query.bookkeepingAccountant) {
-        queryBuilder.andWhere('customer.bookkeepingAccountant = :bookkeepingAccountant', {
-          bookkeepingAccountant: query.bookkeepingAccountant,
-        });
+      if (query.bookkeepingAccountant !== undefined) {
+        if (query.bookkeepingAccountant === '') {
+          queryBuilder.andWhere('customer.bookkeepingAccountant IS NULL');
+        } else {
+          queryBuilder.andWhere('customer.bookkeepingAccountant = :bookkeepingAccountant', {
+            bookkeepingAccountant: query.bookkeepingAccountant,
+          });
+        }
       }
 
-      if (query.taxBureau) {
-        queryBuilder.andWhere('customer.taxBureau LIKE :taxBureau', {
-          taxBureau: `%${query.taxBureau}%`,
-        });
+      if (query.taxBureau !== undefined) {
+        if (query.taxBureau === '') {
+          queryBuilder.andWhere('customer.taxBureau IS NULL');
+        } else {
+          queryBuilder.andWhere('customer.taxBureau LIKE :taxBureau', {
+            taxBureau: `%${query.taxBureau}%`,
+          });
+        }
+      }
+      
+      if (query.enterpriseType !== undefined) {
+        if (query.enterpriseType === '') {
+          // 如果参数值为空字符串，则查询字段为 NULL 的记录
+          queryBuilder.andWhere('customer.enterpriseType IS NULL');
+        } else {
+          // 否则按照原来的方式查询
+          queryBuilder.andWhere('customer.enterpriseType LIKE :enterpriseType', {
+            enterpriseType: `%${query.enterpriseType}%`,
+          });
+        }
       }
 
-      if (query.enterpriseType) {
-        queryBuilder.andWhere('customer.enterpriseType LIKE :enterpriseType', {
-          enterpriseType: `%${query.enterpriseType}%`,
-        });
+      if (query.industryCategory !== undefined) {
+        if (query.industryCategory === '') {
+          queryBuilder.andWhere('customer.industryCategory IS NULL');
+        } else {
+          queryBuilder.andWhere(
+            'customer.industryCategory LIKE :industryCategory',
+            {
+              industryCategory: `%${query.industryCategory}%`,
+            },
+          );
+        }
       }
 
-      if (query.industryCategory) {
-        queryBuilder.andWhere(
-          'customer.industryCategory LIKE :industryCategory',
-          {
-            industryCategory: `%${query.industryCategory}%`,
-          },
-        );
+      if (query.enterpriseStatus !== undefined) {
+        if (query.enterpriseStatus === '') {
+          queryBuilder.andWhere('customer.enterpriseStatus IS NULL');
+        } else {
+          queryBuilder.andWhere('customer.enterpriseStatus = :enterpriseStatus', {
+            enterpriseStatus: query.enterpriseStatus,
+          });
+        }
       }
 
-      if (query.enterpriseStatus) {
-        queryBuilder.andWhere('customer.enterpriseStatus = :enterpriseStatus', {
-          enterpriseStatus: query.enterpriseStatus,
-        });
+      if (query.customerLevel !== undefined) {
+        if (query.customerLevel === '') {
+          queryBuilder.andWhere('customer.customerLevel IS NULL');
+        } else {
+          queryBuilder.andWhere('customer.customerLevel = :customerLevel', {
+            customerLevel: query.customerLevel,
+          });
+        }
       }
 
-      if (query.customerLevel) {
-        queryBuilder.andWhere('customer.customerLevel = :customerLevel', {
-          customerLevel: query.customerLevel,
-        });
-      }
-
-      if (query.location) {
-        queryBuilder.andWhere('customer.location LIKE :location', {
-          location: `%${query.location}%`,
-        });
+      if (query.location !== undefined) {
+        if (query.location === '') {
+          queryBuilder.andWhere('customer.location IS NULL');
+        } else {
+          queryBuilder.andWhere('customer.location LIKE :location', {
+            location: `%${query.location}%`,
+          });
+        }
       }
 
       if (query.startDate && query.endDate) {
