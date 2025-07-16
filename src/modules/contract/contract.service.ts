@@ -259,7 +259,8 @@ export class ContractService {
     
     // 检查每个合同的委托结束日期
     for (const contract of contracts) {
-      if (contract.entrustmentEndDate && contract.contractStatus !== '2') {
+      // 只有状态为'1'(已签署)的合同才能自动更新为已终止状态
+      if (contract.entrustmentEndDate && contract.contractStatus === '1') {
         // 确保比较的是日期而不是时间
         const endDate = new Date(contract.entrustmentEndDate);
         endDate.setHours(0, 0, 0, 0);
@@ -275,7 +276,7 @@ export class ContractService {
     
     // 批量更新过期合同的状态
     if (contractsToUpdate.length > 0) {
-      this.logger.log(`发现 ${contractsToUpdate.length} 个委托已到期的合同，更新状态为已终止`);
+      this.logger.log(`发现 ${contractsToUpdate.length} 个已签署且委托已到期的合同，更新状态为已终止`);
       await this.contractRepository.save(contractsToUpdate);
     }
     
@@ -444,7 +445,7 @@ export class ContractService {
     }
 
     // 检查并更新合同委托到期状态
-    if (contract.entrustmentEndDate && contract.contractStatus !== '2') {
+    if (contract.entrustmentEndDate && contract.contractStatus === '1') {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
@@ -511,8 +512,8 @@ export class ContractService {
       const endDate = new Date(updateContractDto.entrustmentEndDate);
       endDate.setHours(0, 0, 0, 0);
       
-      // 如果今天已经超过了委托结束日期，则将状态更新为已终止
-      if (today > endDate && (updateData.contractStatus === undefined || updateData.contractStatus !== '2')) {
+      // 如果今天已经超过了委托结束日期，且合同状态为已签署，则将状态更新为已终止
+      if (today > endDate && contract.contractStatus === '1') {
         this.logger.debug(`更新合同 #${id} 的委托结束日期为过去日期，自动设置状态为已终止`);
         updateData.contractStatus = '2';
       }
