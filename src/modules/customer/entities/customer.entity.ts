@@ -278,12 +278,11 @@ export class Customer {
 
   @Column({ 
     nullable: true,
-    type: 'enum', 
-    enum: BusinessStatus,
-    default: BusinessStatus.NORMAL,
+    type: 'varchar',
+    length: 50,
     comment: '当前业务的状态' 
   })
-  businessStatus: BusinessStatus;
+  businessStatus: string;
 
   @CreateDateColumn({ 
     nullable: true, 
