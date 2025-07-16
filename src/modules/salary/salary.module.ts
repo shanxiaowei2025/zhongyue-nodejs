@@ -15,6 +15,10 @@ import { AttendanceDeductionModule } from './attendance-deduction/attendance-ded
 import { SalaryBaseHistoryModule } from './salary-base-history/salary-base-history.module';
 import { CommissionModule } from './commission/commission.module';
 import { SalaryBaseHistory } from './salary-base-history/entities/salary-base-history.entity';
+import { User } from '../users/entities/user.entity';
+import { Role } from '../roles/entities/role.entity';
+import { Permission } from '../permissions/entities/permission.entity';
+import { Department } from '../department/entities/department.entity';
 
 // 提成表实体
 import { 
@@ -43,6 +47,11 @@ import {
       BusinessSalesCommission,
       BusinessConsultantCommission,
       BusinessOtherCommission,
+      // 权限相关实体
+      User,
+      Role,
+      Permission,
+      Department,
     ]),
     // 暂时注释考勤补贴模块，后续再实现
     // AttendanceSubsidyModule,

@@ -1,20 +1,28 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Not, Like } from 'typeorm';
 import { Salary } from './entities/salary.entity';
 import { CreateSalaryDto } from './dto/create-salary.dto';
 import { UpdateSalaryDto } from './dto/update-salary.dto';
 import { QuerySalaryDto } from './dto/query-salary.dto';
 import { safeDateParam, safePaginationParams } from 'src/common/utils';
+import { SalaryPermissionService } from './services/salary-permission.service';
 
 @Injectable()
 export class SalaryService {
   constructor(
     @InjectRepository(Salary)
     private readonly salaryRepository: Repository<Salary>,
+    private readonly salaryPermissionService: SalaryPermissionService,
   ) {}
 
-  async create(createSalaryDto: CreateSalaryDto): Promise<Salary> {
+  async create(createSalaryDto: CreateSalaryDto, userId: number): Promise<Salary> {
+    // 检查权限
+    const hasPermission = await this.salaryPermissionService.hasSalaryCreatePermission(userId);
+    if (!hasPermission) {
+      throw new ForbiddenException('没有创建薪资记录的权限');
+    }
+
     // 先计算所有衍生字段
     const salaryWithDerivedFields = this.calculateDerivedFields(createSalaryDto);
     const salary = this.salaryRepository.create(salaryWithDerivedFields);
@@ -22,7 +30,13 @@ export class SalaryService {
   }
 
   // 添加批量创建薪资记录的方法
-  async createBatch(createSalaryDtos: CreateSalaryDto[]): Promise<{ success: boolean; message: string; count: number }> {
+  async createBatch(createSalaryDtos: CreateSalaryDto[], userId: number): Promise<{ success: boolean; message: string; count: number }> {
+    // 检查权限
+    const hasPermission = await this.salaryPermissionService.hasSalaryCreatePermission(userId);
+    if (!hasPermission) {
+      throw new ForbiddenException('没有创建薪资记录的权限');
+    }
+    
     const salaries = createSalaryDtos.map(dto => {
       const withDerivedFields = this.calculateDerivedFields(dto);
       return this.salaryRepository.create(withDerivedFields);
@@ -103,7 +117,7 @@ export class SalaryService {
     return result;
   }
 
-  async findAll(query: QuerySalaryDto) {
+  async findAll(query: QuerySalaryDto, userId: number) {
     console.log('薪资查询参数:', JSON.stringify(query));
     
     // 确保分页参数是有效的数字
@@ -116,6 +130,52 @@ export class SalaryService {
     
     const queryBuilder = this.salaryRepository.createQueryBuilder('salary');
     
+    // 获取权限过滤条件
+    const filterConditions = await this.salaryPermissionService.buildSalaryQueryFilter(userId);
+    
+    // 应用权限过滤条件
+    if (Array.isArray(filterConditions)) {
+      // 如果是条件数组，使用OR连接
+      const whereConditions = [];
+      
+      for (const condition of filterConditions) {
+        if (condition.notDepartment) {
+          // 处理特殊条件：非分公司
+          whereConditions.push("salary.department NOT LIKE '%分公司'");
+        } else if (Object.keys(condition).length > 0) {
+          // 处理普通条件
+          const subConditions = [];
+          for (const key in condition) {
+            subConditions.push(`salary.${key} = :${key}${whereConditions.length}`);
+            queryBuilder.setParameter(`${key}${whereConditions.length}`, condition[key]);
+          }
+          if (subConditions.length > 0) {
+            whereConditions.push(`(${subConditions.join(' AND ')})`);
+          }
+        } else {
+          // 空对象表示无限制（查看所有权限）
+          whereConditions.push('1=1');
+        }
+      }
+      
+      if (whereConditions.length > 0) {
+        queryBuilder.andWhere(`(${whereConditions.join(' OR ')})`);
+      }
+    } else if (filterConditions.notDepartment) {
+      // 处理非分公司条件
+      queryBuilder.andWhere("salary.department NOT LIKE '%分公司'");
+    } else if (Object.keys(filterConditions).length > 0) {
+      // 处理单一对象条件
+      for (const key in filterConditions) {
+        if (key !== 'notDepartment') {
+          queryBuilder.andWhere(`salary.${key} = :${key}`, {
+            [key]: filterConditions[key],
+          });
+        }
+      }
+    }
+    
+    // 应用其他查询条件
     if (department) {
       queryBuilder.andWhere('salary.department LIKE :department', { department: `%${department}%` });
     }
@@ -189,38 +249,115 @@ export class SalaryService {
     };
   }
 
-  async findOne(id: number): Promise<Salary> {
+  async findOne(id: number, userId: number): Promise<Salary> {
     // 确保id是有效的数字
     const safeId = Number(id);
     if (isNaN(safeId)) {
       console.error(`无效的ID值: ${id}, 转换后: ${safeId}`);
-      return null;
+      throw new NotFoundException(`无效的薪资记录ID: ${id}`);
     }
-    return this.salaryRepository.findOne({ where: { id: safeId } });
+    
+    // 获取薪资记录
+    const salary = await this.salaryRepository.findOne({ where: { id: safeId } });
+    
+    if (!salary) {
+      throw new NotFoundException(`ID为${id}的薪资记录不存在`);
+    }
+    
+    // 获取用户权限过滤条件
+    const filterConditions = await this.salaryPermissionService.buildSalaryQueryFilter(userId);
+    
+    // 检查用户是否有权限查看该记录
+    if (Array.isArray(filterConditions)) {
+      // 多个条件，任一条件满足即可
+      let hasAccess = false;
+      for (const condition of filterConditions) {
+        if (this.checkAccess(salary, condition)) {
+          hasAccess = true;
+          break;
+        }
+      }
+      
+      if (!hasAccess) {
+        throw new ForbiddenException('没有权限查看该薪资记录');
+      }
+    } else if (!this.checkAccess(salary, filterConditions)) {
+      throw new ForbiddenException('没有权限查看该薪资记录');
+    }
+    
+    return salary;
   }
 
-  async update(id: number, updateSalaryDto: UpdateSalaryDto): Promise<Salary> {
+  async update(id: number, updateSalaryDto: UpdateSalaryDto, userId: number): Promise<Salary> {
+    // 检查权限
+    const hasPermission = await this.salaryPermissionService.hasSalaryEditPermission(userId);
+    if (!hasPermission) {
+      throw new ForbiddenException('没有编辑薪资记录的权限');
+    }
+    
     // 确保id是有效的数字
     const safeId = Number(id);
     if (isNaN(safeId)) {
       console.error(`更新时无效的ID值: ${id}, 转换后: ${safeId}`);
-      return null;
+      throw new NotFoundException(`无效的薪资记录ID: ${id}`);
+    }
+    
+    // 检查记录是否存在
+    const existingSalary = await this.findOne(safeId, userId);
+    if (!existingSalary) {
+      throw new NotFoundException(`ID为${id}的薪资记录不存在`);
     }
     
     // 先计算衍生字段
     const dataWithDerivedFields = this.calculateDerivedFields(updateSalaryDto);
     
     await this.salaryRepository.update(safeId, dataWithDerivedFields);
-    return this.findOne(safeId);
+    return this.findOne(safeId, userId);
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(id: number, userId: number): Promise<void> {
+    // 检查权限
+    const hasPermission = await this.salaryPermissionService.hasSalaryDeletePermission(userId);
+    if (!hasPermission) {
+      throw new ForbiddenException('没有删除薪资记录的权限');
+    }
+    
     // 确保id是有效的数字
     const safeId = Number(id);
     if (isNaN(safeId)) {
       console.error(`删除时无效的ID值: ${id}, 转换后: ${safeId}`);
-      return;
+      throw new NotFoundException(`无效的薪资记录ID: ${id}`);
     }
+    
+    // 检查记录是否存在
+    const existingSalary = await this.findOne(safeId, userId);
+    if (!existingSalary) {
+      throw new NotFoundException(`ID为${id}的薪资记录不存在`);
+    }
+    
     await this.salaryRepository.delete(safeId);
+  }
+  
+  // 检查薪资记录是否符合访问条件
+  private checkAccess(salary: Salary, condition: any): boolean {
+    // 空条件表示可以访问所有记录
+    if (!condition || Object.keys(condition).length === 0) {
+      return true;
+    }
+    
+    // 特殊条件：非分公司
+    if (condition.notDepartment) {
+      return !salary.department || salary.department.length < 3 || 
+             salary.department.substring(salary.department.length - 3) !== '分公司';
+    }
+    
+    // 普通条件匹配
+    for (const key in condition) {
+      if (key !== 'notDepartment' && salary[key] !== condition[key]) {
+        return false;
+      }
+    }
+    
+    return true;
   }
 }
