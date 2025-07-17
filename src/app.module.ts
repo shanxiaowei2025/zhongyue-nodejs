@@ -21,6 +21,10 @@ import { CombinedAuthGuard } from './modules/auth/guards/combined-auth.guard';
 import { EnterpriseServiceModule } from './modules/enterprise-service/enterprise-service.module'; // 新增企业服务模块
 import { EmployeeModule } from './modules/employee/employee.module'; // 新增员工模块
 import { SalaryModule } from './modules/salary/salary.module'; // 新增薪资模块
+import { SocialInsuranceModule } from './modules/salary/social-insurance/social-insurance.module'; // 直接导入社保信息模块
+import { SubsidySummaryModule } from './modules/salary/subsidy-summary/subsidy-summary.module'; // 直接导入补贴合计模块
+import { FriendCirclePaymentModule } from './modules/salary/friend-circle-payment/friend-circle-payment.module'; // 直接导入朋友圈扣款模块
+import { AttendanceDeductionModule } from './modules/salary/attendance-deduction/attendance-deduction.module'; // 直接导入考勤扣款模块
 import { AttendanceModule } from './modules/attendance/attendance.module'; // 新增考勤模块
 
 // 导入各种配置文件
@@ -153,6 +157,10 @@ import {
     EnterpriseServiceModule, // 企业服务模块：处理企业服务相关的功能
     EmployeeModule, // 员工模块：处理员工相关的功能
     SalaryModule, // 薪资模块：处理薪资相关的功能
+    SocialInsuranceModule, // 社保信息模块：直接导入，避免路由冲突
+    SubsidySummaryModule, // 补贴合计模块：直接导入，避免路由冲突
+    FriendCirclePaymentModule, // 朋友圈扣款模块：直接导入，避免路由冲突
+    AttendanceDeductionModule, // 考勤扣款模块：直接导入，避免路由冲突
     AttendanceModule, // 考勤模块：处理考勤同步相关的功能
   ],
   controllers: [AppController], // 控制器：负责接收请求，像前台接待

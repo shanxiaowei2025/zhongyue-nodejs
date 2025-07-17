@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from '../../auth/auth.module';
 
 import { CommissionController } from './commission.controller';
 import { CommissionService } from './commission.service';
@@ -20,7 +21,8 @@ import {
       BusinessConsultantCommission,
       BusinessOtherCommission,
       PerformanceCommission
-    ])
+    ]),
+    AuthModule
   ],
   controllers: [CommissionController],
   providers: [CommissionService],

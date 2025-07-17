@@ -14,7 +14,7 @@ import { memoryStorage } from 'multer';
 
 @ApiTags('薪资管理朋友圈扣款')
 @ApiBearerAuth()
-@Controller('salary/friend-circle-payment')
+@Controller('friend-circle-payment')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class FriendCirclePaymentController {
   constructor(private readonly friendCirclePaymentService: FriendCirclePaymentService) {}

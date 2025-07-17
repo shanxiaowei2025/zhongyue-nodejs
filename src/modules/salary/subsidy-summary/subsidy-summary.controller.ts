@@ -13,7 +13,7 @@ import { memoryStorage } from 'multer';
 
 @ApiTags('薪资管理补贴合计')
 @ApiBearerAuth()
-@Controller('salary/subsidy-summary')
+@Controller('subsidy-summary')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class SubsidySummaryController {
   constructor(private readonly subsidySummaryService: SubsidySummaryService) {}

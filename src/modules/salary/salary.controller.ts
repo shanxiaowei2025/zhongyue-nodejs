@@ -255,7 +255,7 @@ export class SalaryController {
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权' })
   async findOne(@Param('id') id: string, @Req() req: RequestWithUser) {
     try {
-      const safeId = safeIdParam(id);
+    const safeId = safeIdParam(id);
       return this.salaryService.findOne(safeId, req.user.id);
     } catch (error) {
       throw new HttpException(
@@ -278,7 +278,7 @@ export class SalaryController {
     @Req() req: RequestWithUser,
   ) {
     try {
-      const safeId = safeIdParam(id);
+    const safeId = safeIdParam(id);
       return this.salaryService.update(safeId, updateSalaryDto, req.user.id);
     } catch (error) {
       throw new HttpException(
@@ -296,7 +296,7 @@ export class SalaryController {
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权' })
   async remove(@Param('id') id: string, @Req() req: RequestWithUser) {
     try {
-      const safeId = safeIdParam(id);
+    const safeId = safeIdParam(id);
       await this.salaryService.remove(safeId, req.user.id);
       return { message: '删除成功' };
     } catch (error) {

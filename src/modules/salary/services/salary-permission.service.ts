@@ -91,7 +91,7 @@ export class SalaryPermissionService {
       return this.hasSalaryDeletePermission(userId);
     } else {
       // 查询操作，将在buildSalaryQueryFilter中处理
-      return true;
+    return true;
     }
   }
 

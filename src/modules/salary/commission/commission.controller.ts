@@ -1,7 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CommissionService } from './commission.service';
 import { Public } from '../../auth/decorators/public.decorator';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
 
 import {
   CreateAgencyCommissionDto,
@@ -21,11 +24,13 @@ import {
 
 @ApiTags('薪资管理提成表')
 @Controller('commission')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class CommissionController {
   constructor(private readonly commissionService: CommissionService) {}
 
   // 代理费提成表接口
   @Post('agency')
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: '创建代理费提成记录' })
   @ApiResponse({ status: 201, description: '创建成功' })
   createAgencyCommission(@Body() dto: CreateAgencyCommissionDto) {
@@ -33,12 +38,14 @@ export class CommissionController {
   }
 
   @Get('agency')
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: '查询代理费提成记录列表' })
   findAllAgencyCommission(@Query() query: QueryAgencyCommissionDto) {
     return this.commissionService.findAllAgencyCommission(query);
   }
 
   @Get('agency/:id')
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: '查询单个代理费提成记录' })
   @ApiParam({ name: 'id', description: '记录ID' })
   findOneAgencyCommission(@Param('id') id: string) {
@@ -46,6 +53,7 @@ export class CommissionController {
   }
 
   @Patch('agency/:id')
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: '更新代理费提成记录' })
   @ApiParam({ name: 'id', description: '记录ID' })
   updateAgencyCommission(
@@ -56,6 +64,7 @@ export class CommissionController {
   }
 
   @Delete('agency/:id')
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: '删除代理费提成记录' })
   @ApiParam({ name: 'id', description: '记录ID' })
   @ApiResponse({ status: 204, description: '删除成功' })
@@ -65,6 +74,7 @@ export class CommissionController {
 
   // 业务提成表销售接口
   @Post('sales')
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: '创建业务提成表销售记录' })
   @ApiResponse({ status: 201, description: '创建成功' })
   createBusinessSalesCommission(@Body() dto: CreateBusinessSalesCommissionDto) {
@@ -72,12 +82,14 @@ export class CommissionController {
   }
 
   @Get('sales')
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: '查询业务提成表销售记录列表' })
   findAllBusinessSalesCommission(@Query() query: QueryBusinessSalesCommissionDto) {
     return this.commissionService.findAllBusinessSalesCommission(query);
   }
 
   @Get('sales/:id')
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: '查询单个业务提成表销售记录' })
   @ApiParam({ name: 'id', description: '记录ID' })
   findOneBusinessSalesCommission(@Param('id') id: string) {
@@ -85,6 +97,7 @@ export class CommissionController {
   }
 
   @Patch('sales/:id')
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: '更新业务提成表销售记录' })
   @ApiParam({ name: 'id', description: '记录ID' })
   updateBusinessSalesCommission(
@@ -95,6 +108,7 @@ export class CommissionController {
   }
 
   @Delete('sales/:id')
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: '删除业务提成表销售记录' })
   @ApiParam({ name: 'id', description: '记录ID' })
   @ApiResponse({ status: 204, description: '删除成功' })
@@ -104,6 +118,7 @@ export class CommissionController {
 
   // 业务提成表顾问接口
   @Post('consultant')
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: '创建业务提成表顾问记录' })
   @ApiResponse({ status: 201, description: '创建成功' })
   createBusinessConsultantCommission(@Body() dto: CreateBusinessConsultantCommissionDto) {
@@ -111,12 +126,14 @@ export class CommissionController {
   }
 
   @Get('consultant')
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: '查询业务提成表顾问记录列表' })
   findAllBusinessConsultantCommission(@Query() query: QueryBusinessCommissionDto) {
     return this.commissionService.findAllBusinessConsultantCommission(query);
   }
 
   @Get('consultant/:id')
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: '查询单个业务提成表顾问记录' })
   @ApiParam({ name: 'id', description: '记录ID' })
   findOneBusinessConsultantCommission(@Param('id') id: string) {
@@ -124,6 +141,7 @@ export class CommissionController {
   }
 
   @Patch('consultant/:id')
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: '更新业务提成表顾问记录' })
   @ApiParam({ name: 'id', description: '记录ID' })
   updateBusinessConsultantCommission(
@@ -134,6 +152,7 @@ export class CommissionController {
   }
 
   @Delete('consultant/:id')
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: '删除业务提成表顾问记录' })
   @ApiParam({ name: 'id', description: '记录ID' })
   @ApiResponse({ status: 204, description: '删除成功' })
@@ -143,6 +162,7 @@ export class CommissionController {
 
   // 业务提成表其他接口
   @Post('other')
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: '创建业务提成表其他记录' })
   @ApiResponse({ status: 201, description: '创建成功' })
   createBusinessOtherCommission(@Body() dto: CreateBusinessOtherCommissionDto) {
@@ -150,12 +170,14 @@ export class CommissionController {
   }
 
   @Get('other')
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: '查询业务提成表其他记录列表' })
   findAllBusinessOtherCommission(@Query() query: QueryBusinessCommissionDto) {
     return this.commissionService.findAllBusinessOtherCommission(query);
   }
 
   @Get('other/:id')
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: '查询单个业务提成表其他记录' })
   @ApiParam({ name: 'id', description: '记录ID' })
   findOneBusinessOtherCommission(@Param('id') id: string) {
@@ -163,6 +185,7 @@ export class CommissionController {
   }
 
   @Patch('other/:id')
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: '更新业务提成表其他记录' })
   @ApiParam({ name: 'id', description: '记录ID' })
   updateBusinessOtherCommission(
@@ -173,6 +196,7 @@ export class CommissionController {
   }
 
   @Delete('other/:id')
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: '删除业务提成表其他记录' })
   @ApiParam({ name: 'id', description: '记录ID' })
   @ApiResponse({ status: 204, description: '删除成功' })
@@ -283,6 +307,7 @@ export class CommissionController {
 
   // 绩效提成表接口
   @Post('performance')
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: '创建绩效提成记录' })
   @ApiResponse({ status: 201, description: '创建成功' })
   createPerformanceCommission(@Body() dto: CreatePerformanceCommissionDto) {
@@ -290,12 +315,14 @@ export class CommissionController {
   }
 
   @Get('performance')
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: '查询绩效提成记录列表' })
   findAllPerformanceCommission(@Query() query: QueryPerformanceCommissionDto) {
     return this.commissionService.findAllPerformanceCommission(query);
   }
 
   @Get('performance/:id')
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: '查询单个绩效提成记录' })
   @ApiParam({ name: 'id', description: '记录ID' })
   findOnePerformanceCommission(@Param('id') id: string) {
@@ -303,6 +330,7 @@ export class CommissionController {
   }
 
   @Patch('performance/:id')
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: '更新绩效提成记录' })
   @ApiParam({ name: 'id', description: '记录ID' })
   updatePerformanceCommission(
@@ -313,6 +341,7 @@ export class CommissionController {
   }
 
   @Delete('performance/:id')
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: '删除绩效提成记录' })
   @ApiParam({ name: 'id', description: '记录ID' })
   @ApiResponse({ status: 204, description: '删除成功' })

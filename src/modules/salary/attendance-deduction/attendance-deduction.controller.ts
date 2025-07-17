@@ -13,7 +13,7 @@ import { memoryStorage } from 'multer';
 
 @ApiTags('薪资管理考勤扣款')
 @ApiBearerAuth()
-@Controller('salary/attendance-deduction')
+@Controller('attendance-deduction')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AttendanceDeductionController {
   constructor(private readonly attendanceDeductionService: AttendanceDeductionService) {}
