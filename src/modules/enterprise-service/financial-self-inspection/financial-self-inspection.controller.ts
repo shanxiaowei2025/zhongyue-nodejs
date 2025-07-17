@@ -12,6 +12,7 @@ import { UpdateReviewerFieldsDto } from './dto/update-reviewer-fields.dto';
 import { QueryInspectorCountDto } from './dto/query-inspector-count.dto';
 import { QueryReviewerCountDto } from './dto/query-reviewer-count.dto';
 import { CountResponseDto } from './dto/count-response.dto';
+import { CountByUserResponseDto } from './dto/count-by-user-response.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
@@ -140,9 +141,10 @@ export class FinancialSelfInspectionController {
   }
 
   @Get('count-as-inspector')
+  @Roles('admin', 'super_admin') // 只有管理员和超级管理员可以调用
   @ApiOperation({ 
-    summary: '统计当前用户作为抽查人的记录数量',
-    description: '根据日期范围统计当前用户作为抽查人的记录数量，返回符合条件的记录总数。如果使用相同的开始日期和结束日期，会统计整天的数据。'
+    summary: '统计每个用户作为抽查人的记录数量【仅管理员】',
+    description: '根据日期范围统计每个用户作为抽查人的记录数量，返回每个用户的统计数和总数。如果使用相同的开始日期和结束日期，会统计整天的数据。需要管理员或超级管理员权限。'
   })
   @ApiQuery({ 
     name: 'startDate', 
@@ -159,24 +161,24 @@ export class FinancialSelfInspectionController {
   @ApiResponse({ 
     status: 200, 
     description: '统计成功', 
-    type: CountResponseDto 
+    type: CountByUserResponseDto 
   })
-  countAsInspector(@Query() queryDto: QueryInspectorCountDto, @Request() req) {
-    const username = req.user.username;
-    const roles = req.user.roles || [];
-    const isAdmin = roles.includes('admin') || roles.includes('super_admin');
+  @ApiResponse({ 
+    status: 403, 
+    description: '权限不足，需要管理员权限' 
+  })
+  countAsInspector(@Query() queryDto: QueryInspectorCountDto) {
     return this.financialSelfInspectionService.countAsInspector(
-      username, 
       queryDto.startDate, 
-      queryDto.endDate, 
-      isAdmin
+      queryDto.endDate
     );
   }
 
   @Get('count-as-reviewer')
+  @Roles('admin', 'super_admin') // 只有管理员和超级管理员可以调用
   @ApiOperation({ 
-    summary: '统计当前用户作为复查人的记录数量',
-    description: '根据日期范围统计当前用户作为复查人的记录数量，返回符合条件的记录总数。如果使用相同的开始日期和结束日期，会统计整天的数据。'
+    summary: '统计每个用户作为复查人的记录数量【仅管理员】',
+    description: '根据日期范围统计每个用户作为复查人的记录数量，返回每个用户的统计数和总数。如果使用相同的开始日期和结束日期，会统计整天的数据。需要管理员或超级管理员权限。'
   })
   @ApiQuery({ 
     name: 'startDate', 
@@ -193,17 +195,16 @@ export class FinancialSelfInspectionController {
   @ApiResponse({ 
     status: 200, 
     description: '统计成功', 
-    type: CountResponseDto 
+    type: CountByUserResponseDto 
   })
-  countAsReviewer(@Query() queryDto: QueryReviewerCountDto, @Request() req) {
-    const username = req.user.username;
-    const roles = req.user.roles || [];
-    const isAdmin = roles.includes('admin') || roles.includes('super_admin');
+  @ApiResponse({ 
+    status: 403, 
+    description: '权限不足，需要管理员权限' 
+  })
+  countAsReviewer(@Query() queryDto: QueryReviewerCountDto) {
     return this.financialSelfInspectionService.countAsReviewer(
-      username, 
       queryDto.startDate, 
-      queryDto.endDate, 
-      isAdmin
+      queryDto.endDate
     );
   }
 } 
