@@ -256,9 +256,13 @@ export class CustomerService {
     }
 
     if (businessStatus !== undefined) {
-      queryBuilder.andWhere('customer.businessStatus = :businessStatus', {
-        businessStatus,
-      });
+      if (businessStatus === '') {
+        queryBuilder.andWhere('(customer.businessStatus IS NULL OR customer.businessStatus = \'\')');
+      } else {
+        queryBuilder.andWhere('customer.businessStatus = :businessStatus', {
+          businessStatus,
+        });
+      }
     }
 
     if (location !== undefined) {
