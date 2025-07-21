@@ -28,6 +28,11 @@ export class QueryFinancialSelfInspectionDto {
   @IsString()
   inspector?: string;
 
+  @ApiProperty({ description: '复查人', required: false })
+  @IsOptional()
+  @IsString()
+  reviewer?: string;
+
   @ApiProperty({ description: '抽查日期开始', required: false })
   @IsOptional()
   @IsDateString()

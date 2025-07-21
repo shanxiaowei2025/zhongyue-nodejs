@@ -57,6 +57,15 @@ export class CreateEmployeeDto {
   position?: string;
 
   /**
+   * 职级
+   * @example 'P5'
+   */
+  @ApiProperty({ description: '职级', example: 'P5', required: false })
+  @IsString()
+  @IsOptional()
+  rank?: string;
+
+  /**
    * 是否离职
    * @example false
    */

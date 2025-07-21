@@ -6,6 +6,9 @@ import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { QueryEmployeeDto } from './dto/query-employee.dto';
 import { Employee } from './entities/employee.entity';
 import { Cron } from '@nestjs/schedule';
+import { SalaryBaseHistoryService } from '../salary/salary-base-history/salary-base-history.service';
+import { Request } from 'express';
+import { PerformanceCommission } from '../salary/commission/entities/performance-commission.entity';
 
 @Injectable()
 export class EmployeeService {
@@ -29,6 +32,9 @@ export class EmployeeService {
   constructor(
     @InjectRepository(Employee)
     private employeeRepository: Repository<Employee>,
+    @InjectRepository(PerformanceCommission)
+    private performanceCommissionRepository: Repository<PerformanceCommission>,
+    private salaryBaseHistoryService: SalaryBaseHistoryService,
   ) {
     // 启动时执行一次工龄修复
     this.fixWorkYearsForAllEmployees();
@@ -59,7 +65,7 @@ export class EmployeeService {
     
     // 工龄不能为负数，且最大为5年
     const result = Math.min(5, Math.max(0, yearsDiff));
-    this.logger.log(`计算工龄结果: ${yearsDiff}年，限制后为: ${result}年`);
+    this.logger.debug(`计算工龄结果: ${yearsDiff}年，限制后为: ${result}年`);
     return result;
   }
 
@@ -77,7 +83,7 @@ export class EmployeeService {
     const isInExcludedList = this.excludedEmployeeNames.includes(trimmedName);
     const isExcluded = isExactMatch || isInExcludedList;
     
-    this.logger.log(`检查员工 "${trimmedName}" 是否为特定人员: ${isExcluded} (精确匹配: ${isExactMatch}, 在排除列表: ${isInExcludedList})`);
+    this.logger.debug(`检查员工 "${trimmedName}" 是否为特定人员: ${isExcluded} (精确匹配: ${isExactMatch}, 在排除列表: ${isInExcludedList})`);
     return isExcluded;
   }
 
@@ -92,14 +98,14 @@ export class EmployeeService {
     const trimmedName = name.trim();
     for (const [employeeName, workYears] of Object.entries(this.fixedWorkYears)) {
       if (employeeName === trimmedName) {
-        this.logger.log(`特定人员 "${trimmedName}" 的固定工龄: ${workYears}`);
+        this.logger.debug(`特定人员 "${trimmedName}" 的固定工龄: ${workYears}`);
         return workYears;
       }
     }
     
     // 如果在排除列表但没有固定工龄，保持原工龄不变
     if (this.excludedEmployeeNames.includes(trimmedName)) {
-      this.logger.log(`特定人员 "${trimmedName}" 在排除列表中，但没有设置固定工龄`);
+      this.logger.debug(`特定人员 "${trimmedName}" 在排除列表中，但没有设置固定工龄`);
       return null; 
     }
     
@@ -118,17 +124,17 @@ export class EmployeeService {
     if (this.isExcludedEmployee(employee.name)) {
       const fixedWorkYears = this.getFixedWorkYears(employee.name);
       if (fixedWorkYears !== null) {
-        this.logger.log(`使用特定人员 "${employee.name}" 的固定工龄: ${fixedWorkYears}`);
+        this.logger.debug(`使用特定人员 "${employee.name}" 的固定工龄: ${fixedWorkYears}`);
         employee.workYears = fixedWorkYears;
       } else {
-        this.logger.log(`特定人员 "${employee.name}" 保持原工龄不变: ${employee.workYears}`);
+        this.logger.debug(`特定人员 "${employee.name}" 保持原工龄不变: ${employee.workYears}`);
       }
       return employee;
     }
     
     // 如果是普通员工，限制工龄最大为5年
     if (employee.workYears > 5) {
-      this.logger.log(`限制员工 "${employee.name}" 的工龄: ${employee.workYears} -> 5`);
+      this.logger.debug(`限制员工 "${employee.name}" 的工龄: ${employee.workYears} -> 5`);
       employee.workYears = 5;
     }
     
@@ -195,7 +201,7 @@ export class EmployeeService {
    * @returns 员工列表和总数
    */
   async findAll(queryEmployeeDto: QueryEmployeeDto) {
-    const { page = 1, pageSize = 10, name, departmentId, employeeType, idCardNumber, commissionRatePosition, position, isResigned } = queryEmployeeDto;
+    const { page = 1, pageSize = 10, name, departmentId, employeeType, idCardNumber, commissionRatePosition, position, rank, isResigned } = queryEmployeeDto;
     const skip = (page - 1) * pageSize;
     
     // 构建查询条件
@@ -223,6 +229,10 @@ export class EmployeeService {
 
     if (position) {
       where.position = Like(`%${position}%`);
+    }
+    
+    if (rank) {
+      where.rank = Like(`%${rank}%`);
     }
     
     if (isResigned !== undefined) {
@@ -294,9 +304,10 @@ export class EmployeeService {
    * 更新员工信息
    * @param id 员工ID
    * @param updateEmployeeDto 更新数据
+   * @param req 请求对象，用于获取当前用户
    * @returns 更新后的员工信息
    */
-  async update(id: number, updateEmployeeDto: UpdateEmployeeDto): Promise<Employee> {
+  async update(id: number, updateEmployeeDto: UpdateEmployeeDto, req?: Request): Promise<Employee> {
     // 先获取原始员工信息
     const employee = await this.findOne(id);
     this.logger.log(`开始更新员工 ${id} - 名字: "${employee.name}", 当前工龄: ${employee.workYears}`);
@@ -329,9 +340,10 @@ export class EmployeeService {
       this.logger.log(`更新resume数据: ${JSON.stringify(updateEmployeeDto.resume)}`);
     }
     
-    // 保存更新前的入职时间和工龄
+    // 保存更新前的入职时间、工龄和底薪
     const oldHireDate = employee.hireDate;
     const originalWorkYears = employee.workYears;
+    const originalBaseSalary = employee.baseSalary;
     
     // 如果更新了入职时间，记录日志
     if (updateEmployeeDto.hireDate) {
@@ -353,6 +365,44 @@ export class EmployeeService {
     const updateData = { ...updateEmployeeDto };
     delete updateData['idCardNumber'];
     
+    // 检查是否修改了rank字段且position为记账会计，如果是则更新baseSalary
+    if (updateEmployeeDto.rank && 
+        (employee.position === '记账会计' || updateEmployeeDto.position === '记账会计')) {
+      
+      this.logger.log(`检测到rank字段更新且position为记账会计，rank值: ${updateEmployeeDto.rank}`);
+      
+      // 解析rank格式，例如 "P3-2" -> pLevel="P3", gradeLevel="2"
+      const rankMatch = updateEmployeeDto.rank.match(/^(P\d+)-(\d+)$/);
+      if (rankMatch) {
+        const pLevel = rankMatch[1]; // 例如 P3
+        const gradeLevel = rankMatch[2]; // 例如 2
+        
+        this.logger.log(`解析rank值: ${updateEmployeeDto.rank}, pLevel=${pLevel}, gradeLevel=${gradeLevel}`);
+        
+        try {
+          // 查询匹配的绩效提成记录
+          const performanceCommission = await this.performanceCommissionRepository.findOne({
+            where: {
+              pLevel: pLevel,
+              gradeLevel: gradeLevel
+            }
+          });
+          
+          // 如果找到匹配记录，则更新baseSalary
+          if (performanceCommission && performanceCommission.baseSalary !== undefined) {
+            this.logger.log(`找到匹配的绩效提成记录，自动更新baseSalary: ${originalBaseSalary || 0} -> ${performanceCommission.baseSalary}`);
+            updateData.baseSalary = performanceCommission.baseSalary;
+          } else {
+            this.logger.warn(`未找到匹配的绩效提成记录: pLevel=${pLevel}, gradeLevel=${gradeLevel}`);
+          }
+        } catch (error) {
+          this.logger.error(`查询绩效提成记录出错:`, error);
+        }
+      } else {
+        this.logger.warn(`rank字段格式不正确，无法自动更新baseSalary: ${updateEmployeeDto.rank}`);
+      }
+    }
+    
     // 更新员工信息
     Object.assign(employee, updateData);
     
@@ -362,26 +412,49 @@ export class EmployeeService {
       const fixedWorkYears = this.getFixedWorkYears(employee.name);
       if (fixedWorkYears !== null) {
         employee.workYears = fixedWorkYears;
-        this.logger.log(`强制设置特定人员 "${employee.name}" 的工龄为固定值: ${fixedWorkYears}`);
+        this.logger.debug(`强制设置特定人员 "${employee.name}" 的工龄为固定值: ${fixedWorkYears}`);
       } else {
         employee.workYears = originalWorkYears;
-        this.logger.log(`保持特定人员 "${employee.name}" 的工龄不变: ${originalWorkYears}`);
+        this.logger.debug(`保持特定人员 "${employee.name}" 的工龄不变: ${originalWorkYears}`);
       }
     } else if (employee.hireDate && (updateEmployeeDto.hireDate || !oldHireDate)) {
       // 对于普通员工，如果入职时间更新，重新计算工龄
       const calculatedWorkYears = this.calculateWorkYears(employee.hireDate);
       employee.workYears = calculatedWorkYears;
-      this.logger.log(`更新普通员工 "${employee.name}" 的工龄: ${originalWorkYears || 0} -> ${calculatedWorkYears}`);
+      this.logger.debug(`更新普通员工 "${employee.name}" 的工龄: ${originalWorkYears || 0} -> ${calculatedWorkYears}`);
     }
     
     // 最后强制应用工龄限制规则
     this.enforceWorkYearsLimit(employee);
     
     // 打印最终结果
-    this.logger.log(`最终更新结果 - 员工: "${employee.name}", 工龄: ${employee.workYears}年`);
+    this.logger.debug(`最终更新结果 - 员工: "${employee.name}", 工龄: ${employee.workYears}年`);
     
     // 保存更新后的员工信息
-    return this.employeeRepository.save(employee);
+    const updatedEmployee = await this.employeeRepository.save(employee);
+    
+    // 检查底薪是否有变化，如果有则记录到工资基数历程表
+    if (updateData.baseSalary !== undefined && updateData.baseSalary !== originalBaseSalary) {
+      // 获取当前用户名（修改人）
+      let modifiedBy = '系统';
+      
+      // 尝试从请求对象中获取用户信息
+      if (req && req.user) {
+        modifiedBy = req.user['username'] || req.user['name'] || '系统';
+      }
+      
+      // 记录底薪变更历史
+      await this.salaryBaseHistoryService.recordBaseSalaryChange(
+        employee.name,
+        originalBaseSalary || 0,
+        updateData.baseSalary,
+        modifiedBy
+      );
+      
+      this.logger.log(`已记录员工 "${employee.name}" 的底薪变更历史: ${originalBaseSalary || 0} -> ${updateData.baseSalary}, 修改人: ${modifiedBy}`);
+    }
+    
+    return updatedEmployee;
   }
 
   /**
@@ -416,7 +489,7 @@ export class EmployeeService {
     try {
       // 查询所有员工
       const employees = await this.employeeRepository.find();
-      this.logger.log(`找到 ${employees.length} 名员工需要检查工龄`);
+      this.logger.debug(`找到 ${employees.length} 名员工需要检查工龄`);
       
       // 处理特定人员的工龄
       for (const employee of employees) {
@@ -430,9 +503,9 @@ export class EmployeeService {
             // 如果是特定人员且有固定工龄值，直接设置为固定值
             employee.workYears = fixedWorkYears;
             await this.employeeRepository.update(employee.id, { workYears: fixedWorkYears });
-            this.logger.log(`修正特定人员 "${employee.name}" 的工龄: ${originalWorkYears} -> ${fixedWorkYears} (固定值)`);
+            this.logger.debug(`修正特定人员 "${employee.name}" 的工龄: ${originalWorkYears} -> ${fixedWorkYears} (固定值)`);
           } else {
-            this.logger.log(`跳过特定人员 "${employee.name}" 的工龄更新，保持原值: ${employee.workYears}`);
+            this.logger.debug(`跳过特定人员 "${employee.name}" 的工龄更新，保持原值: ${employee.workYears}`);
           }
           continue;
         }
@@ -445,7 +518,7 @@ export class EmployeeService {
           if (calculatedWorkYears !== employee.workYears) {
             employee.workYears = calculatedWorkYears;
             await this.employeeRepository.update(employee.id, { workYears: calculatedWorkYears });
-            this.logger.log(`修正普通员工 "${employee.name}" 的工龄: ${originalWorkYears || 0} -> ${calculatedWorkYears}`);
+            this.logger.debug(`修正普通员工 "${employee.name}" 的工龄: ${originalWorkYears || 0} -> ${calculatedWorkYears}`);
           }
         }
       }
@@ -453,6 +526,43 @@ export class EmployeeService {
       this.logger.log('员工工龄修正完成');
     } catch (error) {
       this.logger.error('修正员工工龄时出错：', error);
+    }
+  }
+
+  /**
+   * 根据姓名查找员工
+   * @param name 员工姓名
+   * @returns 员工信息
+   */
+  async findByName(name: string): Promise<Employee | null> {
+    if (!name) {
+      return null;
+    }
+    
+    try {
+      const employee = await this.employeeRepository.findOne({
+        where: { name }
+      });
+      
+      return employee || null;
+    } catch (error) {
+      this.logger.error(`根据姓名查找员工失败: ${error.message}`, error.stack);
+      return null;
+    }
+  }
+
+  /**
+   * 获取所有员工（不分页）
+   * @returns 所有员工信息
+   */
+  async findAllNoLimit(): Promise<Employee[]> {
+    try {
+      return await this.employeeRepository.find({
+        where: { isResigned: false }
+      });
+    } catch (error) {
+      this.logger.error(`获取所有员工失败: ${error.message}`, error.stack);
+      return [];
     }
   }
 } 

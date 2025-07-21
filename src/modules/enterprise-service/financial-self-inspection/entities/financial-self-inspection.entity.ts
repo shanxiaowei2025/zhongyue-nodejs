@@ -35,6 +35,27 @@ export class FinancialSelfInspection {
   @Column({ type: 'text', nullable: true, comment: '整改结果' })
   rectificationResult: string;
 
+  @Column({ type: 'varchar', length: 255, nullable: true, comment: '复查人' })
+  reviewer: string;
+
+  @Column({ type: 'text', nullable: true, comment: '复查问题' })
+  reviewerProblem: string;
+
+  @Column({ type: 'text', nullable: true, comment: '复查解决方案' })
+  reviewerSolution: string;
+
+  @Column({ type: 'date', nullable: true, comment: '复查整改完成日期' })
+  reviewerRectificationCompletionDate: Date;
+
+  @Column({ type: 'text', nullable: true, comment: '复查整改结果' })
+  reviewerRectificationResult: string;
+
+  @Column({ type: 'date', nullable: true, comment: '复查人确认' })
+  reviewerConfirmation: Date;
+
+  @Column({ type: 'text', nullable: true, comment: '复查备注' })
+  reviewerRemarks: string;
+
   @Column({ type: 'date', nullable: true, comment: '抽查人确认' })
   inspectorConfirmation: Date;
 

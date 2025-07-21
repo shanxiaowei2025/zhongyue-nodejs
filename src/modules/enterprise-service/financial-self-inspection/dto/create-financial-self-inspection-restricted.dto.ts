@@ -41,4 +41,19 @@ export class CreateFinancialSelfInspectionRestrictedDto {
   @IsOptional()
   @IsString()
   solution?: string;
+
+  @ApiProperty({ description: '复查人', required: false, example: '赵六' })
+  @IsOptional()
+  @IsString()
+  reviewer?: string;
+
+  @ApiProperty({ description: '复查问题', required: false, example: '仍有部分发票未入账' })
+  @IsOptional()
+  @IsString()
+  reviewerProblem?: string;
+
+  @ApiProperty({ description: '复查解决方案', required: false, example: '再次补充入账' })
+  @IsOptional()
+  @IsString()
+  reviewerSolution?: string;
 } 

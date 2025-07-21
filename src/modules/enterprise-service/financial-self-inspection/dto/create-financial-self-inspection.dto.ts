@@ -47,6 +47,46 @@ export class CreateFinancialSelfInspectionDto {
   @IsDateString()
   rectificationCompletionDate?: string;
 
+  @ApiProperty({ description: '整改结果', required: false, example: '已完成所有账务调整' })
+  @IsOptional()
+  @IsString()
+  rectificationResult?: string;
+
+  @ApiProperty({ description: '复查人', required: false, example: '赵六' })
+  @IsOptional()
+  @IsString()
+  reviewer?: string;
+
+  @ApiProperty({ description: '复查问题', required: false, example: '仍有部分发票未入账' })
+  @IsOptional()
+  @IsString()
+  reviewerProblem?: string;
+
+  @ApiProperty({ description: '复查解决方案', required: false, example: '再次补充入账' })
+  @IsOptional()
+  @IsString()
+  reviewerSolution?: string;
+
+  @ApiProperty({ description: '复查整改完成日期', required: false, example: '2023-03-01' })
+  @IsOptional()
+  @IsDateString()
+  reviewerRectificationCompletionDate?: string;
+
+  @ApiProperty({ description: '复查整改结果', required: false, example: '已完成全部补充入账' })
+  @IsOptional()
+  @IsString()
+  reviewerRectificationResult?: string;
+
+  @ApiProperty({ description: '复查人确认', required: false, example: '2023-03-15' })
+  @IsOptional()
+  @IsDateString()
+  reviewerConfirmation?: string;
+
+  @ApiProperty({ description: '复查备注', required: false, example: '已与客户再次确认' })
+  @IsOptional()
+  @IsString()
+  reviewerRemarks?: string;
+
   @ApiProperty({ description: '抽查人确认', required: false, example: '2023-02-15' })
   @IsOptional()
   @IsDateString()

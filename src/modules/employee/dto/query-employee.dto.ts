@@ -52,6 +52,15 @@ export class QueryEmployeeDto extends PaginationDto {
   position?: string;
 
   /**
+   * 职级
+   * @example 'P5'
+   */
+  @ApiPropertyOptional({ description: '职级', example: 'P5' })
+  @IsString()
+  @IsOptional()
+  rank?: string;
+
+  /**
    * 是否离职
    * @example false
    */
