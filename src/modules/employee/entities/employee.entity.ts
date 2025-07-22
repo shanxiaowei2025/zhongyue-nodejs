@@ -22,9 +22,7 @@ export class Employee {
   @ApiProperty({ description: '部门ID', required: false })
   departmentId: number;
 
-  @Column({ type: 'simple-array', nullable: true, comment: '角色' })
-  @ApiProperty({ description: '角色', required: false, type: [String] })
-  roles: string[];
+  // roles 字段已删除
 
   @Column({ length: 50, nullable: true, comment: '员工类型' })
   @ApiProperty({ description: '员工类型', required: false })
@@ -69,6 +67,10 @@ export class Employee {
   @Column({ length: 30, nullable: true, comment: '银行卡号' })
   @ApiProperty({ description: '银行卡号', required: false })
   bankCardNumber: string;
+
+  @Column({ length: 50, nullable: true, comment: '开户银行' })
+  @ApiProperty({ description: '开户银行', required: false })
+  bankName: string;
 
   @Column({ type: 'date', nullable: true, comment: '入职时间' })
   @ApiProperty({ description: '入职时间', required: false })

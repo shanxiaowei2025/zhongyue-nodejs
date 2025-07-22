@@ -95,6 +95,47 @@ src/
 - 角色管理
 - 权限分配
 
+### 9. 薪资管理模块 (salary)
+- 薪资信息的CRUD操作
+- 薪资基数历程管理（仅限管理员和超级管理员）
+- 薪资自动生成功能
+- 各种薪资相关组件（社保、补贴、考勤扣款等）
+- 提成表管理（仅限管理员和超级管理员）
+
+## 权限控制
+
+系统采用基于角色的访问控制（RBAC）和基于权限的访问控制相结合的方式：
+
+### 角色控制
+- `super_admin`：超级管理员，拥有所有权限
+- `admin`：管理员，拥有大部分管理权限
+- 其他自定义角色：根据业务需求配置权限
+
+### 权限控制
+- 薪资管理模块：
+  - `salary_action_create`：创建薪资记录权限
+  - `salary_action_edit`：编辑薪资记录权限
+  - `salary_action_delete`：删除薪资记录权限
+  - `salary_date_view_all`：查看所有薪资记录权限
+  - `salary_date_view_by_location`：按区域查看薪资记录权限
+  - `salary_date_view_own`：查看自己薪资记录权限
+  
+- 特殊模块权限：
+  - 薪资基数历程：仅限`admin`和`super_admin`角色访问
+  - 社保信息管理：仅限`admin`和`super_admin`角色访问
+  - 补贴合计管理：仅限`admin`和`super_admin`角色访问
+  - 考勤扣款管理：仅限`admin`和`super_admin`角色访问
+  - 朋友圈扣款管理：仅限`admin`和`super_admin`角色访问
+  - 提成表管理：仅限`admin`和`super_admin`角色访问（除提成比例查询接口外）
+
+## API路由说明
+
+### 重要路由变更
+- 社保信息模块：从 `/api/salary/social-insurance` 变更为 `/api/social-insurance`，避免与薪资详情路由 `/api/salary/:id` 冲突
+- 补贴合计模块：从 `/api/salary/subsidy-summary` 变更为 `/api/subsidy-summary`，避免与薪资详情路由 `/api/salary/:id` 冲突
+- 朋友圈扣款模块：从 `/api/salary/friend-circle-payment` 变更为 `/api/friend-circle-payment`，避免与薪资详情路由 `/api/salary/:id` 冲突
+- 考勤扣款模块：从 `/api/salary/attendance-deduction` 变更为 `/api/attendance-deduction`，避免与薪资详情路由 `/api/salary/:id` 冲突
+
 ## 认证系统
 
 系统支持两种认证方式：

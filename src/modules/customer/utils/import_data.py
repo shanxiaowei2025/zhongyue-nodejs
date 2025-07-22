@@ -108,15 +108,54 @@ def import_excel_data(file_path):
             if file_ext == '.csv':
                 # 读取CSV文件
                 print(f"检测到CSV文件，使用pandas.read_csv读取")
-                df = pd.read_csv(file_path, encoding='utf-8')
-                # 尝试不同的编码方式（如果UTF-8失败）
-                if df.empty or len(df.columns) == 0:
-                    print("尝试使用GBK编码读取CSV文件")
-                    df = pd.read_csv(file_path, encoding='gbk')
+                try:
+                    df = pd.read_csv(file_path, encoding='utf-8')
+                    # 尝试不同的编码方式（如果UTF-8失败）
+                    if df.empty or len(df.columns) == 0:
+                        print("UTF-8编码读取失败，尝试使用GBK编码读取CSV文件")
+                        df = pd.read_csv(file_path, encoding='gbk')
+                except Exception as e:
+                    error_msg = f"CSV文件读取失败: {str(e)}"
+                    print(error_msg)
+                    print(f"尝试检查文件内容前100个字节:")
+                    try:
+                        with open(file_path, 'rb') as f:
+                            file_preview = f.read(100)
+                            print(f"文件内容预览(二进制): {file_preview}")
+                    except Exception as preview_error:
+                        print(f"无法读取文件预览: {str(preview_error)}")
+                        
+                    error_info = {
+                        "success": False,
+                        "error_type": "csv_read_error",
+                        "error_message": error_msg,
+                        "failed_records": []
+                    }
+                    print(f"ERROR_INFO_JSON: {json.dumps(error_info)}")
+                    raise Exception(f"CSV文件读取失败: {str(e)}")
             else:
                 # 读取Excel文件
                 print(f"检测到Excel文件，使用pandas.read_excel读取")
-                df = pd.read_excel(file_path, engine='openpyxl')
+                try:
+                    df = pd.read_excel(file_path, engine='openpyxl')
+                except Exception as e:
+                    error_msg = f"Excel文件读取失败: {str(e)}"
+                    print(error_msg)
+                    # 检查openpyxl版本
+                    try:
+                        import openpyxl
+                        print(f"openpyxl版本: {openpyxl.__version__}")
+                    except ImportError:
+                        print("openpyxl未安装或无法导入")
+                    
+                    error_info = {
+                        "success": False,
+                        "error_type": "excel_read_error",
+                        "error_message": error_msg,
+                        "failed_records": []
+                    }
+                    print(f"ERROR_INFO_JSON: {json.dumps(error_info)}")
+                    raise Exception(f"Excel文件读取失败: {str(e)}")
             
             print(f"成功读取文件，包含 {len(df)} 行数据")
             
@@ -353,8 +392,46 @@ def import_excel_data(file_path):
                 try:
                     # 将数据导入到数据库表名为sys_customer
                     print("开始导入数据到数据库...")
-                    filtered_data.to_sql('sys_customer', engine, if_exists='append', index=False)
-                    print("数据导入成功!")
+                    print(f"数据字段列表: {', '.join(filtered_data.columns.tolist())}")
+                    
+                    # 检查数据类型和空值
+                    print("数据类型检查:")
+                    dtypes = filtered_data.dtypes
+                    for col, dtype in dtypes.items():
+                        null_count = filtered_data[col].isna().sum()
+                        print(f"  - {col}: {dtype}, 空值数量: {null_count}")
+                    
+                    try:
+                        # 尝试导入数据
+                        filtered_data.to_sql('sys_customer', engine, if_exists='append', index=False)
+                        print("数据导入成功!")
+                    except Exception as db_error:
+                        success = False
+                        error_message = str(db_error)
+                        print(f"导入数据到数据库失败: {error_message}")
+                        print(f"错误类型: {type(db_error).__name__}")
+                        
+                        # 详细分析错误原因
+                        if "Duplicate entry" in error_message:
+                            print("检测到重复键错误，可能有未过滤的重复记录")
+                        elif "Data too long" in error_message:
+                            print("检测到数据过长错误，某些字段值超出数据库列长度限制")
+                        elif "cannot be null" in error_message.lower() or "not-null" in error_message.lower():
+                            print("检测到空值错误，某些必填字段为空")
+                        
+                        # 提供更详细的堆栈跟踪
+                        print("错误堆栈跟踪:")
+                        traceback.print_exc()
+                        
+                        # 构建并输出错误信息JSON
+                        db_error_info = {
+                            "success": False,
+                            "error_type": "database_insert_error",
+                            "error_message": error_message,
+                            "stack_trace": traceback.format_exc()
+                        }
+                        print(f"DATABASE_ERROR_JSON: {json.dumps(db_error_info)}")
+                        raise  # 重新抛出异常，中止流程
                     
                     # 为新导入的客户创建服务历程记录
                     print("开始创建服务历程记录...")
@@ -381,12 +458,26 @@ def import_excel_data(file_path):
                         print(f"成功创建 {len(service_history_data)} 条服务历程记录!")
                     except Exception as sh_error:
                         print(f"创建服务历程记录失败: {str(sh_error)}")
-                        # 不影响主流程，继续执行
+                        print("错误类型:", type(sh_error).__name__)
+                        print("错误堆栈跟踪:")
+                        traceback.print_exc()
+                        print("此错误不影响主流程，继续执行")
                 except Exception as e:
                     success = False
                     error_message = str(e)
                     print(f"导入数据到数据库失败: {error_message}")
+                    print(f"错误类型: {type(e).__name__}")
+                    print("错误堆栈跟踪:")
                     traceback.print_exc()
+                    
+                    # 构建详细错误信息
+                    error_info = {
+                        "success": False,
+                        "error_type": "import_process_error",
+                        "error_message": error_message,
+                        "stack_trace": traceback.format_exc()
+                    }
+                    print(f"ERROR_INFO_JSON: {json.dumps(error_info)}")
             
             # 准备结果对象
             result = {
@@ -441,7 +532,57 @@ def main():
         if args.file:
             file_path = args.file
         else:
-            print("错误: 未指定Excel文件路径")
+            error_msg = "错误: 未指定Excel文件路径"
+            print(error_msg)
+            print("命令行参数:", sys.argv)
+            error_info = {
+                "success": False,
+                "error_type": "missing_argument",
+                "error_message": error_msg,
+                "failed_records": []
+            }
+            print(f"ERROR_INFO_JSON: {json.dumps(error_info)}")
+            sys.exit(1)
+            
+        # 检查文件是否存在
+        if not os.path.exists(file_path):
+            error_msg = f"错误: 文件不存在: {file_path}"
+            print(error_msg)
+            print("当前工作目录:", os.getcwd())
+            error_info = {
+                "success": False,
+                "error_type": "file_not_found",
+                "error_message": error_msg,
+                "failed_records": []
+            }
+            print(f"ERROR_INFO_JSON: {json.dumps(error_info)}")
+            sys.exit(1)
+            
+        # 检查文件大小
+        try:
+            file_size = os.path.getsize(file_path)
+            print(f"文件大小: {file_size} 字节")
+            if file_size == 0:
+                error_msg = f"错误: 文件为空: {file_path}"
+                print(error_msg)
+                error_info = {
+                    "success": False,
+                    "error_type": "empty_file",
+                    "error_message": error_msg,
+                    "failed_records": []
+                }
+                print(f"ERROR_INFO_JSON: {json.dumps(error_info)}")
+                sys.exit(1)
+        except Exception as e:
+            error_msg = f"错误: 检查文件大小失败: {str(e)}"
+            print(error_msg)
+            error_info = {
+                "success": False,
+                "error_type": "file_access_error",
+                "error_message": error_msg,
+                "failed_records": []
+            }
+            print(f"ERROR_INFO_JSON: {json.dumps(error_info)}")
             sys.exit(1)
         
         # 导入数据
@@ -467,13 +608,51 @@ def main():
                     print(f"所有记录({len(failed_records)}条)均为重复数据，无需导入")
                     sys.exit(0)
                 else:
-                    # 其他失败情况
+                    # 详细打印失败原因
+                    print(f"导入失败: {result.get('error_message', '未知错误')}")
+                    if 'failed_records' in result and result['failed_records']:
+                        print(f"失败记录详情:")
+                        for i, record in enumerate(result['failed_records'][:10]):  # 只显示前10条
+                            print(f"  {i+1}. 行 {record.get('row', '?')}: {record.get('companyName', '未知')} - {record.get('reason', '未知原因')}")
+                        if len(result['failed_records']) > 10:
+                            print(f"  ... 以及其他 {len(result['failed_records']) - 10} 条错误记录")
+                    
+                    # 输出详细错误信息JSON
+                    detailed_error = {
+                        "success": False,
+                        "error_type": "import_failed",
+                        "error_message": result.get('error_message', '导入失败'),
+                        "failed_records": result.get('failed_records', [])
+                    }
+                    print(f"ERROR_DETAILS_JSON: {json.dumps(detailed_error)}")
                     sys.exit(1)
         else:
+            error_msg = "导入失败: 未返回有效结果"
+            print(error_msg)
+            error_info = {
+                "success": False,
+                "error_type": "invalid_result",
+                "error_message": error_msg,
+                "failed_records": []
+            }
+            print(f"ERROR_INFO_JSON: {json.dumps(error_info)}")
             sys.exit(1)
     except Exception as e:
-        print(f"主函数异常: {str(e)}")
+        error_msg = f"主函数异常: {str(e)}"
+        print(error_msg)
+        print("错误类型:", type(e).__name__)
+        print("错误详情:")
         traceback.print_exc()
+        
+        # 输出详细错误信息JSON
+        error_info = {
+            "success": False,
+            "error_type": "fatal_error",
+            "error_message": error_msg,
+            "stack_trace": traceback.format_exc(),
+            "failed_records": []
+        }
+        print(f"ERROR_INFO_JSON: {json.dumps(error_info)}")
         sys.exit(1)
 
 if __name__ == "__main__":

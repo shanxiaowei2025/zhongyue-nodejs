@@ -201,7 +201,7 @@ export class EmployeeService {
    * @returns 员工列表和总数
    */
   async findAll(queryEmployeeDto: QueryEmployeeDto) {
-    const { page = 1, pageSize = 10, name, departmentId, employeeType, idCardNumber, commissionRatePosition, position, rank, isResigned } = queryEmployeeDto;
+    const { page = 1, pageSize = 10, name, departmentId, employeeType, idCardNumber, commissionRatePosition, position, rank, isResigned, bankName } = queryEmployeeDto;
     const skip = (page - 1) * pageSize;
     
     // 构建查询条件
@@ -237,6 +237,10 @@ export class EmployeeService {
     
     if (isResigned !== undefined) {
       where.isResigned = isResigned;
+    }
+    
+    if (bankName) {
+      where.bankName = Like(`%${bankName}%`);
     }
     
     const queryBuilder = this.employeeRepository.createQueryBuilder('employee');

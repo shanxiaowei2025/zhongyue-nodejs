@@ -1135,13 +1135,85 @@ export class CustomerService {
           if (code === 0) {
             resolve({ stdout, stderr });
           } else {
+            // 在stdout中寻找错误信息JSON
+            let errorDetails = null;
+            let errorInfoMatch = null;
+            
+            // 查找ERROR_INFO_JSON格式的错误信息
+            const errorInfoRegex = /ERROR_INFO_JSON: (\{.*\})/s;
+            errorInfoMatch = stdout.match(errorInfoRegex);
+            if (errorInfoMatch && errorInfoMatch[1]) {
+              try {
+                errorDetails = JSON.parse(errorInfoMatch[1]);
+                this.logger.error(`Python错误详情: ${JSON.stringify(errorDetails)}`);
+              } catch (e) {
+                this.logger.error(`解析ERROR_INFO_JSON失败: ${e.message}`);
+              }
+            }
+            
+            // 查找ERROR_DETAILS_JSON格式的错误信息
+            if (!errorDetails) {
+              const detailsRegex = /ERROR_DETAILS_JSON: (\{.*\})/s;
+              const detailsMatch = stdout.match(detailsRegex);
+              if (detailsMatch && detailsMatch[1]) {
+                try {
+                  errorDetails = JSON.parse(detailsMatch[1]);
+                  this.logger.error(`Python错误详情: ${JSON.stringify(errorDetails)}`);
+                } catch (e) {
+                  this.logger.error(`解析ERROR_DETAILS_JSON失败: ${e.message}`);
+                }
+              }
+            }
+            
+            // 查找DATABASE_ERROR_JSON格式的错误信息
+            if (!errorDetails) {
+              const dbErrorRegex = /DATABASE_ERROR_JSON: (\{.*\})/s;
+              const dbErrorMatch = stdout.match(dbErrorRegex);
+              if (dbErrorMatch && dbErrorMatch[1]) {
+                try {
+                  errorDetails = JSON.parse(dbErrorMatch[1]);
+                  this.logger.error(`数据库错误详情: ${JSON.stringify(errorDetails)}`);
+                } catch (e) {
+                  this.logger.error(`解析DATABASE_ERROR_JSON失败: ${e.message}`);
+                }
+              }
+            }
+
             if (stderr) {
-              this.logger.error(`Python脚本执行失败，错误信息: ${stderr}`);
+              this.logger.error(`Python脚本错误输出: ${stderr}`);
             }
+            
             if (stdout) {
-              this.logger.log(`Python脚本标准输出: ${stdout}`);
+              // 记录完整输出供调试，但只输出前2000个字符避免日志过大
+              const truncatedStdout = stdout.length > 2000 ? stdout.substring(0, 2000) + '...(截断)' : stdout;
+              this.logger.log(`Python脚本标准输出: ${truncatedStdout}`);
             }
-            reject(new Error(`Python脚本执行失败，退出码: ${code}\n${stderr}`));
+            
+            // 构建详细错误信息
+            let errorMessage = `Python脚本执行失败，退出码: ${code}`;
+            
+            // 如果解析到了错误详情，添加到错误信息中
+            if (errorDetails && errorDetails.error_message) {
+              errorMessage += `\n错误类型: ${errorDetails.error_type || '未知'}`;
+              errorMessage += `\n错误描述: ${errorDetails.error_message}`;
+              
+              // 如果有失败记录，添加概述
+              if (errorDetails.failed_records && errorDetails.failed_records.length > 0) {
+                errorMessage += `\n失败记录数: ${errorDetails.failed_records.length}`;
+                // 添加前3条失败记录的详情
+                const recordsToShow = Math.min(3, errorDetails.failed_records.length);
+                errorMessage += `\n失败记录示例:`;
+                for (let i = 0; i < recordsToShow; i++) {
+                  const record = errorDetails.failed_records[i];
+                  errorMessage += `\n - 行${record.row}: ${record.companyName || '未知企业'} - ${record.reason || '未知原因'}`;
+                }
+              }
+            } else if (stderr) {
+              // 如果没有解析到结构化错误信息但有stderr，使用stderr
+              errorMessage += `\n${stderr}`;
+            }
+            
+            reject(new Error(errorMessage));
           }
         });
         
@@ -1238,13 +1310,85 @@ export class CustomerService {
           if (code === 0) {
             resolve({ stdout, stderr });
           } else {
+            // 在stdout中寻找错误信息JSON
+            let errorDetails = null;
+            let errorInfoMatch = null;
+            
+            // 查找ERROR_INFO_JSON格式的错误信息
+            const errorInfoRegex = /ERROR_INFO_JSON: (\{.*\})/s;
+            errorInfoMatch = stdout.match(errorInfoRegex);
+            if (errorInfoMatch && errorInfoMatch[1]) {
+              try {
+                errorDetails = JSON.parse(errorInfoMatch[1]);
+                this.logger.error(`Python错误详情: ${JSON.stringify(errorDetails)}`);
+              } catch (e) {
+                this.logger.error(`解析ERROR_INFO_JSON失败: ${e.message}`);
+              }
+            }
+            
+            // 查找ERROR_DETAILS_JSON格式的错误信息
+            if (!errorDetails) {
+              const detailsRegex = /ERROR_DETAILS_JSON: (\{.*\})/s;
+              const detailsMatch = stdout.match(detailsRegex);
+              if (detailsMatch && detailsMatch[1]) {
+                try {
+                  errorDetails = JSON.parse(detailsMatch[1]);
+                  this.logger.error(`Python错误详情: ${JSON.stringify(errorDetails)}`);
+                } catch (e) {
+                  this.logger.error(`解析ERROR_DETAILS_JSON失败: ${e.message}`);
+                }
+              }
+            }
+            
+            // 查找DATABASE_ERROR_JSON格式的错误信息
+            if (!errorDetails) {
+              const dbErrorRegex = /DATABASE_ERROR_JSON: (\{.*\})/s;
+              const dbErrorMatch = stdout.match(dbErrorRegex);
+              if (dbErrorMatch && dbErrorMatch[1]) {
+                try {
+                  errorDetails = JSON.parse(dbErrorMatch[1]);
+                  this.logger.error(`数据库错误详情: ${JSON.stringify(errorDetails)}`);
+                } catch (e) {
+                  this.logger.error(`解析DATABASE_ERROR_JSON失败: ${e.message}`);
+                }
+              }
+            }
+
             if (stderr) {
-              this.logger.error(`Python脚本执行失败，错误信息: ${stderr}`);
+              this.logger.error(`Python脚本错误输出: ${stderr}`);
             }
+            
             if (stdout) {
-              this.logger.log(`Python脚本标准输出: ${stdout}`);
+              // 记录完整输出供调试，但只输出前2000个字符避免日志过大
+              const truncatedStdout = stdout.length > 2000 ? stdout.substring(0, 2000) + '...(截断)' : stdout;
+              this.logger.log(`Python脚本标准输出: ${truncatedStdout}`);
             }
-            reject(new Error(`Python脚本执行失败，退出码: ${code}\n${stderr}`));
+            
+            // 构建详细错误信息
+            let errorMessage = `Python脚本执行失败，退出码: ${code}`;
+            
+            // 如果解析到了错误详情，添加到错误信息中
+            if (errorDetails && errorDetails.error_message) {
+              errorMessage += `\n错误类型: ${errorDetails.error_type || '未知'}`;
+              errorMessage += `\n错误描述: ${errorDetails.error_message}`;
+              
+              // 如果有失败记录，添加概述
+              if (errorDetails.failed_records && errorDetails.failed_records.length > 0) {
+                errorMessage += `\n失败记录数: ${errorDetails.failed_records.length}`;
+                // 添加前3条失败记录的详情
+                const recordsToShow = Math.min(3, errorDetails.failed_records.length);
+                errorMessage += `\n失败记录示例:`;
+                for (let i = 0; i < recordsToShow; i++) {
+                  const record = errorDetails.failed_records[i];
+                  errorMessage += `\n - 行${record.row}: ${record.companyName || '未知企业'} - ${record.reason || '未知原因'}`;
+                }
+              }
+            } else if (stderr) {
+              // 如果没有解析到结构化错误信息但有stderr，使用stderr
+              errorMessage += `\n${stderr}`;
+            }
+            
+            reject(new Error(errorMessage));
           }
         });
         

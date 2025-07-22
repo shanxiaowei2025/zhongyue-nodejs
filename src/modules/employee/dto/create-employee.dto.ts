@@ -21,15 +21,6 @@ export class CreateEmployeeDto {
   departmentId?: number;
 
   /**
-   * 角色
-   * @example ['销售专员', '顾问会计']
-   */
-  @ApiProperty({ description: '角色', example: ['销售专员', '顾问会计'], required: false, type: [String] })
-  @IsArray()
-  @IsOptional()
-  roles?: string[];
-
-  /**
    * 员工类型
    * @example '正式'
    */
@@ -132,6 +123,15 @@ export class CreateEmployeeDto {
   @IsString()
   @IsOptional()
   bankCardNumber?: string;
+
+  /**
+   * 开户银行
+   * @example '中国工商银行'
+   */
+  @ApiProperty({ description: '开户银行', example: '中国工商银行', required: false })
+  @IsString()
+  @IsOptional()
+  bankName?: string;
 
   /**
    * 入职时间

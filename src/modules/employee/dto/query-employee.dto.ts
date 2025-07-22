@@ -86,4 +86,13 @@ export class QueryEmployeeDto extends PaginationDto {
   @IsString()
   @IsOptional()
   idCardNumber?: string;
+  
+  /**
+   * 开户银行
+   * @example '中国工商银行'
+   */
+  @ApiPropertyOptional({ description: '开户银行', example: '中国工商银行' })
+  @IsString()
+  @IsOptional()
+  bankName?: string;
 } 

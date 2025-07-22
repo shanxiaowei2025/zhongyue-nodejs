@@ -71,9 +71,12 @@ export class AttendanceScheduleService {
   private async getAccessToken(corpId: string, corpSecret: string): Promise<string | null> {
     try {
       const url = `https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=${corpId}&corpsecret=${corpSecret}`;
+      this.logger.log(`正在请求access_token: ${url}`);
+      
       const response = await axios.get(url);
       
       if (response.data && response.data.errcode === 0) {
+        this.logger.log('获取access_token成功');
         return response.data.access_token;
       } else {
         this.logger.error('获取access_token错误', response.data);
@@ -90,18 +93,45 @@ export class AttendanceScheduleService {
    */
   private async getUserIds(accessToken: string): Promise<string[]> {
     try {
-      const url = `http://qyapi.weixin.qq.com/cgi-bin/user/list_id?access_token=${accessToken}`;
-      const response = await axios.post(url, {});
+      // 使用HTTPS协议而不是HTTP
+      const url = `https://qyapi.weixin.qq.com/cgi-bin/user/list_id?access_token=${accessToken}`;
+      this.logger.log(`正在请求用户ID列表: ${url}`);
+      
+      const response = await axios.post(url, {}, {
+        timeout: 10000, // 设置10秒超时
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
       
       if (response.data && response.data.errcode === 0 && response.data.dept_user) {
         // 提取所有用户ID
-        return response.data.dept_user.map(user => user.userid);
+        const userIds = response.data.dept_user.map(user => user.userid);
+        this.logger.log(`成功获取${userIds.length}个用户ID`);
+        return userIds;
       } else {
         this.logger.error('获取用户ID列表错误', response.data);
+        
+        // 检查是否是IP白名单问题
+        if (response.data && response.data.errcode === 60020) {
+          this.logger.warn(`IP访问限制错误，请确保服务器IP已添加到企业微信IP白名单中，当前请求IP: ${response.data.errmsg}`);
+          // 提取IP地址
+          const ipMatch = response.data.errmsg.match(/from ip: ([^,]+)/);
+          if (ipMatch && ipMatch[1]) {
+            this.logger.warn(`请求IP: ${ipMatch[1]}, 请确认此IP已添加到企业微信后台的IP白名单中`);
+          }
+        }
+        
         return [];
       }
     } catch (error) {
       this.logger.error('请求用户ID列表异常', error);
+      
+      // 检查是否是网络问题
+      if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+        this.logger.error('网络连接问题，请检查网络设置和防火墙配置');
+      }
+      
       return [];
     }
   }
@@ -122,12 +152,16 @@ export class AttendanceScheduleService {
       endOfYesterday.setHours(23, 59, 59, 999);
       const endTime = Math.floor(endOfYesterday.getTime() / 1000);
       
+      this.logger.log(`获取打卡数据时间范围: ${new Date(startTime * 1000).toISOString()} 到 ${new Date(endTime * 1000).toISOString()}`);
+      
       // 请求打卡数据
       const url = `https://qyapi.weixin.qq.com/cgi-bin/checkin/getcheckin_daydata?access_token=${accessToken}`;
       const response = await axios.post(url, {
         starttime: startTime,
         endtime: endTime,
         useridlist: userIds
+      }, {
+        timeout: 30000 // 设置30秒超时
       });
       
       if (response.data && response.data.errcode === 0) {
@@ -151,6 +185,7 @@ export class AttendanceScheduleService {
    * 手动触发同步（用于测试）
    */
   async manualSync(): Promise<void> {
+    this.logger.log('手动触发考勤数据同步...');
     await this.syncAttendanceData();
   }
 } 
