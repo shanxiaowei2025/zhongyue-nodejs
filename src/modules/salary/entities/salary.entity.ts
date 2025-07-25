@@ -1,4 +1,5 @@
 import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { ApiProperty } from '@nestjs/swagger';
 
 @Entity('sys_salary')
 export class Salary {
@@ -97,6 +98,10 @@ export class Salary {
 
   @Column({ comment: '个税申报', type: 'decimal', precision: 10, scale: 2, default: 0 })
   taxDeclaration: number;
+
+  @ApiProperty({ description: '是否已发放', type: 'boolean', default: false })
+  @Column({ comment: '是否已发放', type: 'boolean', default: false })
+  isPaid: boolean;
 
   @Column({ comment: '年月', type: 'date' })
   yearMonth: Date;

@@ -1,4 +1,5 @@
-import { IsDate, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsDate, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateSalaryDto {
   @IsNotEmpty({ message: '部门不能为空' })
@@ -123,6 +124,17 @@ export class CreateSalaryDto {
   @IsNumber()
   @IsOptional()
   taxDeclaration: number;
+
+  @ApiProperty({ 
+    description: '是否已发放', 
+    type: 'boolean',
+    required: false,
+    default: false,
+    example: false
+  })
+  @IsBoolean()
+  @IsOptional()
+  isPaid: boolean;
 
   @IsNotEmpty({ message: '年月不能为空' })
   @IsDate()
