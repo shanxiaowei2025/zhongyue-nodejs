@@ -67,16 +67,6 @@ export class CreateFinancialSelfInspectionDto {
   @IsString()
   reviewerSolution?: string;
 
-  @ApiProperty({ description: '复查整改完成日期', required: false, example: '2023-03-01' })
-  @IsOptional()
-  @IsDateString()
-  reviewerRectificationCompletionDate?: string;
-
-  @ApiProperty({ description: '复查整改结果', required: false, example: '已完成全部补充入账' })
-  @IsOptional()
-  @IsString()
-  reviewerRectificationResult?: string;
-
   @ApiProperty({ description: '复查人确认', required: false, example: '2023-03-15' })
   @IsOptional()
   @IsDateString()

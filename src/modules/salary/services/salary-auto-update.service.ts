@@ -97,9 +97,10 @@ export class SalaryAutoUpdateService {
   /**
    * 计算代理费提成
    * 1. 筛选sys_expense表中auditDate为上个月且businessType为续费的记录
-   * 2. 根据salesperson字段统计每个业务员的agencyFee与socialInsuranceAgencyFee总和
-   * 3. 根据统计结果在sys_agency_commission表查找对应区间的提成比例
-   * 4. 计算代理费提成
+   * 2. 根据salesperson字段统计每个业务员的费用：
+   *    - 代理费和社保代理费提成为1%
+   *    - 记账软件费、开票软件费、地址费提成为10%
+   * 3. 计算代理费提成
    * @param employeeName 员工姓名
    * @param firstDayOfLastMonth 上月第一天
    * @param lastDayOfLastMonth 上月最后一天
@@ -111,7 +112,10 @@ export class SalaryAutoUpdateService {
       const expenseQuery = `
         SELECT 
           SUM(agencyFee) as totalAgencyFee, 
-          SUM(socialInsuranceAgencyFee) as totalSocialInsuranceAgencyFee 
+          SUM(socialInsuranceAgencyFee) as totalSocialInsuranceAgencyFee,
+          SUM(accountingSoftwareFee) as totalAccountingSoftwareFee,
+          SUM(invoiceSoftwareFee) as totalInvoiceSoftwareFee,
+          SUM(addressFee) as totalAddressFee
         FROM sys_expense 
         WHERE 
           salesperson = ? AND 
@@ -126,46 +130,46 @@ export class SalaryAutoUpdateService {
         lastDayOfLastMonth
       ]);
       
-      // 如果没有找到数据或者两个费用都为空，则返回0
-      if (!expenseResults.length || 
-          (expenseResults[0].totalAgencyFee === null && expenseResults[0].totalSocialInsuranceAgencyFee === null)) {
+      // 如果没有找到数据，则返回0
+      if (!expenseResults.length) {
         this.logger.debug(`员工 ${employeeName} 在上个月没有符合条件的代理费记录`);
         return 0;
       }
       
-      // 2. 计算总和
+      // 2. 计算代理费用总和（提成比例1%）
       const totalAgencyFee = Number(expenseResults[0].totalAgencyFee || 0);
       const totalSocialInsuranceAgencyFee = Number(expenseResults[0].totalSocialInsuranceAgencyFee || 0);
-      const totalFee = totalAgencyFee + totalSocialInsuranceAgencyFee;
+      const agencyTotalFee = totalAgencyFee + totalSocialInsuranceAgencyFee;
       
-      if (totalFee <= 0) {
-        this.logger.debug(`员工 ${employeeName} 的代理费总和为0`);
+      // 计算软件费用总和（提成比例10%）
+      const totalAccountingSoftwareFee = Number(expenseResults[0].totalAccountingSoftwareFee || 0);
+      const totalInvoiceSoftwareFee = Number(expenseResults[0].totalInvoiceSoftwareFee || 0);
+      const totalAddressFee = Number(expenseResults[0].totalAddressFee || 0);
+      const softwareTotalFee = totalAccountingSoftwareFee + totalInvoiceSoftwareFee + totalAddressFee;
+      
+      if (agencyTotalFee <= 0 && softwareTotalFee <= 0) {
+        this.logger.debug(`员工 ${employeeName} 的代理费和软件费总和为0`);
         return 0;
       }
       
-      this.logger.debug(`员工 ${employeeName} 的代理费总和为 ${totalFee}，其中代理费 ${totalAgencyFee}，社保代理费 ${totalSocialInsuranceAgencyFee}`);
+      this.logger.debug(`
+        员工 ${employeeName} 的费用明细：
+        代理费: ${totalAgencyFee}，
+        社保代理费: ${totalSocialInsuranceAgencyFee}，
+        记账软件费: ${totalAccountingSoftwareFee}，
+        开票软件费: ${totalInvoiceSoftwareFee}，
+        地址费: ${totalAddressFee}
+      `);
       
-      // 3. 根据总和在sys_agency_commission表查找对应区间的提成比例
-      const commissionQuery = `
-        SELECT * FROM sys_agency_commission 
-        WHERE ? BETWEEN SUBSTRING_INDEX(feeRange, '-', 1) AND SUBSTRING_INDEX(feeRange, '-', -1)
-        ORDER BY id ASC 
-        LIMIT 1
-      `;
+      // 3. 计算代理费提成 = 代理费总和 × 1% + 软件费总和 × 10%
+      const agencyFeeCommission = agencyTotalFee * 0.01 + softwareTotalFee * 0.1;
       
-      const commissionResults = await this.dataSource.query(commissionQuery, [totalFee]);
-      
-      if (!commissionResults.length) {
-        this.logger.debug(`没有找到适用于金额 ${totalFee} 的提成比例`);
-        return 0;
-      }
-      
-      const commissionRate = Number(commissionResults[0].commissionRate || 0);
-      
-      // 4. 计算代理费提成 = 总和 × 提成比例
-      const agencyFeeCommission = totalFee * commissionRate;
-      
-      this.logger.debug(`员工 ${employeeName} 的代理费提成计算: ${totalFee} × ${commissionRate} = ${agencyFeeCommission}`);
+      this.logger.debug(`
+        员工 ${employeeName} 的代理费提成计算: 
+        代理费部分: ${agencyTotalFee} × 1% = ${agencyTotalFee * 0.01}
+        软件费部分: ${softwareTotalFee} × 10% = ${softwareTotalFee * 0.1}
+        总计: ${agencyFeeCommission}
+      `);
       
       return agencyFeeCommission;
     } catch (error) {
@@ -550,6 +554,7 @@ export class SalaryAutoUpdateService {
                       businessCommissionResult.newBaseSalary !== undefined ? 
                       businessCommissionResult.newBaseSalary : employee.baseSalary || 0,
           temporaryIncrease: existingSalary?.temporaryIncrease || 0,
+          temporaryIncreaseItem: existingSalary?.temporaryIncreaseItem || '',
           attendanceDeduction: attendanceDeduction?.attendanceDeduction || 0,
           fullAttendance: attendanceDeduction?.fullAttendanceBonus || 0,
           totalSubsidy: subsidySummary?.totalSubsidy || 0,

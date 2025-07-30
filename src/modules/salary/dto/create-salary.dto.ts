@@ -25,6 +25,10 @@ export class CreateSalaryDto {
   @IsNumber()
   @IsOptional()
   temporaryIncrease: number;
+  
+  @IsString()
+  @IsOptional()
+  temporaryIncreaseItem: string;
 
   @IsNumber()
   @IsOptional()

@@ -1,14 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Query, UseGuards, Request, Delete } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { FinancialSelfInspectionService } from './financial-self-inspection.service';
 import { CreateFinancialSelfInspectionDto } from './dto/create-financial-self-inspection.dto';
 import { CreateFinancialSelfInspectionRestrictedDto } from './dto/create-financial-self-inspection-restricted.dto';
 import { QueryFinancialSelfInspectionDto } from './dto/query-financial-self-inspection.dto';
 import { RectificationCompletionDto } from './dto/rectification-completion.dto';
-import { InspectorConfirmationDto } from './dto/inspector-confirmation.dto';
-import { ReviewerConfirmationDto } from './dto/reviewer-confirmation.dto';
-import { ReviewerRectificationCompletionDto } from './dto/reviewer-rectification-completion.dto';
-import { UpdateReviewerFieldsDto } from './dto/update-reviewer-fields.dto';
+import { ApprovalDto } from './dto/approval.dto';
+import { ReviewerApprovalDto } from './dto/reviewer-approval.dto';
+import { RejectDto } from './dto/reject.dto';
+import { ReviewerRejectDto } from './dto/reviewer-reject.dto';
 import { QueryInspectorCountDto } from './dto/query-inspector-count.dto';
 import { QueryReviewerCountDto } from './dto/query-reviewer-count.dto';
 import { CountResponseDto } from './dto/count-response.dto';
@@ -16,6 +16,8 @@ import { CountByUserResponseDto } from './dto/count-by-user-response.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
+import { BadRequestException } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 
 @ApiTags('账务自查')
 @Controller('enterprise-service/financial-self-inspection')
@@ -23,16 +25,21 @@ import { Roles } from '../../auth/decorators/roles.decorator';
 @Roles('admin', 'super_admin', 'bookkeepingAccountant', 'consultantAccountant')
 @ApiBearerAuth()
 export class FinancialSelfInspectionController {
+  private readonly logger = new Logger(FinancialSelfInspectionController.name);
   constructor(private readonly financialSelfInspectionService: FinancialSelfInspectionService) {}
 
   @Post()
-  @ApiOperation({ summary: '创建账务自查记录（限制只能填写部分字段）' })
+  @ApiOperation({ 
+    summary: '创建账务自查记录（限制只能填写部分字段）',
+    description: '创建账务自查记录时会进行职级检查：1.如果记账会计是当前用户自己，允许创建；2.如果当前用户职级高于记账会计，允许创建；3.如果双方都是P4职级，允许创建；4.其他情况不允许创建'
+  })
   create(@Body() createDto: CreateFinancialSelfInspectionRestrictedDto, @Request() req) {
     // 如果没有提供抽查人，则使用当前登录用户的用户名
     if (!createDto.inspector) {
       createDto.inspector = req.user.username;
     }
-    return this.financialSelfInspectionService.create(createDto);
+    // 传递当前用户名，用于职级检查
+    return this.financialSelfInspectionService.create(createDto, req.user.username);
   }
 
   @Get('my-submitted')
@@ -54,7 +61,8 @@ export class FinancialSelfInspectionController {
   }
 
   @Get('my-reviewed')
-  @ApiOperation({ summary: '查询我负责复查的记录（抽查人是当前用户的下级）, 管理员和超级管理员可查看所有记录' })
+  @Roles('admin', 'super_admin') // 只有管理员和超级管理员可以调用
+  @ApiOperation({ summary: '查询我复查的记录【仅管理员】' })
   findMyReviewed(@Query() queryDto: QueryFinancialSelfInspectionDto, @Request() req) {
     const username = req.user.username;
     const roles = req.user.roles || [];
@@ -83,7 +91,8 @@ export class FinancialSelfInspectionController {
   }
 
   @Get('my-reviewed/:id')
-  @ApiOperation({ summary: '查看我负责复查的记录详情（抽查人是当前用户的下级）' })
+  @Roles('admin', 'super_admin') // 只有管理员和超级管理员可以调用
+  @ApiOperation({ summary: '查看我复查的记录详情【仅管理员】' })
   @ApiParam({ name: 'id', description: '记录ID' })
   findMyReviewedDetail(@Param('id') id: string, @Request() req) {
     const username = req.user.username;
@@ -93,51 +102,118 @@ export class FinancialSelfInspectionController {
   }
 
   @Patch(':id/rectification-completion')
-  @ApiOperation({ summary: '更新整改完成日期和整改结果' })
+  @ApiOperation({ summary: '更新整改记录' })
   @ApiParam({ name: 'id', description: '记录ID' })
-  updateRectificationCompletion(@Param('id') id: string, @Body() dto: RectificationCompletionDto) {
+  async updateRectificationCompletion(
+    @Param('id') id: string, 
+    @Body() dto: RectificationCompletionDto
+  ) {
+    this.logger.debug(`接收到整改记录: ${JSON.stringify(dto.rectificationRecords)}`);
+    
+    // 确保DTO中的数据结构正确
+    if (!dto.rectificationRecords || !Array.isArray(dto.rectificationRecords)) {
+      throw new BadRequestException('整改记录必须是数组');
+    }
+    
     return this.financialSelfInspectionService.updateRectificationCompletion(+id, dto);
   }
 
-  @Patch(':id/inspector-confirmation')
-  @ApiOperation({ summary: '更新抽查人确认（只能修改抽查人确认和备注字段）' })
+  @Patch(':id/approval')
+  @ApiOperation({ summary: '添加审核通过记录' })
   @ApiParam({ name: 'id', description: '记录ID' })
-  updateInspectorConfirmation(@Param('id') id: string, @Body() dto: InspectorConfirmationDto) {
-    return this.financialSelfInspectionService.updateInspectorConfirmation(+id, dto);
-  }
-
-  @Patch(':id/reviewer-rectification-completion')
-  @ApiOperation({ summary: '更新复查整改完成日期和复查整改结果' })
-  @ApiParam({ name: 'id', description: '记录ID' })
-  updateReviewerRectificationCompletion(@Param('id') id: string, @Body() dto: ReviewerRectificationCompletionDto) {
-    return this.financialSelfInspectionService.updateReviewerRectificationCompletion(+id, dto);
-  }
-
-  @Patch(':id/reviewer-confirmation')
-  @ApiOperation({ summary: '更新复查人确认（只能修改复查人确认和复查备注字段）' })
-  @ApiParam({ name: 'id', description: '记录ID' })
-  updateReviewerConfirmation(@Param('id') id: string, @Body() dto: ReviewerConfirmationDto, @Request() req) {
-    console.log('收到复查人确认请求，请求体:', JSON.stringify(dto));
-    console.log('请求参数ID:', id);
-    console.log('请求用户:', req.user?.username);
+  async updateApproval(
+    @Param('id') id: string, 
+    @Body() dto: ApprovalDto
+  ) {
+    this.logger.debug(`接收到审核通过记录: ${JSON.stringify(dto.approvalRecords)}`);
     
-    // 确保有效的请求体
-    if (!dto || !dto.reviewerConfirmation) {
-      console.error('请求体无效或缺少必要参数');
-      throw new Error('请求参数不完整，复查人确认日期必须提供');
+    // 确保DTO中的数据结构正确
+    if (!dto.approvalRecords || !Array.isArray(dto.approvalRecords)) {
+      throw new BadRequestException('审核通过记录必须是数组');
     }
     
-    return this.financialSelfInspectionService.updateReviewerConfirmation(+id, dto);
+    return this.financialSelfInspectionService.updateApproval(+id, dto);
   }
 
-  @Patch(':id/reviewer-fields')
-  @ApiOperation({ summary: '更新复查问题和解决方案，自动将当前用户设为复查人' })
+  @Patch(':id/reviewer-approval')
+  @ApiOperation({ summary: '添加复查审核通过记录' })
   @ApiParam({ name: 'id', description: '记录ID' })
-  updateReviewerFields(@Param('id') id: string, @Body() dto: UpdateReviewerFieldsDto, @Request() req) {
+  async updateReviewerApproval(
+    @Param('id') id: string, 
+    @Body() dto: ReviewerApprovalDto, 
+    @Request() req
+  ) {
+    this.logger.debug(`接收到复查审核通过记录: ${JSON.stringify(dto.reviewerApprovalRecords)}`);
+    
+    // 确保DTO中的数据结构正确
+    if (!dto.reviewerApprovalRecords || !Array.isArray(dto.reviewerApprovalRecords)) {
+      throw new BadRequestException('复查审核通过记录必须是数组');
+    }
+    
     const username = req.user.username;
-    const roles = req.user.roles || [];
-    const isAdmin = roles.includes('admin') || roles.includes('super_admin');
-    return this.financialSelfInspectionService.updateReviewerFields(+id, dto, username, isAdmin);
+    return this.financialSelfInspectionService.updateReviewerApproval(+id, dto, username);
+  }
+
+  @Patch(':id/reject')
+  @ApiOperation({ summary: '添加审核退回记录' })
+  @ApiParam({ name: 'id', description: '记录ID' })
+  async updateReject(
+    @Param('id') id: string, 
+    @Body() dto: RejectDto
+  ) {
+    this.logger.debug(`接收到审核退回记录: ${JSON.stringify(dto.rejectRecords)}`);
+    
+    // 确保DTO中的数据结构正确
+    if (!dto.rejectRecords || !Array.isArray(dto.rejectRecords)) {
+      throw new BadRequestException('审核退回记录必须是数组');
+    }
+    
+    return this.financialSelfInspectionService.updateReject(+id, dto);
+  }
+
+  @Patch(':id/reviewer-reject')
+  @ApiOperation({ summary: '添加复查审核退回记录' })
+  @ApiParam({ name: 'id', description: '记录ID' })
+  async updateReviewerReject(
+    @Param('id') id: string, 
+    @Body() dto: ReviewerRejectDto, 
+    @Request() req
+  ) {
+    this.logger.debug(`接收到复查审核退回记录: ${JSON.stringify(dto.reviewerRejectRecords)}`);
+    
+    // 确保DTO中的数据结构正确
+    if (!dto.reviewerRejectRecords || !Array.isArray(dto.reviewerRejectRecords)) {
+      throw new BadRequestException('复查审核退回记录必须是数组');
+    }
+    
+    const username = req.user.username;
+    return this.financialSelfInspectionService.updateReviewerReject(+id, dto, username);
+  }
+
+  @Delete(':id')
+  @Roles('admin', 'super_admin') // 只有管理员和超级管理员可以调用
+  @ApiOperation({ 
+    summary: '删除账务自查记录【仅管理员】',
+    description: '删除指定ID的账务自查记录，需要管理员或超级管理员权限。'
+  })
+  @ApiParam({ 
+    name: 'id', 
+    description: '记录ID' 
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: '删除成功' 
+  })
+  @ApiResponse({ 
+    status: 403, 
+    description: '权限不足，需要管理员权限' 
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: '记录不存在' 
+  })
+  remove(@Param('id') id: string) {
+    return this.financialSelfInspectionService.remove(+id);
   }
 
   @Get('count-as-inspector')

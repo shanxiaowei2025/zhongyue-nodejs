@@ -23,6 +23,9 @@ export class Salary {
 
   @Column({ comment: '底薪临时增加金额', type: 'decimal', precision: 10, scale: 2, default: 0 })
   temporaryIncrease: number;
+  
+  @Column({ comment: '临时增加项目', type: 'varchar', length: 100, nullable: true })
+  temporaryIncreaseItem: string;
 
   @Column({ comment: '考勤扣款', type: 'decimal', precision: 10, scale: 2, default: 0 })
   attendanceDeduction: number;
