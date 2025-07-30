@@ -31,15 +31,20 @@ export class FinancialSelfInspectionController {
   @Post()
   @ApiOperation({ 
     summary: '创建账务自查记录（限制只能填写部分字段）',
-    description: '创建账务自查记录时会进行职级检查：1.如果记账会计是当前用户自己，允许创建；2.如果当前用户职级高于记账会计，允许创建；3.如果双方都是P4职级，允许创建；4.其他情况不允许创建'
+    description: '对于普通用户，创建账务自查记录时会进行职级检查：1.如果记账会计是当前用户自己，允许创建；2.如果当前用户职级高于记账会计，允许创建；3.如果双方都是P4职级，允许创建；4.其他情况不允许创建。管理员和超级管理员可以直接创建任意记录，无需职级检查。'
   })
   create(@Body() createDto: CreateFinancialSelfInspectionRestrictedDto, @Request() req) {
     // 如果没有提供抽查人，则使用当前登录用户的用户名
     if (!createDto.inspector) {
       createDto.inspector = req.user.username;
     }
-    // 传递当前用户名，用于职级检查
-    return this.financialSelfInspectionService.create(createDto, req.user.username);
+    
+    // 检查用户角色
+    const roles = req.user.roles || [];
+    const isAdmin = roles.includes('admin') || roles.includes('super_admin');
+    
+    // 传递当前用户名和管理员标识
+    return this.financialSelfInspectionService.create(createDto, req.user.username, isAdmin);
   }
 
   @Get('my-submitted')

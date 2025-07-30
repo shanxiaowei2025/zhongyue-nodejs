@@ -27,9 +27,29 @@ export class FinancialSelfInspectionService {
   /**
    * 创建账务自查记录
    */
-  async create(createDto: CreateFinancialSelfInspectionDto | CreateFinancialSelfInspectionRestrictedDto, currentUsername?: string): Promise<FinancialSelfInspection> {
-    // 1. 获取当前用户的rank字段(分析职级: Px-y格式)
-    if (currentUsername) {
+  async create(createDto: CreateFinancialSelfInspectionDto | CreateFinancialSelfInspectionRestrictedDto, currentUsername?: string, isAdmin: boolean = false): Promise<FinancialSelfInspection> {
+    // 如果是管理员或超级管理员，直接允许创建，跳过职级检查
+    if (isAdmin) {
+      this.logger.log(`用户 ${currentUsername} 是管理员，允许创建账务自查记录而无需职级检查`);
+      
+      // 如果提供了统一社会信用代码，仍然获取记账会计信息用于参考
+      if (createDto.unifiedSocialCreditCode) {
+        const customerRepository = this.financialSelfInspectionRepository.manager.getRepository('sys_customer');
+        const customer = await customerRepository.findOne({
+          where: { unifiedSocialCreditCode: createDto.unifiedSocialCreditCode }
+        });
+
+        if (customer && customer.bookkeepingAccountant) {
+          // 如果传入的记账会计与客户表中的不一致，以客户表为准
+          if (!createDto.bookkeepingAccountant || createDto.bookkeepingAccountant !== customer.bookkeepingAccountant) {
+            createDto.bookkeepingAccountant = customer.bookkeepingAccountant;
+            this.logger.log(`更新记账会计为客户表中的记录: ${customer.bookkeepingAccountant}`);
+          }
+        }
+      }
+    }
+    // 非管理员需进行职级检查
+    else if (currentUsername) {
       const currentEmployee = await this.employeeService.findByName(currentUsername);
       if (!currentEmployee || !currentEmployee.rank) {
         throw new BadRequestException('无法获取当前用户职级信息');
@@ -84,13 +104,17 @@ export class FinancialSelfInspectionService {
       }
     }
 
-    const record = this.financialSelfInspectionRepository.create(createDto);
+    const record = this.financialSelfInspectionRepository.create({
+      ...createDto,
+      status: 0 // 默认状态：已提交未整改
+    });
     
     // 记录最终使用的记账会计信息
     if (currentUsername && createDto.bookkeepingAccountant) {
       this.logger.log(`创建账务自查记录 - 抽查人: ${currentUsername}, 记账会计: ${createDto.bookkeepingAccountant}, 企业: ${createDto.companyName || ''}, 统一社会信用代码: ${createDto.unifiedSocialCreditCode || ''}`);
     }
     
+    this.logger.log(`新建记录状态: 已提交未整改(0)`);
     return this.financialSelfInspectionRepository.save(record);
   }
 
@@ -139,7 +163,11 @@ export class FinancialSelfInspectionService {
       }))
     ];
     
+    // 更新状态为"已整改"
+    record.status = 1;
+    
     this.logger.debug(`添加整改记录: ${JSON.stringify(validRecords)}`);
+    this.logger.log(`更新记录状态为: 已整改(1)`);
     
     return this.financialSelfInspectionRepository.save(record);
   }
@@ -174,7 +202,11 @@ export class FinancialSelfInspectionService {
       }))
     ];
     
+    // 更新状态为"抽查人确认"
+    record.status = 2;
+    
     this.logger.debug(`添加审核通过记录: ${JSON.stringify(validRecords)}`);
+    this.logger.log(`更新记录状态为: 抽查人确认(2)`);
     
     return this.financialSelfInspectionRepository.save(record);
   }
@@ -200,7 +232,7 @@ export class FinancialSelfInspectionService {
       record.rejectRecords = [];
     }
 
-    // 添加新的退回记录，确保每条记录都包含所需属性
+        // 添加新的退回记录，确保每条记录都包含所需属性
     record.rejectRecords = [
       ...record.rejectRecords,
       ...validRecords.map(item => ({
@@ -209,8 +241,12 @@ export class FinancialSelfInspectionService {
       }))
     ];
     
+    // 更新状态为"抽查人退回"
+    record.status = 3;
+    
     this.logger.debug(`添加审核退回记录: ${JSON.stringify(validRecords)}`);
-
+    this.logger.log(`更新记录状态为: 抽查人退回(3)`);
+    
     return this.financialSelfInspectionRepository.save(record);
   }
 
@@ -251,6 +287,10 @@ export class FinancialSelfInspectionService {
       record.reviewer = username;
       this.logger.debug(`设置复查人为: ${username}`);
     }
+    
+    // 更新状态为"复查人退回"
+    record.status = 5;
+    this.logger.log(`更新记录状态为: 复查人退回(5)`);
 
     return this.financialSelfInspectionRepository.save(record);
   }
@@ -325,6 +365,7 @@ export class FinancialSelfInspectionService {
       inspector,
       inspectionDateStart,
       inspectionDateEnd,
+      status,
       page = 1, 
       pageSize = 10 
     } = queryDto;
@@ -417,6 +458,16 @@ export class FinancialSelfInspectionService {
       }
     }
 
+    // 状态过滤
+    if (status !== undefined && status !== null) {
+      if (hasWhereCondition) {
+        queryBuilder.andWhere('record.status = :status', { status });
+      } else {
+        queryBuilder.where('record.status = :status', { status });
+        hasWhereCondition = true;
+      }
+    }
+
     // 添加分页
     queryBuilder
       .orderBy('record.createdAt', 'DESC')
@@ -448,6 +499,7 @@ export class FinancialSelfInspectionService {
       consultantAccountant,
       inspectionDateStart,
       inspectionDateEnd,
+      status,
       page = 1, 
       pageSize = 10 
     } = queryDto;
@@ -541,6 +593,16 @@ export class FinancialSelfInspectionService {
       }
     }
 
+    // 状态过滤
+    if (status !== undefined && status !== null) {
+      if (hasWhereCondition) {
+        queryBuilder.andWhere('record.status = :status', { status });
+      } else {
+        queryBuilder.where('record.status = :status', { status });
+        hasWhereCondition = true;
+      }
+    }
+
     // 添加分页
     queryBuilder
       .orderBy('record.createdAt', 'DESC')
@@ -596,6 +658,10 @@ export class FinancialSelfInspectionService {
       record.reviewer = username;
       this.logger.debug(`设置复查人为: ${username}`);
     }
+    
+    // 更新状态为"复查人确认"
+    record.status = 4;
+    this.logger.log(`更新记录状态为: 复查人确认(4)`);
 
     return this.financialSelfInspectionRepository.save(record);
   }
@@ -713,6 +779,7 @@ export class FinancialSelfInspectionService {
       reviewer,
       inspectionDateStart,
       inspectionDateEnd,
+      status,
       page = 1, 
       pageSize = 10 
     } = queryDto;
@@ -803,6 +870,16 @@ export class FinancialSelfInspectionService {
         queryBuilder.andWhere('record.inspectionDate <= :end', { end: inspectionDateEnd });
       } else {
         queryBuilder.where('record.inspectionDate <= :end', { end: inspectionDateEnd });
+        hasWhereCondition = true;
+      }
+    }
+
+    // 状态过滤
+    if (status !== undefined && status !== null) {
+      if (hasWhereCondition) {
+        queryBuilder.andWhere('record.status = :status', { status });
+      } else {
+        queryBuilder.where('record.status = :status', { status });
         hasWhereCondition = true;
       }
     }

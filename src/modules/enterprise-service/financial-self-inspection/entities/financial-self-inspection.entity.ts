@@ -5,6 +5,13 @@ export class FinancialSelfInspection {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column({ 
+    type: 'int', 
+    default: 0, 
+    comment: '状态(0：已提交未整改 1：已整改 2：抽查人确认 3：抽查人退回 4：复查人(管理员)确认 5：复查人(管理员)退回)' 
+  })
+  status: number;
+
   @Column({ type: 'date', nullable: true, comment: '抽查日期' })
   inspectionDate: Date;
 
