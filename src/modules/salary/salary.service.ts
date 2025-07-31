@@ -5,6 +5,7 @@ import { Salary } from './entities/salary.entity';
 import { CreateSalaryDto } from './dto/create-salary.dto';
 import { UpdateSalaryDto } from './dto/update-salary.dto';
 import { QuerySalaryDto } from './dto/query-salary.dto';
+import { ConfirmSalaryDto } from './dto/confirm-salary.dto';
 import { safeDateParam, safePaginationParams } from 'src/common/utils';
 import { SalaryPermissionService } from './services/salary-permission.service';
 
@@ -390,6 +391,43 @@ export class SalaryService {
     }
     
     await this.salaryRepository.delete(safeId);
+  }
+
+  /**
+   * 确认薪资记录
+   * @param id 薪资记录ID
+   * @param confirmSalaryDto 确认薪资DTO
+   * @param userId 用户ID
+   * @returns 更新后的薪资记录
+   */
+  async confirmSalary(id: number, confirmSalaryDto: ConfirmSalaryDto, userId: number): Promise<Salary> {
+    // 检查权限
+    const hasPermission = await this.salaryPermissionService.hasSalaryEditPermission(userId);
+    if (!hasPermission) {
+      throw new ForbiddenException('没有确认薪资记录的权限');
+    }
+    
+    // 确保id是有效的数字
+    const safeId = Number(id);
+    if (isNaN(safeId)) {
+      console.error(`确认薪资时无效的ID值: ${id}, 转换后: ${safeId}`);
+      throw new NotFoundException(`无效的薪资记录ID: ${id}`);
+    }
+    
+    // 检查记录是否存在
+    const existingSalary = await this.findOne(safeId, userId);
+    if (!existingSalary) {
+      throw new NotFoundException(`ID为${id}的薪资记录不存在`);
+    }
+
+    // 更新确认状态和确认时间
+    const updateData = {
+      isConfirmed: confirmSalaryDto.isConfirmed,
+      confirmedAt: confirmSalaryDto.isConfirmed ? new Date() : null
+    };
+    
+    await this.salaryRepository.update(safeId, updateData);
+    return this.findOne(safeId, userId);
   }
   
   // 检查薪资记录是否符合访问条件

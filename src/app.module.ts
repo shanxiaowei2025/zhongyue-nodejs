@@ -26,6 +26,7 @@ import { SubsidySummaryModule } from './modules/salary/subsidy-summary/subsidy-s
 import { FriendCirclePaymentModule } from './modules/salary/friend-circle-payment/friend-circle-payment.module'; // 直接导入朋友圈扣款模块
 import { AttendanceDeductionModule } from './modules/salary/attendance-deduction/attendance-deduction.module'; // 直接导入考勤扣款模块
 import { AttendanceModule } from './modules/attendance/attendance.module'; // 新增考勤模块
+import { Deposit } from './modules/salary/deposit/entities/deposit.entity'; // 新增保证金表实体
 
 // 导入各种配置文件
 import appConfig from './config/app.config'; // 应用配置
@@ -56,7 +57,6 @@ import { AttendanceDeduction } from './modules/salary/attendance-deduction/entit
 import { Attendance } from './modules/attendance/entities/attendance.entity'; // 新增考勤实体
 import { SalaryBaseHistory } from './modules/salary/salary-base-history/entities/salary-base-history.entity'; // 新增工资基数历程表实体
 import { 
-  AgencyCommission, 
   BusinessSalesCommission, 
   BusinessConsultantCommission, 
   BusinessOtherCommission,
@@ -132,7 +132,7 @@ import {
           AttendanceDeduction, // 新增考勤扣款表实体
           Attendance, // 新增考勤实体
           SalaryBaseHistory, // 新增工资基数历程表实体
-          AgencyCommission, // 新增代理费提成表实体
+          Deposit, // 新增保证金表实体
           BusinessSalesCommission, // 新增业务提成表销售实体
           BusinessConsultantCommission, // 新增业务提成表顾问实体
           BusinessOtherCommission, // 新增业务提成表其他实体

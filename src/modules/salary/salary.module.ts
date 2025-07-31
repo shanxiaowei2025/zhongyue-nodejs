@@ -14,7 +14,9 @@ import { SocialInsuranceModule } from './social-insurance/social-insurance.modul
 import { AttendanceDeductionModule } from './attendance-deduction/attendance-deduction.module';
 import { SalaryBaseHistoryModule } from './salary-base-history/salary-base-history.module';
 import { CommissionModule } from './commission/commission.module';
+import { DepositModule } from './deposit/deposit.module';
 import { SalaryBaseHistory } from './salary-base-history/entities/salary-base-history.entity';
+import { Deposit } from './deposit/entities/deposit.entity';
 import { User } from '../users/entities/user.entity';
 import { Role } from '../roles/entities/role.entity';
 import { Permission } from '../permissions/entities/permission.entity';
@@ -22,7 +24,6 @@ import { Department } from '../department/entities/department.entity';
 
 // 提成表实体
 import { 
-  AgencyCommission, 
   BusinessSalesCommission, 
   BusinessConsultantCommission, 
   BusinessOtherCommission 
@@ -39,11 +40,12 @@ import {
     AttendanceDeductionModule,
     SalaryBaseHistoryModule,
     CommissionModule,
+    DepositModule,
     // 再注册父模块
     TypeOrmModule.forFeature([
       Salary, 
       SalaryBaseHistory,
-      AgencyCommission,
+      Deposit,
       BusinessSalesCommission,
       BusinessConsultantCommission,
       BusinessOtherCommission,

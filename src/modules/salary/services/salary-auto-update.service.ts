@@ -738,6 +738,21 @@ export class SalaryAutoUpdateService {
       SELECT * FROM sys_employees
     `);
     
+    // 获取所有保证金数据，以便后续匹配
+    this.logger.log(`获取${firstDayOfLastMonth}至${lastDayOfLastMonth}期间的保证金数据`);
+    const depositRecords = await this.dataSource.query(`
+      SELECT * FROM sys_deposit
+      WHERE deductionDate BETWEEN ? AND ?
+    `, [firstDayOfLastMonth, lastDayOfLastMonth]);
+
+    // 创建员工姓名到保证金金额的映射表
+    const depositMap = new Map<string, number>();
+    depositRecords.forEach(record => {
+      depositMap.set(record.name, Number(record.amount) || 0);
+      this.logger.debug(`员工 ${record.name} 保证金: ${record.amount}`);
+    });
+    this.logger.log(`找到${depositRecords.length}条保证金记录`);
+    
     let created = 0;
     let updated = 0;
 
@@ -834,6 +849,16 @@ export class SalaryAutoUpdateService {
           }
         }
 
+        // 获取保证金扣除金额
+        const depositDeduction = depositMap.has(employee.name) 
+          ? depositMap.get(employee.name) 
+          : (existingSalary?.depositDeduction || 0);
+        
+        // 如果找到了保证金记录，记录日志
+        if (depositMap.has(employee.name)) {
+          this.logger.debug(`员工 ${employee.name} 匹配到保证金扣除金额: ${depositDeduction}`);
+        }
+
         // 准备薪资数据
         const salaryData: any = {
           name: employee.name,
@@ -860,7 +885,7 @@ export class SalaryAutoUpdateService {
           personalUnemployment: socialInsurance?.personalUnemployment || 0,
           personalInsuranceTotal: socialInsurance?.personalTotal || 0,
           companyInsuranceTotal: socialInsurance?.companyTotal || 0,
-          depositDeduction: existingSalary?.depositDeduction || 0,
+          depositDeduction: depositDeduction, // 设置为从保证金表获取的金额
           personalIncomeTax: existingSalary?.personalIncomeTax || 0,
           other: existingSalary?.other || 0,
           bankCardNumber: employee.bankCardNumber || '',

@@ -106,6 +106,14 @@ export class Salary {
   @Column({ comment: '是否已发放', type: 'boolean', default: false })
   isPaid: boolean;
 
+  @ApiProperty({ description: '是否已确认', type: 'boolean', default: false })
+  @Column({ comment: '是否已确认', type: 'boolean', default: false })
+  isConfirmed: boolean;
+
+  @ApiProperty({ description: '确认时间', required: false })
+  @Column({ comment: '确认时间', type: 'datetime', nullable: true })
+  confirmedAt: Date;
+
   @Column({ comment: '年月', type: 'date' })
   yearMonth: Date;
 

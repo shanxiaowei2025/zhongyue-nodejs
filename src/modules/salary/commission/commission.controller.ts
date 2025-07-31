@@ -7,16 +7,13 @@ import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
 
 import {
-  CreateAgencyCommissionDto,
   CreateBusinessSalesCommissionDto,
   CreateBusinessConsultantCommissionDto,
   CreateBusinessOtherCommissionDto,
   CreatePerformanceCommissionDto,
-  QueryAgencyCommissionDto,
   QueryBusinessSalesCommissionDto,
   QueryBusinessCommissionDto,
   QueryPerformanceCommissionDto,
-  UpdateAgencyCommissionDto,
   UpdateBusinessSalesCommissionDto,
   UpdateBusinessCommissionDto,
   UpdatePerformanceCommissionDto
@@ -27,50 +24,6 @@ import {
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class CommissionController {
   constructor(private readonly commissionService: CommissionService) {}
-
-  // 代理费提成表接口
-  @Post('agency')
-  @Roles('admin', 'super_admin')
-  @ApiOperation({ summary: '创建代理费提成记录' })
-  @ApiResponse({ status: 201, description: '创建成功' })
-  createAgencyCommission(@Body() dto: CreateAgencyCommissionDto) {
-    return this.commissionService.createAgencyCommission(dto);
-  }
-
-  @Get('agency')
-  @Roles('admin', 'super_admin')
-  @ApiOperation({ summary: '查询代理费提成记录列表' })
-  findAllAgencyCommission(@Query() query: QueryAgencyCommissionDto) {
-    return this.commissionService.findAllAgencyCommission(query);
-  }
-
-  @Get('agency/:id')
-  @Roles('admin', 'super_admin')
-  @ApiOperation({ summary: '查询单个代理费提成记录' })
-  @ApiParam({ name: 'id', description: '记录ID' })
-  findOneAgencyCommission(@Param('id') id: string) {
-    return this.commissionService.findOneAgencyCommission(+id);
-  }
-
-  @Patch('agency/:id')
-  @Roles('admin', 'super_admin')
-  @ApiOperation({ summary: '更新代理费提成记录' })
-  @ApiParam({ name: 'id', description: '记录ID' })
-  updateAgencyCommission(
-    @Param('id') id: string,
-    @Body() dto: UpdateAgencyCommissionDto,
-  ) {
-    return this.commissionService.updateAgencyCommission(+id, dto);
-  }
-
-  @Delete('agency/:id')
-  @Roles('admin', 'super_admin')
-  @ApiOperation({ summary: '删除代理费提成记录' })
-  @ApiParam({ name: 'id', description: '记录ID' })
-  @ApiResponse({ status: 204, description: '删除成功' })
-  removeAgencyCommission(@Param('id') id: string) {
-    return this.commissionService.removeAgencyCommission(+id);
-  }
 
   // 业务提成表销售接口
   @Post('sales')
@@ -217,16 +170,13 @@ export class CommissionController {
 1. 查询业务销售提成率:
    \`GET /api/commission/rate/amount?amount=5000&type=sales&salesType=转正后\`
 
-2. 查询代理费提成率(整数代理户数):
-   \`GET /api/commission/rate/amount?amount=20000&type=agency&agencyCount=180\`
-
-3. 查询业务顾问提成率:
+2. 查询业务顾问提成率:
    \`GET /api/commission/rate/amount?amount=18000&type=consultant\`
 
-4. 查询其他业务提成率:
+3. 查询其他业务提成率:
    \`GET /api/commission/rate/amount?amount=10000&type=other\`
 
-5. 无匹配结果:
+4. 无匹配结果:
    \`GET /api/commission/rate/amount?amount=100000&type=consultant\`
 `
   })
@@ -244,23 +194,11 @@ export class CommissionController {
     name: 'type',
     required: true,
     description: '提成类型',
-    enum: ['agency', 'sales', 'consultant', 'other'],
+    enum: ['sales', 'consultant', 'other'],
     examples: {
-      '代理费提成': { value: 'agency' },
       '业务销售提成': { value: 'sales' },
       '业务顾问提成': { value: 'consultant' },
       '其他业务提成': { value: 'other' }
-    }
-  })
-  @ApiQuery({
-    name: 'agencyCount',
-    required: false,
-    description: '代理户数（整数），当type=agency时有效',
-    type: Number,
-    examples: {
-      '120户': { value: 120 },
-      '180户': { value: 180 },
-      '260户': { value: 260 }
     }
   })
   @ApiQuery({
@@ -282,7 +220,6 @@ export class CommissionController {
         matched: true,
         record: {
           id: 3,
-          agencyCount: "151-200",
           minCommissionBase: "20000.00",
           feeRange: "20000-35000",
           commissionRate: "0.010",
@@ -294,12 +231,10 @@ export class CommissionController {
   })
   getCommissionRateByAmount(
     @Query('amount') amount: number,
-    @Query('type') type: 'agency' | 'sales' | 'consultant' | 'other',
-    @Query('agencyCount') agencyCount?: number,
+    @Query('type') type: 'sales' | 'consultant' | 'other',
     @Query('salesType') salesType?: string,
   ) {
     const filterOptions = {
-      agencyCount,
       type: salesType,
     };
     return this.commissionService.getCommissionRateByAmount(amount, type, filterOptions);

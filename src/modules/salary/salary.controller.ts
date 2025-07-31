@@ -3,6 +3,7 @@ import { SalaryService } from './salary.service';
 import { CreateSalaryDto } from './dto/create-salary.dto';
 import { UpdateSalaryDto } from './dto/update-salary.dto';
 import { QuerySalaryDto } from './dto/query-salary.dto';
+import { ConfirmSalaryDto } from './dto/confirm-salary.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { SalaryPermissionService } from './services/salary-permission.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiQuery, ApiProperty } from '@nestjs/swagger';
@@ -302,6 +303,29 @@ export class SalaryController {
     } catch (error) {
       throw new HttpException(
         error.message || '删除薪资记录失败',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+  
+  @Patch(':id/confirm')
+  @ApiOperation({ summary: '确认薪资记录', description: '根据ID确认薪资记录' })
+  @ApiParam({ name: 'id', description: '薪资记录ID' })
+  @ApiBody({ type: ConfirmSalaryDto })
+  @ApiResponse({ status: HttpStatus.OK, description: '确认成功' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: '薪资记录不存在' })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权' })
+  async confirmSalary(
+    @Param('id') id: string,
+    @Body() confirmSalaryDto: ConfirmSalaryDto,
+    @Req() req: RequestWithUser,
+  ) {
+    try {
+      const safeId = safeIdParam(id);
+      return this.salaryService.confirmSalary(safeId, confirmSalaryDto, req.user.id);
+    } catch (error) {
+      throw new HttpException(
+        error.message || '确认薪资记录失败',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

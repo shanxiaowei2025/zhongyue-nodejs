@@ -140,6 +140,26 @@ export class CreateSalaryDto {
   @IsOptional()
   isPaid: boolean;
 
+  @ApiProperty({ 
+    description: '是否已确认', 
+    type: 'boolean',
+    required: false,
+    default: false,
+    example: false
+  })
+  @IsBoolean()
+  @IsOptional()
+  isConfirmed: boolean;
+
+  @ApiProperty({
+    description: '确认时间',
+    required: false,
+    type: Date
+  })
+  @IsDate()
+  @IsOptional()
+  confirmedAt: Date;
+
   @IsNotEmpty({ message: '年月不能为空' })
   @IsDate()
   yearMonth: Date;
