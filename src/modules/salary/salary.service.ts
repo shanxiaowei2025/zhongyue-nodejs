@@ -1,6 +1,6 @@
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Not, Like } from 'typeorm';
+import { Repository, Not, Like, DataSource } from 'typeorm';
 import { Salary } from './entities/salary.entity';
 import { CreateSalaryDto } from './dto/create-salary.dto';
 import { UpdateSalaryDto } from './dto/update-salary.dto';
@@ -15,6 +15,7 @@ export class SalaryService {
     @InjectRepository(Salary)
     private readonly salaryRepository: Repository<Salary>,
     private readonly salaryPermissionService: SalaryPermissionService,
+    private readonly dataSource: DataSource,
   ) {}
 
   async create(createSalaryDto: CreateSalaryDto, userId: number): Promise<Salary> {
@@ -122,6 +123,74 @@ export class SalaryService {
     delete result.skipPerformanceCalculation;
     
     return result;
+  }
+
+  /**
+   * 获取员工保证金总额
+   * @param name 员工姓名
+   * @returns 保证金总额
+   */
+  async getEmployeeDepositTotal(name: string): Promise<number> {
+    try {
+      const result = await this.dataSource.query(
+        `SELECT COALESCE(SUM(amount), 0) as totalDeposit 
+         FROM sys_deposit 
+         WHERE name = ?`,
+        [name]
+      );
+      
+      return Number(result[0]?.totalDeposit || 0);
+    } catch (error) {
+      console.error(`获取员工${name}的保证金总额失败:`, error);
+      return 0;
+    }
+  }
+
+  /**
+   * 批量获取员工保证金总额
+   * @param names 员工姓名数组
+   * @returns 姓名到保证金总额的映射
+   */
+  async getMultipleEmployeeDepositTotals(names: string[]): Promise<Map<string, number>> {
+    const depositMap = new Map<string, number>();
+    
+    if (!names || names.length === 0) {
+      return depositMap;
+    }
+    
+    try {
+      // 为SQL查询准备参数占位符
+      const placeholders = names.map(() => '?').join(',');
+      
+      const result = await this.dataSource.query(
+        `SELECT name, COALESCE(SUM(amount), 0) as totalDeposit 
+         FROM sys_deposit 
+         WHERE name IN (${placeholders})
+         GROUP BY name`,
+        [...names]
+      );
+      
+      // 将结果转换为Map
+      result.forEach(item => {
+        depositMap.set(item.name, Number(item.totalDeposit || 0));
+      });
+      
+      // 确保所有请求的名字都有一个条目，即使是0
+      names.forEach(name => {
+        if (!depositMap.has(name)) {
+          depositMap.set(name, 0);
+        }
+      });
+      
+      return depositMap;
+    } catch (error) {
+      console.error('批量获取员工保证金总额失败:', error);
+      // 出错时返回所有为0的映射
+      names.forEach(name => {
+        depositMap.set(name, 0);
+      });
+      return depositMap;
+    }
   }
 
   async findAll(query: QuerySalaryDto, userId: number) {
@@ -249,6 +318,18 @@ export class SalaryService {
         .skip((page - 1) * pageSize)
         .take(pageSize)
         .getMany();
+
+      // 如果有数据，获取所有员工的保证金总和
+      if (data.length > 0) {
+        const employeeNames = data.map(item => item.name);
+        const depositTotals = await this.getMultipleEmployeeDepositTotals(employeeNames);
+        
+        // 将保证金总和添加到每个薪资记录中
+        data = data.map(item => ({
+          ...item,
+          depositTotal: depositTotals.get(item.name) || 0
+        }));
+      }
     } catch (error) {
       console.error('获取薪资数据出错:', error);
     }
@@ -261,7 +342,7 @@ export class SalaryService {
     };
   }
 
-  async findOne(id: number, userId: number): Promise<Salary> {
+  async findOne(id: number, userId: number): Promise<Salary & { depositTotal?: number }> {
     // 确保id是有效的数字
     const safeId = Number(id);
     if (isNaN(safeId)) {
@@ -297,7 +378,14 @@ export class SalaryService {
       throw new ForbiddenException('没有权限查看该薪资记录');
     }
     
-    return salary;
+    // 获取员工保证金总和
+    const depositTotal = await this.getEmployeeDepositTotal(salary.name);
+    
+    // 返回附加了保证金总和的薪资记录
+    return {
+      ...salary,
+      depositTotal
+    };
   }
 
   async update(id: number, updateSalaryDto: UpdateSalaryDto, userId: number): Promise<Salary> {
