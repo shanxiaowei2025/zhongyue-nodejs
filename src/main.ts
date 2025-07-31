@@ -178,8 +178,8 @@ async function bootstrap() {
         UpdateEmployeeDto, 
         QueryEmployeeDto, 
         Employee,
-        // 添加新模型
-        require('./modules/enterprise-service/financial-self-inspection/dto/count-response.dto').CountResponseDto
+        // 删除不存在的模型引用
+        // require('./modules/enterprise-service/financial-self-inspection/dto/count-response.dto').CountResponseDto
       ] // 确保包含额外模型
     });
 

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Between } from 'typeorm';
+import { Repository, DataSource, Between, LessThan, In } from 'typeorm';
 import { Cron } from '@nestjs/schedule';
 import { Salary } from '../entities/salary.entity';
 import moment from 'moment';
@@ -426,6 +426,294 @@ export class SalaryAutoUpdateService {
   }
 
   /**
+   * 检查并更新记账会计的绩效扣除
+   * 根据上个月账务自查数据，调整薪资表中记账会计的performanceDeductions字段
+   * @param lastMonth 上个月对象
+   */
+  async checkAndUpdateAccountantPerformance(lastMonth: moment.Moment): Promise<void> {
+    try {
+      this.logger.warn('██████████ 开始检查记账会计账务自查记录并更新绩效扣除... ██████████');
+      
+      // 获取上个月的第一天和最后一天
+      const firstDayOfLastMonth = lastMonth.startOf('month').format('YYYY-MM-DD');
+      const lastDayOfLastMonth = lastMonth.endOf('month').format('YYYY-MM-DD');
+      
+      this.logger.warn(`统计${firstDayOfLastMonth}至${lastDayOfLastMonth}期间的账务自查记录`);
+      
+      // 1. 获取所有记账会计
+      const accountantSQL = `SELECT * FROM sys_employees WHERE position = '记账会计'`;
+      this.logger.warn(`执行SQL: ${accountantSQL}`);
+      
+      const accountants = await this.dataSource.query(accountantSQL);
+      
+      this.logger.warn(`查询结果: ${JSON.stringify(accountants).substring(0, 200)}${accountants && accountants.length > 0 ? '...' : ''}`);
+      
+      if (!accountants || accountants.length === 0) {
+        this.logger.warn('⚠️⚠️⚠️ 未找到任何记账会计，跳过绩效扣除调整 ⚠️⚠️⚠️');
+        return;
+      }
+      
+      this.logger.warn(`找到${accountants.length}名记账会计`);
+      
+      // 2. 筛选账务自查表，上个月，status字段为2或4的记录
+      const inspectionSQL = `
+        SELECT * FROM sys_financial_self_inspection 
+        WHERE inspectionDate BETWEEN ? AND ? 
+        AND status IN (2, 4)
+      `;
+      this.logger.warn(`执行SQL: ${inspectionSQL.replace(/\n\s+/g, ' ')} [参数: ${firstDayOfLastMonth}, ${lastDayOfLastMonth}]`);
+      
+      const inspectionRecords = await this.dataSource.query(inspectionSQL, [
+        firstDayOfLastMonth, 
+        lastDayOfLastMonth
+      ]);
+      
+      this.logger.warn(`查询结果: ${JSON.stringify(inspectionRecords).substring(0, 200)}${inspectionRecords && inspectionRecords.length > 0 ? '...' : ''}`);
+      
+      if (!inspectionRecords || inspectionRecords.length === 0) {
+        this.logger.warn('⚠️⚠️⚠️ 上月没有已确认的账务自查记录，但将继续统计并显示结果 ⚠️⚠️⚠️');
+      } else {
+        this.logger.warn(`找到${inspectionRecords.length}条已确认的账务自查记录`);
+      }
+      
+      // 3. 统计每个记账会计的自查和抽查数量
+      const accountantStats = {};
+      
+      for (const accountant of accountants) {
+        accountantStats[accountant.name] = {
+          selfInspectionCount: 0,
+          inspectionByOthersCount: 0,
+          reviewCount: 0,
+          mainRank: 0
+        };
+        
+        // 解析记账会计的职级
+        if (accountant.rank) {
+          const rankMatch = accountant.rank.match(/^P(\d+)-\d+$/);
+          if (rankMatch) {
+            accountantStats[accountant.name].mainRank = parseInt(rankMatch[1], 10);
+          }
+        }
+      }
+      
+      // 只有当有记录时才进行计数
+      if (inspectionRecords && inspectionRecords.length > 0) {
+        // 4. 计算自查和抽查数量
+        for (const record of inspectionRecords) {
+          if (record.bookkeepingAccountant === record.inspector) {
+            // 自查记录
+            if (accountantStats[record.bookkeepingAccountant]) {
+              accountantStats[record.bookkeepingAccountant].selfInspectionCount++;
+              // 移除详细日志
+            }
+          } else if (accountantStats[record.inspector]) {
+            // 抽查记录 - 统计抽查人的抽查数量
+            accountantStats[record.inspector].inspectionByOthersCount++;
+            // 移除详细日志
+          }
+          
+          // 统计复查数量（特别是曹海玲的复查数量）
+          if (record.reviewer && accountantStats[record.reviewer]) {
+            accountantStats[record.reviewer].reviewCount++;
+            // 移除详细日志
+          }
+        }
+      }
+      
+      this.logger.warn('记账会计统计结果:');
+      // 添加表格样式的日志输出，更清晰地展示统计数据
+      this.logger.warn('------------------------------------------------------');
+      this.logger.warn('| 姓名       | 职级   | 自查数量 | 抽查数量 | 复查数量 |');
+      this.logger.warn('------------------------------------------------------');
+      Object.keys(accountantStats).forEach(name => {
+        const stats = accountantStats[name];
+        const paddedName = name.padEnd(10, ' ');
+        const paddedRank = `P${stats.mainRank}`.padEnd(6, ' ');
+        const paddedSelf = `${stats.selfInspectionCount}`.padStart(8, ' ');
+        const paddedInspect = `${stats.inspectionByOthersCount}`.padStart(8, ' ');
+        const paddedReview = `${stats.reviewCount}`.padStart(8, ' ');
+        
+        this.logger.warn(`| ${paddedName} | ${paddedRank} | ${paddedSelf} | ${paddedInspect} | ${paddedReview} |`);
+        
+        // 检查是否符合规则
+        let ruleApplied = false;
+        
+        if (name === '曹海玲') {
+          if (stats.reviewCount < 12) {
+            this.logger.warn(`❌ ${name} 复查数量 ${stats.reviewCount} < 12，需扣除绩效`);
+            ruleApplied = true;
+          }
+        } else if (stats.mainRank === 2) {
+          if (stats.selfInspectionCount < 30) {
+            this.logger.warn(`❌ ${name} (P2级别) 自查数量 ${stats.selfInspectionCount} < 30，需扣除绩效`);
+            ruleApplied = true;
+          }
+        } else if (stats.mainRank === 3) {
+          if (stats.selfInspectionCount < 20) {
+            this.logger.warn(`❌ ${name} (P3级别) 自查数量 ${stats.selfInspectionCount} < 20，需扣除绩效`);
+            ruleApplied = true;
+          }
+          if (stats.inspectionByOthersCount < 20) {
+            this.logger.warn(`❌ ${name} (P3级别) 抽查数量 ${stats.inspectionByOthersCount} < 20，需扣除绩效`);
+            ruleApplied = true;
+          }
+        } else if (stats.mainRank === 4) {
+          if (stats.selfInspectionCount < 10) {
+            this.logger.warn(`❌ ${name} (P4级别) 自查数量 ${stats.selfInspectionCount} < 10，需扣除绩效`);
+            ruleApplied = true;
+          }
+          if (stats.inspectionByOthersCount < 20) {
+            this.logger.warn(`❌ ${name} (P4级别) 抽查数量 ${stats.inspectionByOthersCount} < 20，需扣除绩效`);
+            ruleApplied = true;
+          }
+        }
+        
+        if (!ruleApplied) {
+          this.logger.warn(`✅ ${name} 达到绩效要求，无需扣除`);
+        }
+      });
+      
+      // 5. 根据职级和数量调整绩效扣除
+      for (const accountant of accountants) {
+        const name = accountant.name;
+        const stats = accountantStats[name];
+        
+        if (!stats) continue;
+        
+        // 获取记账会计当月薪资记录
+        const salaryRecord = await this.salaryRepository.findOne({
+          where: {
+            name: name,
+            yearMonth: new Date(firstDayOfLastMonth)
+          }
+        });
+        
+        if (!salaryRecord) {
+          this.logger.warn(`未找到记账会计${name}的薪资记录，跳过绩效扣除调整`);
+          continue;
+        }
+        
+        // 获取或初始化performanceDeductions数组
+        const performanceDeductions = Array.isArray(salaryRecord.performanceDeductions) ? 
+          [...salaryRecord.performanceDeductions] : Array(15).fill(0);
+        
+        // 确保performanceDeductions数组至少有14个元素
+        while (performanceDeductions.length < 14) {
+          performanceDeductions.push(0);
+        }
+        
+        let shouldUpdate = false;
+        
+        // 曹海玲的特殊规则
+        if (name === '曹海玲') {
+          if (stats.reviewCount < 12) {
+            performanceDeductions[13] = 0.2;
+            shouldUpdate = true;
+            this.logger.warn(`❌ 曹海玲复查数量(${stats.reviewCount})少于12次，设置绩效扣除为0.2`);
+          } else if (performanceDeductions[13] === 0.2) {
+            // 如果已经是0.2但现在符合条件，恢复为0
+            performanceDeductions[13] = 0;
+            shouldUpdate = true;
+            this.logger.warn(`✅ 曹海玲复查数量(${stats.reviewCount})达标，清除绩效扣除`);
+          }
+        } 
+        // 其他记账会计根据职级规则
+        else {
+          // P2级别规则
+          if (stats.mainRank === 2) {
+            if (stats.selfInspectionCount < 30) {
+              performanceDeductions[13] = 0.2;
+              shouldUpdate = true;
+              this.logger.warn(`❌ ${name} (P2)自查数量(${stats.selfInspectionCount})少于30次，设置绩效扣除为0.2`);
+            } else if (performanceDeductions[13] === 0.2) {
+              performanceDeductions[13] = 0;
+              shouldUpdate = true;
+              this.logger.warn(`✅ ${name} (P2)自查数量(${stats.selfInspectionCount})达标，清除绩效扣除`);
+            }
+          }
+          // P3级别规则
+          else if (stats.mainRank === 3) {
+            if (stats.selfInspectionCount < 20 || stats.inspectionByOthersCount < 20) {
+              performanceDeductions[13] = 0.2;
+              shouldUpdate = true;
+              this.logger.warn(`❌ ${name} (P3)自查数量(${stats.selfInspectionCount})少于20次或抽查数量(${stats.inspectionByOthersCount})少于20次，设置绩效扣除为0.2`);
+            } else if (performanceDeductions[13] === 0.2) {
+              performanceDeductions[13] = 0;
+              shouldUpdate = true;
+              this.logger.warn(`✅ ${name} (P3)自查和抽查数量达标，清除绩效扣除`);
+            }
+          }
+          // P4级别规则（排除曹海玲）
+          else if (stats.mainRank === 4) {
+            if (stats.selfInspectionCount < 10 || stats.inspectionByOthersCount < 20) {
+              performanceDeductions[13] = 0.2;
+              shouldUpdate = true;
+              this.logger.warn(`❌ ${name} (P4)自查数量(${stats.selfInspectionCount})少于10次或抽查数量(${stats.inspectionByOthersCount})少于20次，设置绩效扣除为0.2`);
+            } else if (performanceDeductions[13] === 0.2) {
+              performanceDeductions[13] = 0;
+              shouldUpdate = true;
+              this.logger.warn(`✅ ${name} (P4)自查和抽查数量达标，清除绩效扣除`);
+            }
+          }
+        }
+        
+        // 如果需要更新绩效扣除，则更新数据库
+        if (shouldUpdate) {
+          // 记录更新前的状态
+          this.logger.warn(`${name} 更新前: performanceDeductions = [${salaryRecord.performanceDeductions ? salaryRecord.performanceDeductions.join(', ') : ''}], performanceCommission = ${salaryRecord.performanceCommission}`);
+          
+          // 计算更新后的绩效佣金
+          const newCommission = this.recalculatePerformanceCommission(salaryRecord.performanceCommission, performanceDeductions);
+          
+          // 更新薪资记录的performanceDeductions
+          await this.salaryRepository.update(salaryRecord.id, {
+            performanceDeductions,
+            // 重新计算绩效佣金
+            performanceCommission: newCommission
+          });
+          
+          // 记录更新后的状态
+          this.logger.warn(`${name} 更新后: performanceDeductions = [${performanceDeductions.join(', ')}], performanceCommission = ${newCommission}`);
+          this.logger.warn(`索引位置13的值: ${performanceDeductions[13]} (${performanceDeductions[13] > 0 ? '已扣除' : '无扣除'})`);
+        } else {
+          this.logger.warn(`${name} 无需更新绩效扣除`);
+        }
+      }
+      
+      this.logger.warn('记账会计绩效扣除检查更新完成');
+    } catch (error) {
+      this.logger.error(`检查记账会计绩效扣除时出错: ${error.message}`, error.stack);
+    }
+  }
+  
+  /**
+   * 重新计算绩效佣金
+   * @param originalCommission 原始绩效佣金
+   * @param performanceDeductions 绩效扣除数组
+   * @returns 重新计算的绩效佣金
+   */
+  private recalculatePerformanceCommission(originalCommission: number, performanceDeductions: number[]): number {
+    try {
+      // 计算绩效扣除总额
+      let performanceDeductionTotal = 0;
+      if (Array.isArray(performanceDeductions)) {
+        performanceDeductionTotal = performanceDeductions.reduce((sum, deduction) => sum + Number(deduction || 0), 0);
+        
+        // 如果绩效扣除总额大于1，则重置为1
+        if (performanceDeductionTotal > 1) {
+          performanceDeductionTotal = 1;
+        }
+      }
+      
+      // 计算绩效佣金 = 原始绩效佣金 * (1 - 绩效扣除总额)
+      return Number(originalCommission || 0) * (1 - performanceDeductionTotal);
+    } catch (error) {
+      this.logger.error(`重新计算绩效佣金时出错: ${error.message}`, error.stack);
+      return originalCommission;
+    }
+  }
+
+  /**
    * 生成指定月份的薪资数据（不指定则为上个月）
    * @param targetMonth 目标月份，格式：YYYY-MM-DD
    * @returns 更新结果
@@ -440,6 +728,9 @@ export class SalaryAutoUpdateService {
     const lastDayOfLastMonth = lastMonth.endOf('month').format('YYYY-MM-DD');
     
     this.logger.log(`生成${firstDayOfLastMonth}至${lastDayOfLastMonth}期间的薪资数据`);
+
+    // 先检查和更新记账会计绩效扣除
+    await this.checkAndUpdateAccountantPerformance(lastMonth);
 
     // 直接使用dataSource.query执行原生SQL查询
     // 获取所有员工

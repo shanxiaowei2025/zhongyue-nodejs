@@ -53,7 +53,7 @@ export class SalaryService {
    * 计算薪资衍生字段
    * 根据业务规则自动计算basicSalaryPayable、totalPayable、corporatePayment和taxDeclaration
    */
-  private calculateDerivedFields<T extends Partial<Salary>>(salaryData: T): T {
+  private calculateDerivedFields<T extends Partial<Salary> & { skipPerformanceCalculation?: boolean }>(salaryData: T): T {
     const result = { ...salaryData };
     
     // 基本字段值处理，确保是数字
@@ -73,20 +73,23 @@ export class SalaryService {
     const bankCardOrWechat = Number(result.bankCardOrWechat || 0);
     const cashPaid = Number(result.cashPaid || 0);
     
-    // 计算绩效扣除总额
-    let performanceDeductionTotal = 0;
-    if (result.performanceDeductions && Array.isArray(result.performanceDeductions)) {
-      performanceDeductionTotal = result.performanceDeductions.reduce((sum, deduction) => sum + Number(deduction || 0), 0);
-      
-      // 如果绩效扣除总额大于1，则重置为1
-      if (performanceDeductionTotal > 1) {
-        performanceDeductionTotal = 1;
+    // 计算绩效佣金，如果有标记则跳过
+    if (!result.skipPerformanceCalculation) {
+      // 计算绩效扣除总额
+      let performanceDeductionTotal = 0;
+      if (result.performanceDeductions && Array.isArray(result.performanceDeductions)) {
+        performanceDeductionTotal = result.performanceDeductions.reduce((sum, deduction) => sum + Number(deduction || 0), 0);
+        
+        // 如果绩效扣除总额大于1，则重置为1
+        if (performanceDeductionTotal > 1) {
+          performanceDeductionTotal = 1;
+        }
       }
+      
+      // 计算绩效佣金 = 原始绩效佣金 * (1 - 绩效扣除总额)
+      const originalPerformanceCommission = Number(result.performanceCommission || 0);
+      result.performanceCommission = originalPerformanceCommission * (1 - performanceDeductionTotal);
     }
-    
-    // 计算绩效佣金 = 原始绩效佣金 * (1 - 绩效扣除总额)
-    const originalPerformanceCommission = Number(result.performanceCommission || 0);
-    result.performanceCommission = originalPerformanceCommission * (1 - performanceDeductionTotal);
     
     // 计算应发基本工资
     const basicSalaryPayable = baseSalary + temporaryIncrease - attendanceDeduction;
@@ -98,7 +101,7 @@ export class SalaryService {
       totalSubsidy + 
       seniority + 
       agencyFeeCommission + 
-      result.performanceCommission + 
+      Number(result.performanceCommission || 0) + 
       businessCommission - 
       otherDeductions - 
       personalInsuranceTotal - 
@@ -113,6 +116,9 @@ export class SalaryService {
     
     // 计算个税申报
     result.taxDeclaration = corporatePayment + personalInsuranceTotal;
+    
+    // 删除临时标记字段
+    delete result.skipPerformanceCalculation;
     
     return result;
   }
@@ -312,10 +318,53 @@ export class SalaryService {
     if (!existingSalary) {
       throw new NotFoundException(`ID为${id}的薪资记录不存在`);
     }
+
+    // 标记是否已经计算过绩效佣金
+    let skipPerformanceCalculation = false;
+
+    // 如果更新了performanceDeductions字段，确保重新计算performanceCommission
+    if (updateSalaryDto.performanceDeductions) {
+      // 如果没有提供performanceCommission，则使用现有值
+      const originalPerformanceCommission = updateSalaryDto.performanceCommission !== undefined 
+        ? Number(updateSalaryDto.performanceCommission) 
+        : Number(existingSalary.performanceCommission);
+
+      console.log(`更新前：原始绩效佣金=${originalPerformanceCommission}, 现有绩效佣金=${existingSalary.performanceCommission}`);
+      
+      // 计算绩效扣除总额
+      let performanceDeductionTotal = 0;
+      if (Array.isArray(updateSalaryDto.performanceDeductions)) {
+        performanceDeductionTotal = updateSalaryDto.performanceDeductions.reduce(
+          (sum, deduction) => sum + Number(deduction || 0), 0
+        );
+        
+        // 如果绩效扣除总额大于1，则重置为1
+        if (performanceDeductionTotal > 1) {
+          performanceDeductionTotal = 1;
+        }
+      }
+      
+      // 重新计算绩效佣金 = 原始绩效佣金 * (1 - 绩效扣除总额)
+      updateSalaryDto.performanceCommission = originalPerformanceCommission * (1 - performanceDeductionTotal);
+      
+      console.log(`更新薪资ID ${safeId}：重新计算绩效佣金，扣除总额=${performanceDeductionTotal}，原始绩效=${originalPerformanceCommission}，最终绩效=${updateSalaryDto.performanceCommission}`);
+      
+      // 标记已经计算过绩效佣金，避免重复计算
+      skipPerformanceCalculation = true;
+    }
     
-    // 先计算衍生字段
-    const dataWithDerivedFields = this.calculateDerivedFields(updateSalaryDto);
+    // 将现有值与更新值合并，确保calculateDerivedFields有完整的数据
+    const mergedData = {
+      ...existingSalary,
+      ...updateSalaryDto,
+      // 添加标记避免重复计算绩效佣金
+      skipPerformanceCalculation
+    };
     
+    // 计算衍生字段
+    const dataWithDerivedFields = this.calculateDerivedFields(mergedData);
+    
+    // 执行更新操作
     await this.salaryRepository.update(safeId, dataWithDerivedFields);
     return this.findOne(safeId, userId);
   }

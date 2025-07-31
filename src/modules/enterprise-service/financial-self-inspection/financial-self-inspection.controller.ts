@@ -9,10 +9,6 @@ import { ApprovalDto } from './dto/approval.dto';
 import { ReviewerApprovalDto } from './dto/reviewer-approval.dto';
 import { RejectDto } from './dto/reject.dto';
 import { ReviewerRejectDto } from './dto/reviewer-reject.dto';
-import { QueryInspectorCountDto } from './dto/query-inspector-count.dto';
-import { QueryReviewerCountDto } from './dto/query-reviewer-count.dto';
-import { CountResponseDto } from './dto/count-response.dto';
-import { CountByUserResponseDto } from './dto/count-by-user-response.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
@@ -219,73 +215,5 @@ export class FinancialSelfInspectionController {
   })
   remove(@Param('id') id: string) {
     return this.financialSelfInspectionService.remove(+id);
-  }
-
-  @Get('count-as-inspector')
-  @Roles('admin', 'super_admin') // 只有管理员和超级管理员可以调用
-  @ApiOperation({ 
-    summary: '统计每个用户作为抽查人的记录数量【仅管理员】',
-    description: '根据日期范围统计每个用户作为抽查人的记录数量，返回每个用户的统计数和总数。如果使用相同的开始日期和结束日期，会统计整天的数据。需要管理员或超级管理员权限。'
-  })
-  @ApiQuery({ 
-    name: 'startDate', 
-    required: false, 
-    description: '抽查人确认开始日期（格式：YYYY-MM-DD）',
-    example: '2023-01-01'
-  })
-  @ApiQuery({ 
-    name: 'endDate', 
-    required: false, 
-    description: '抽查人确认结束日期（格式：YYYY-MM-DD）',
-    example: '2023-12-31'
-  })
-  @ApiResponse({ 
-    status: 200, 
-    description: '统计成功', 
-    type: CountByUserResponseDto 
-  })
-  @ApiResponse({ 
-    status: 403, 
-    description: '权限不足，需要管理员权限' 
-  })
-  countAsInspector(@Query() queryDto: QueryInspectorCountDto) {
-    return this.financialSelfInspectionService.countAsInspector(
-      queryDto.startDate, 
-      queryDto.endDate
-    );
-  }
-
-  @Get('count-as-reviewer')
-  @Roles('admin', 'super_admin') // 只有管理员和超级管理员可以调用
-  @ApiOperation({ 
-    summary: '统计每个用户作为复查人的记录数量【仅管理员】',
-    description: '根据日期范围统计每个用户作为复查人的记录数量，返回每个用户的统计数和总数。如果使用相同的开始日期和结束日期，会统计整天的数据。需要管理员或超级管理员权限。'
-  })
-  @ApiQuery({ 
-    name: 'startDate', 
-    required: false, 
-    description: '复查人确认开始日期（格式：YYYY-MM-DD）',
-    example: '2023-01-01'
-  })
-  @ApiQuery({ 
-    name: 'endDate', 
-    required: false, 
-    description: '复查人确认结束日期（格式：YYYY-MM-DD）',
-    example: '2023-12-31'
-  })
-  @ApiResponse({ 
-    status: 200, 
-    description: '统计成功', 
-    type: CountByUserResponseDto 
-  })
-  @ApiResponse({ 
-    status: 403, 
-    description: '权限不足，需要管理员权限' 
-  })
-  countAsReviewer(@Query() queryDto: QueryReviewerCountDto) {
-    return this.financialSelfInspectionService.countAsReviewer(
-      queryDto.startDate, 
-      queryDto.endDate
-    );
   }
 } 
