@@ -443,8 +443,9 @@ export class SalaryService {
     }
     
     // 将现有值与更新值合并，确保calculateDerivedFields有完整的数据
+    const { depositTotal, ...salaryWithoutTotal } = existingSalary; // 移除depositTotal字段
     const mergedData = {
-      ...existingSalary,
+      ...salaryWithoutTotal,
       ...updateSalaryDto,
       // 添加标记避免重复计算绩效佣金
       skipPerformanceCalculation
@@ -511,7 +512,8 @@ export class SalaryService {
     // 更新确认状态和确认时间
     const updateData = {
       isConfirmed: confirmSalaryDto.isConfirmed,
-      confirmedAt: confirmSalaryDto.isConfirmed ? new Date() : null
+      confirmedAt: confirmSalaryDto.isConfirmed ? new Date() : null,
+      ...(confirmSalaryDto.remark ? { remark: confirmSalaryDto.remark } : {})
     };
     
     await this.salaryRepository.update(safeId, updateData);
