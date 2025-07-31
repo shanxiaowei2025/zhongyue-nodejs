@@ -37,13 +37,17 @@ import { ExportExpenseDto } from './dto/export-expense.dto';
 import { Response } from 'express';
 import { QueryReceiptDto } from './dto/query-receipt.dto';
 import { QueryMaxDatesDto } from './dto/query-max-dates.dto';
+import { ExpensePermissionService } from './services/expense-permission.service';
 
 @ApiTags('费用管理')
 @Controller('expense')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class ExpenseController {
-  constructor(private readonly expenseService: ExpenseService) {}
+  constructor(
+    private readonly expenseService: ExpenseService,
+    private readonly expensePermissionService: ExpensePermissionService
+  ) {}
 
   @Post()
   @ApiOperation({
@@ -173,11 +177,18 @@ export class ExpenseController {
     description: '导出符合筛选条件的费用记录。使用startDate和endDate参数可以按创建日期范围筛选，如果使用相同的日期（如startDate=2023-01-01&endDate=2023-01-01），将导出该整天的数据。',
   })
   @ApiResponse({ status: 200, description: '导出成功' })
+  @ApiResponse({ status: 403, description: '没有权限执行此操作' })
   async exportToCsv(
     @Query() query: ExportExpenseDto,
     @Req() req,
     @Res() res: Response,
   ) {
+    // 检查导出权限
+    const hasExportPermission = await this.expensePermissionService.hasExpenseExportPermission(req.user.id);
+    if (!hasExportPermission) {
+      throw new ForbiddenException('导出失败，请联系管理员添加导出权限');
+    }
+
     const csvData = await this.expenseService.exportToCsv(query, req.user.id);
 
     // 生成带日期的文件名

@@ -84,6 +84,12 @@ export class CustomerPermissionService {
     return permissions.includes('customer_action_create');
   }
 
+  // 检查用户是否有导出客户数据的权限
+  async hasCustomerExportPermission(userId: number): Promise<boolean> {
+    const permissions = await this.getUserPermissions(userId);
+    return permissions.includes('customer_action_export');
+  }
+
   /**
    * 用于批量操作的权限检查（如导入导出等），不关联特定客户ID
    * 此方法仅检查用户是否有相应权限，不会构建查询条件
@@ -175,8 +181,8 @@ export class CustomerPermissionService {
     // 处理查看自己提交的权限
     if (permissions.includes('customer_date_view_own')) {
       const isSpecialRole = roleCodes.includes('consultantAccountant') || 
-                            roleCodes.includes('bookkeepingAccountant') || 
-                            roleCodes.includes('invoiceOfficer');
+                          roleCodes.includes('bookkeepingAccountant') || 
+                          roleCodes.includes('invoiceOfficer');
       
       // 如果是特殊角色，根据角色对应的字段筛选
       if (isSpecialRole) {

@@ -80,6 +80,14 @@ export class ExpensePermissionService {
     return hasPermission;
   }
 
+  // 检查用户是否有费用导出权限
+  async hasExpenseExportPermission(userId: number): Promise<boolean> {
+    const permissions = await this.getUserPermissions(userId);
+    const hasPermission = permissions.includes('expense_action_export');
+
+    return hasPermission;
+  }
+
   // 根据用户权限构建费用查询条件
   async buildExpenseQueryFilter(userId: number): Promise<any> {
     const user = await this.userRepository.findOne({

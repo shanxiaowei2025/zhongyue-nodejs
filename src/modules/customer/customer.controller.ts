@@ -53,6 +53,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 // import { CustomerPermissionGuard } from './guards/customer-permission.guard';
 import { Customer } from './entities/customer.entity';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CustomerPermissionService } from './services/customer-permission.service';
 
 @ApiTags('客户管理')
 @ApiBearerAuth() // 需要登录才能访问
@@ -61,7 +62,10 @@ import { Roles } from '../auth/decorators/roles.decorator';
 export class CustomerController {
   private readonly logger = new Logger(CustomerController.name);
   
-  constructor(private readonly customerService: CustomerService) {}
+  constructor(
+    private readonly customerService: CustomerService,
+    private readonly customerPermissionService: CustomerPermissionService
+  ) {}
 
   @Post()
   @ApiOperation({ summary: '创建客户信息' })
@@ -136,11 +140,18 @@ export class CustomerController {
     description: '导出符合筛选条件的客户数据。使用startDate和endDate参数可以按创建日期范围筛选，如果使用相同的日期（如startDate=2023-01-01&endDate=2023-01-01），将导出该整天的数据。'
   })
   @ApiResponse({ status: 200, description: '导出成功' })
+  @ApiResponse({ status: 403, description: '没有权限执行此操作' })
   async exportToCsv(
     @Query() query: ExportCustomerDto,
     @Req() req,
     @Res() res: Response
   ) {
+    // 检查导出权限
+    const hasExportPermission = await this.customerPermissionService.hasCustomerExportPermission(req.user.id);
+    if (!hasExportPermission) {
+      throw new ForbiddenException('导出失败，请联系管理员添加导出权限');
+    }
+    
     const csvData = await this.customerService.exportToCsv(query, req.user.id);
     
     // 生成带日期的文件名
