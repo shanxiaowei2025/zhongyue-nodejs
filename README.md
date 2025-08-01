@@ -70,6 +70,13 @@ src/
 ### 3. 客户管理模块 (customer)
 - 客户信息的CRUD操作
 - 客户分类和标签
+- 费用贡献金额跟踪
+
+### 企业服务模块 (enterprise-service)
+- 客户列表查询：支持按费用贡献金额倒序排列
+- 客户详情查询
+- 费用贡献分析
+- 服务历程跟踪
 
 ### 4. 部门管理模块 (department)
 - 部门信息的CRUD操作
@@ -135,6 +142,10 @@ src/
 - 补贴合计模块：从 `/api/salary/subsidy-summary` 变更为 `/api/subsidy-summary`，避免与薪资详情路由 `/api/salary/:id` 冲突
 - 朋友圈扣款模块：从 `/api/salary/friend-circle-payment` 变更为 `/api/friend-circle-payment`，避免与薪资详情路由 `/api/salary/:id` 冲突
 - 考勤扣款模块：从 `/api/salary/attendance-deduction` 变更为 `/api/attendance-deduction`，避免与薪资详情路由 `/api/salary/:id` 冲突
+
+### 企业服务API
+- `/api/enterprise-service/customer`：获取客户列表，已优化为按费用贡献金额（contributionAmount）倒序排列
+- `/api/enterprise-service/customer/:id`：获取单个客户详情
 
 ## 认证系统
 

@@ -73,7 +73,7 @@ export class EnterpriseServiceService {
       skip,
       take: pageSize,
       order: {
-        id: 'DESC',
+        contributionAmount: 'DESC',
       },
     });
 
