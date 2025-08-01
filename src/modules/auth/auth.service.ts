@@ -29,6 +29,7 @@ export class AuthService {
 
   // 用户登录
   async login(loginDto: LoginDto) {
+    try {
     // 1. 验证用户名和密码
     const user = await this.validateUser(loginDto.username, loginDto.password);
 
@@ -67,6 +68,10 @@ export class AuthService {
         passwordUpdatedAt: user.passwordUpdatedAt,
       },
     };
+    } catch (error) {
+      // 捕获并重新抛出异常，保持原始错误消息
+      throw error;
+    }
   }
 
   async validateUser(username: string, password: string): Promise<any> {
@@ -76,6 +81,11 @@ export class AuthService {
     // 2. 如果用户不存在，返回null
     if (!user) {
       return null;
+    }
+
+    // 检查用户账号是否被禁用
+    if (!user.isActive) {
+      throw new UnauthorizedException('该账号已禁用');
     }
 
     // 3. 验证密码

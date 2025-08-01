@@ -134,6 +134,15 @@ export class CreateEmployeeDto {
   bankName?: string;
 
   /**
+   * 发工资公司
+   * @example '北京中岳企业管理有限公司'
+   */
+  @ApiProperty({ description: '发工资公司', example: '北京中岳企业管理有限公司', required: false })
+  @IsString()
+  @IsOptional()
+  payrollCompany?: string;
+
+  /**
    * 入职时间
    * @example '2023-01-01'
    */

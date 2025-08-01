@@ -72,6 +72,10 @@ export class Employee {
   @ApiProperty({ description: '开户银行', required: false })
   bankName: string;
 
+  @Column({ length: 100, nullable: true, comment: '发工资公司' })
+  @ApiProperty({ description: '发工资公司', required: false })
+  payrollCompany: string;
+
   @Column({ type: 'date', nullable: true, comment: '入职时间' })
   @ApiProperty({ description: '入职时间', required: false })
   hireDate: Date;

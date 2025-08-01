@@ -40,6 +40,7 @@ export class AuthController {
   })
   @ApiResponse({ status: 200, description: '登录成功' })
   @ApiResponse({ status: 401, description: '用户名或密码不正确' })
+  @ApiResponse({ status: 401, description: '该账号已禁用' })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }

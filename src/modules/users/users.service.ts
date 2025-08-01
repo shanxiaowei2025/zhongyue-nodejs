@@ -27,6 +27,14 @@ export class UsersService {
     return this.userRepository.findOne({ where: { username } });
   }
 
+  // 根据身份证号查找用户
+  async findByIdCardNumber(idCardNumber: string): Promise<User | null> {
+    if (!idCardNumber) {
+      return null;
+    }
+    return this.userRepository.findOne({ where: { idCardNumber } });
+  }
+
   // 根据用户ID查找用户
   async findById(id: number): Promise<User | null> {
     return this.userRepository.findOne({ where: { id } });
@@ -390,5 +398,22 @@ export class UsersService {
     return this.userRepository.find({
       where: { dept_id: deptId },
     });
+  }
+
+  /**
+   * 更新用户状态（启用/禁用）
+   * @param id 用户ID
+   * @param isActive 是否启用
+   * @returns 更新后的用户对象
+   */
+  async updateUserStatus(id: number, isActive: boolean): Promise<User> {
+    const user = await this.findById(id);
+    
+    if (!user) {
+      throw new NotFoundException(`用户ID ${id} 不存在`);
+    }
+    
+    user.isActive = isActive;
+    return this.userRepository.save(user);
   }
 }

@@ -51,9 +51,9 @@ export class CustomerService {
   async create(createCustomerDto: CreateCustomerDto, userId: number) {
     console.log(`用户 ${userId} 尝试创建客户`);
 
-    // 检查权限
+    // 检查权限 - 创建操作只需要创建权限
     const hasPermission =
-      await this.customerPermissionService.hasCustomerEditPermission(userId);
+      await this.customerPermissionService.hasCustomerCreatePermission(userId);
     console.log(`用户 ${userId} 创建权限检查结果: ${hasPermission}`);
 
     if (!hasPermission) {
@@ -462,9 +462,9 @@ export class CustomerService {
     updateCustomerDto: UpdateCustomerDto,
     userId: number,
   ) {
-    // 检查权限
+    // 检查权限 - 更新操作只需要编辑权限
     const hasPermission =
-      await this.customerPermissionService.hasCustomerEditPermission(userId);
+      await this.customerPermissionService.hasCustomerUpdatePermission(userId);
     if (!hasPermission) {
       throw new ForbiddenException('没有更新客户的权限');
     }
@@ -550,9 +550,9 @@ export class CustomerService {
 
   // 删除客户
   async remove(id: number, userId: number) {
-    // 检查权限
+    // 检查权限 - 删除操作只需要删除权限
     const hasPermission =
-      await this.customerPermissionService.hasCustomerEditPermission(userId);
+      await this.customerPermissionService.hasCustomerDeletePermission(userId);
     if (!hasPermission) {
       throw new ForbiddenException('没有删除客户的权限');
     }

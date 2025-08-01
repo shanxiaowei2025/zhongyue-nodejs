@@ -95,4 +95,13 @@ export class QueryEmployeeDto extends PaginationDto {
   @IsString()
   @IsOptional()
   bankName?: string;
+
+  /**
+   * 发工资公司
+   * @example '北京中岳企业管理有限公司'
+   */
+  @ApiPropertyOptional({ description: '发工资公司', example: '北京中岳企业管理有限公司' })
+  @IsString()
+  @IsOptional()
+  payrollCompany?: string;
 } 

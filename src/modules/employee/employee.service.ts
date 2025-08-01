@@ -9,6 +9,7 @@ import { Cron } from '@nestjs/schedule';
 import { SalaryBaseHistoryService } from '../salary/salary-base-history/salary-base-history.service';
 import { Request } from 'express';
 import { PerformanceCommission } from '../salary/commission/entities/performance-commission.entity';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class EmployeeService {
@@ -35,6 +36,7 @@ export class EmployeeService {
     @InjectRepository(PerformanceCommission)
     private performanceCommissionRepository: Repository<PerformanceCommission>,
     private salaryBaseHistoryService: SalaryBaseHistoryService,
+    private usersService: UsersService,
   ) {
     // 启动时执行一次工龄修复
     this.fixWorkYearsForAllEmployees();
@@ -201,7 +203,7 @@ export class EmployeeService {
    * @returns 员工列表和总数
    */
   async findAll(queryEmployeeDto: QueryEmployeeDto) {
-    const { page = 1, pageSize = 10, name, departmentId, employeeType, idCardNumber, commissionRatePosition, position, rank, isResigned, bankName } = queryEmployeeDto;
+    const { page = 1, pageSize = 10, name, departmentId, employeeType, idCardNumber, commissionRatePosition, position, rank, isResigned, bankName, payrollCompany } = queryEmployeeDto;
     const skip = (page - 1) * pageSize;
     
     // 构建查询条件
@@ -243,13 +245,17 @@ export class EmployeeService {
       where.bankName = Like(`%${bankName}%`);
     }
     
+    if (payrollCompany) {
+      where.payrollCompany = Like(`%${payrollCompany}%`);
+    }
+    
     const queryBuilder = this.employeeRepository.createQueryBuilder('employee');
     
     // 分页
     queryBuilder.skip(skip).take(pageSize);
     
-    // 排序
-    queryBuilder.orderBy('employee.createdAt', 'DESC');
+    // 排序 - 按ID倒序排列
+    queryBuilder.orderBy('employee.id', 'DESC');
     
     // 执行查询
     const [employees, total] = await queryBuilder.where(where).getManyAndCount();
@@ -315,6 +321,28 @@ export class EmployeeService {
     // 先获取原始员工信息
     const employee = await this.findOne(id);
     this.logger.log(`开始更新员工 ${id} - 名字: "${employee.name}", 当前工龄: ${employee.workYears}`);
+    
+    // 检查是否更新了离职状态为已离职
+    if (updateEmployeeDto.isResigned === true && employee.isResigned === false) {
+      this.logger.log(`检测到员工 "${employee.name}" 状态变更为离职，将同步禁用其用户账号`);
+      try {
+        // 查找关联的用户账号（通过员工身份证号匹配用户身份证号）
+        if (employee.idCardNumber) {
+          const user = await this.usersService.findByIdCardNumber(employee.idCardNumber);
+          if (user) {
+            // 禁用用户账号
+            await this.usersService.updateUserStatus(user.id, false);
+            this.logger.log(`已禁用员工 "${employee.name}" (身份证号: ${employee.idCardNumber}) 对应的用户账号`);
+          } else {
+            this.logger.warn(`未找到员工 "${employee.name}" (身份证号: ${employee.idCardNumber}) 对应的用户账号`);
+          }
+        } else {
+          this.logger.warn(`员工 "${employee.name}" 没有身份证号，无法匹配用户账号`);
+        }
+      } catch (error) {
+        this.logger.error(`禁用员工 "${employee.name}" 对应的用户账号失败: ${error.message}`);
+      }
+    }
     
     // 直接检查并打印是否是特定人员，便于调试
     const isExcluded = this.isExcludedEmployee(employee.name);

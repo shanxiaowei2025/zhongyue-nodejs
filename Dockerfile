@@ -13,9 +13,14 @@ RUN npm config set registry https://registry.npmmirror.com && \
     npm install -g pnpm && \
     pnpm config set registry https://registry.npmmirror.com
 
-# 复制Python依赖文件并安装
+# 复制Python依赖文件并使用国内镜像源安装
 COPY requirements.txt ./
-RUN pip3 install --no-cache-dir -r requirements.txt
+RUN pip3 install --no-cache-dir \
+    --timeout=1000 \
+    --retries=5 \
+    -i https://pypi.tuna.tsinghua.edu.cn/simple/ \
+    --trusted-host pypi.tuna.tsinghua.edu.cn \
+    -r requirements.txt
 
 # 第二阶段：开发构建
 FROM base AS development
@@ -32,23 +37,24 @@ FROM base AS production
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
 
-# 创建非root用户和组（在复制文件前）
+# 创建非root用户和组
 RUN groupadd -r nodeapp && \
     useradd -r -g nodeapp -d /usr/src/app nodeapp
 
+# 复制package文件并安装生产依赖（保持root权限进行安装）
 COPY package*.json pnpm-lock.yaml ./
 RUN pnpm install --prod && \
     pnpm store prune
 
-# 从development阶段复制构建产物
-COPY --from=development /usr/src/app/dist ./dist
+# 从development阶段复制构建产物，直接设置所有者
+COPY --from=development --chown=nodeapp:nodeapp /usr/src/app/dist ./dist
 
-# 复制应用文件
-COPY . .
-
-# 创建必要的目录并设置权限（一步完成）
+# 创建需要写入权限的目录并设置所有者
 RUN mkdir -p /usr/src/app/uploads /usr/src/app/tmp /usr/src/app/logs && \
-    chown -R nodeapp:nodeapp /usr/src/app
+    chown nodeapp:nodeapp /usr/src/app/uploads /usr/src/app/tmp /usr/src/app/logs
+
+# 复制应用文件，直接设置所有者
+COPY --chown=nodeapp:nodeapp . .
 
 # 切换到非root用户
 USER nodeapp

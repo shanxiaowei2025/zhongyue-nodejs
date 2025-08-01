@@ -5,11 +5,13 @@ import { EmployeeService } from './employee.service';
 import { Employee } from './entities/employee.entity';
 import { SalaryBaseHistoryModule } from '../salary/salary-base-history/salary-base-history.module';
 import { PerformanceCommission } from '../salary/commission/entities/performance-commission.entity';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Employee, PerformanceCommission]),
-    SalaryBaseHistoryModule
+    SalaryBaseHistoryModule,
+    UsersModule
   ],
   controllers: [EmployeeController],
   providers: [EmployeeService],

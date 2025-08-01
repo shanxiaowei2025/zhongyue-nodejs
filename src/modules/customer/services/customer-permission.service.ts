@@ -71,6 +71,24 @@ export class CustomerPermissionService {
     );
   }
 
+  // 检查用户是否有客户更新权限（只需要编辑权限）
+  async hasCustomerUpdatePermission(userId: number): Promise<boolean> {
+    const permissions = await this.getUserPermissions(userId);
+    return permissions.includes('customer_action_edit');
+  }
+
+  // 检查用户是否有客户删除权限
+  async hasCustomerDeletePermission(userId: number): Promise<boolean> {
+    const permissions = await this.getUserPermissions(userId);
+    return permissions.includes('customer_action_delete');
+  }
+
+  // 检查用户是否有客户创建权限
+  async hasCustomerCreatePermission(userId: number): Promise<boolean> {
+    const permissions = await this.getUserPermissions(userId);
+    return permissions.includes('customer_action_create');
+  }
+
   // 检查用户是否有导入客户数据的权限
   async hasCustomerImportPermission(userId: number): Promise<boolean> {
     const permissions = await this.getUserPermissions(userId);
