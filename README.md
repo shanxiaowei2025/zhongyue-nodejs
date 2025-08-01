@@ -71,6 +71,7 @@ src/
 - 客户信息的CRUD操作
 - 客户分类和标签
 - 费用贡献金额跟踪
+- 客户档案信息查询：支持按企业名称或统一社会信用代码筛选
 
 ### 企业服务模块 (enterprise-service)
 - 客户列表查询：支持按费用贡献金额倒序排列
@@ -85,6 +86,13 @@ src/
 ### 5. 费用管理模块 (expense)
 - 费用记录的CRUD操作
 - 费用统计和报表
+- 费用审核流程管理
+- 客户费用贡献金额自动计算
+
+#### 重要业务流程
+- **费用删除保护机制**: 已审核通过的费用记录不能直接删除，必须先取消审核
+- **贡献金额同步**: 费用审核通过时自动累加客户贡献金额，取消审核时自动扣减
+- **前后端双重保护**: 前端UI控制删除按钮显示，后端API验证记录状态
 
 ### 6. 合同管理模块 (contract)
 - 合同信息管理
@@ -146,6 +154,47 @@ src/
 ### 企业服务API
 - `/api/enterprise-service/customer`：获取客户列表，已优化为按费用贡献金额（contributionAmount）倒序排列
 - `/api/enterprise-service/customer/:id`：获取单个客户详情
+
+### 客户管理API
+- `/api/customer/archive/search`：查询客户档案信息，支持按企业名称或统一社会信用代码筛选，返回档案相关字段（**公开接口，无需认证**）
+
+#### 客户档案查询接口详情
+**接口地址**: `GET /api/customer/archive/search`
+**访问权限**: 🌐 **公开接口，无需身份验证**
+**功能说明**: 根据企业名称或统一社会信用代码筛选客户档案信息，不提供参数时返回所有客户档案信息
+**查询参数**:
+- `companyName` (可选): 企业名称，支持模糊查询
+- `unifiedSocialCreditCode` (可选): 统一社会信用代码，支持模糊查询
+- 注意：所有参数均为可选，不提供任何参数时返回所有客户档案信息
+
+**返回字段**:
+- `companyName`: 企业名称
+- `unifiedSocialCreditCode`: 统一社会信用代码
+- `sealStorageNumber`: 章存放编号
+- `onlineBankingArchiveNumber`: 网银托管档案号
+- `paperArchiveNumber`: 纸质资料档案编号
+- `archiveStorageRemarks`: 档案存放备注
+
+**使用示例**:
+```bash
+# 获取所有客户档案信息（无参数查询）
+GET /api/customer/archive/search
+
+# 按企业名称查询（无需认证Header）
+GET /api/customer/archive/search?companyName=阿里巴巴
+
+# 按统一社会信用代码查询  
+GET /api/customer/archive/search?unifiedSocialCreditCode=91330100
+
+# 组合查询
+GET /api/customer/archive/search?companyName=阿里&unifiedSocialCreditCode=913301
+```
+
+**注意事项**:
+- ✅ 此接口为公开接口，无需提供JWT Token或任何身份认证
+- ✅ 可直接通过浏览器或任何HTTP客户端访问
+- ✅ 所有查询参数均为可选，不提供任何参数时返回所有客户档案信息
+- ⚠️ 无参数查询可能返回大量数据，请根据实际需要使用筛选条件
 
 ## 认证系统
 

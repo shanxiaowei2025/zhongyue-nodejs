@@ -17,6 +17,7 @@ import { Customer } from './entities/customer.entity';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { QueryCustomerDto } from './dto/query-customer.dto';
+import { SearchCustomerArchiveDto } from './dto/search-customer-archive.dto';
 import { CustomerPermissionService } from './services/customer-permission.service';
 import { User } from '../users/entities/user.entity';
 import { Department } from '../department/entities/department.entity';
@@ -1569,6 +1570,66 @@ export class CustomerService {
         success: false,
         message: `批量更新客户数据失败: ${error.message}`
       };
+    }
+  }
+
+  /**
+   * 根据企业名称或统一社会信用代码查询客户档案信息（公开接口）
+   * @param searchDto 查询条件，可选。如果不提供任何条件，返回所有客户档案信息
+   * @returns 客户档案信息列表
+   */
+  async searchCustomerArchive(searchDto: SearchCustomerArchiveDto) {
+    const { companyName, unifiedSocialCreditCode } = searchDto;
+
+    // 创建查询构建器，只选择需要的字段
+    const queryBuilder = this.customerRepository.createQueryBuilder('customer')
+      .select([
+        'customer.companyName',
+        'customer.unifiedSocialCreditCode',
+        'customer.sealStorageNumber',
+        'customer.onlineBankingArchiveNumber',
+        'customer.paperArchiveNumber',
+        'customer.archiveStorageRemarks'
+      ]);
+
+    // 构建查询条件：企业名称或统一社会信用代码
+    const whereConditions = [];
+    const parameters: any = {};
+
+    if (companyName) {
+      whereConditions.push('customer.companyName LIKE :companyName');
+      parameters.companyName = `%${companyName}%`;
+    }
+
+    if (unifiedSocialCreditCode) {
+      whereConditions.push('customer.unifiedSocialCreditCode LIKE :unifiedSocialCreditCode');
+      parameters.unifiedSocialCreditCode = `%${unifiedSocialCreditCode}%`;
+    }
+
+    // 如果有查询条件，使用OR连接查询条件；如果没有条件，查询所有记录
+    if (whereConditions.length > 0) {
+      queryBuilder.where(`(${whereConditions.join(' OR ')})`, parameters);
+    }
+
+    // 添加排序
+    queryBuilder.orderBy('customer.companyName', 'ASC');
+
+    try {
+      // 执行查询
+      const customers = await queryBuilder.getMany();
+      
+      // 转换为响应格式
+      return customers.map(customer => ({
+        companyName: customer.companyName || '',
+        unifiedSocialCreditCode: customer.unifiedSocialCreditCode || '',
+        sealStorageNumber: customer.sealStorageNumber || '',
+        onlineBankingArchiveNumber: customer.onlineBankingArchiveNumber || '',
+        paperArchiveNumber: customer.paperArchiveNumber || '',
+        archiveStorageRemarks: customer.archiveStorageRemarks || ''
+      }));
+    } catch (error) {
+      this.logger.error(`查询客户档案信息失败: ${error.message}`, error.stack);
+      throw new BadRequestException('查询客户档案信息失败');
     }
   }
 }

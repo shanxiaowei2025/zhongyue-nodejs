@@ -32,6 +32,9 @@ import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { QueryCustomerDto } from './dto/query-customer.dto';
 import { ExportCustomerDto } from './dto/export-customer.dto';
 import { ImportCustomerDto } from './dto/import-customer.dto';
+import { SearchCustomerArchiveDto } from './dto/search-customer-archive.dto';
+import { CustomerArchiveResponseDto } from './dto/customer-archive-response.dto';
+import { Public } from '../auth/decorators/public.decorator';
 import {
   ApiBearerAuth,
   ApiTags,
@@ -298,5 +301,22 @@ export class CustomerController {
       this.logger.error(`用户 ${req.user.id} 批量更新失败: ${error.message}`);
       throw error;
     }
+  }
+
+  @Get('archive/search')
+  @Public() // 公开接口，无需身份验证
+  @ApiOperation({ 
+    summary: '查询客户档案信息', 
+    description: '根据企业名称或统一社会信用代码查询客户的档案相关信息，支持模糊查询。不提供任何参数时返回所有客户档案信息（公开接口）' 
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: '查询成功',
+    type: [CustomerArchiveResponseDto]
+  })
+  async searchCustomerArchive(
+    @Query() searchDto: SearchCustomerArchiveDto,
+  ) {
+    return this.customerService.searchCustomerArchive(searchDto);
   }
 }

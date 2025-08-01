@@ -995,6 +995,11 @@ export class ExpenseService {
       throw new BadRequestException('没有权限删除费用记录');
     }
 
+    // 后端保护：检查费用记录状态，已审核通过的记录不能直接删除
+    if (expense.status === 1) {
+      throw new BadRequestException('已审核通过的费用记录不能直接删除，请先取消审核');
+    }
+
     return await this.expenseRepository.remove(expense);
   }
 
