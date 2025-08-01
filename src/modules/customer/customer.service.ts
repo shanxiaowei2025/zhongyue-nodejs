@@ -1587,7 +1587,7 @@ export class CustomerService {
         'customer.companyName',
         'customer.unifiedSocialCreditCode',
         'customer.sealStorageNumber',
-        'customer.onlineBankingArchiveNumber',
+        'customer.onlineBankingStorageNumber',
         'customer.paperArchiveNumber',
         'customer.archiveStorageRemarks'
       ]);
@@ -1623,7 +1623,7 @@ export class CustomerService {
         companyName: customer.companyName || '',
         unifiedSocialCreditCode: customer.unifiedSocialCreditCode || '',
         sealStorageNumber: customer.sealStorageNumber || '',
-        onlineBankingArchiveNumber: customer.onlineBankingArchiveNumber || '',
+        onlineBankingArchiveNumber: customer.onlineBankingStorageNumber || '',
         paperArchiveNumber: customer.paperArchiveNumber || '',
         archiveStorageRemarks: customer.archiveStorageRemarks || ''
       }));
