@@ -82,8 +82,9 @@ export class SalaryAutoUpdateService {
 
   /**
    * 每月13号凌晨2点自动执行
+   * 注意：已取消自动定时任务，如需重新启用请取消下方注释
    */
-  @Cron('0 0 2 13 * *')
+  // @Cron('0 0 2 13 * *')
   async autoUpdateSalaries() {
     try {
       this.logger.log('开始自动更新薪资表...');
