@@ -1,10 +1,11 @@
-FROM node:20-bullseye AS development
+# 第一阶段：基础依赖
+FROM node:20-bullseye AS base
 
 WORKDIR /usr/src/app
 
-# 安装 Python 和 pip
+# 安装Python、pip和健康检查工具
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends python3 python3-pip && \
+    apt-get install -y --no-install-recommends python3 python3-pip wget && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # 设置npm和pnpm使用国内镜像
@@ -12,57 +13,42 @@ RUN npm config set registry https://registry.npmmirror.com && \
     npm install -g pnpm && \
     pnpm config set registry https://registry.npmmirror.com
 
-COPY package*.json pnpm-lock.yaml ./
+# 复制Python依赖文件并安装
 COPY requirements.txt ./
-
-RUN pnpm install
-# 安装Python依赖
 RUN pip3 install --no-cache-dir -r requirements.txt
 
-COPY . .
+# 第二阶段：开发构建
+FROM base AS development
 
+COPY package*.json pnpm-lock.yaml ./
+RUN pnpm install
+
+COPY . .
 RUN pnpm run build
 
-FROM node:20-bullseye AS production
+# 第三阶段：生产环境
+FROM base AS production
 
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
 
-WORKDIR /usr/src/app
-
-# 安装Python和必要依赖
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends python3 python3-pip && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# 设置国内镜像
-RUN npm config set registry https://registry.npmmirror.com && \
-    npm install -g pnpm && \
-    pnpm config set registry https://registry.npmmirror.com
-
-COPY package*.json pnpm-lock.yaml ./
-COPY requirements.txt ./
-
-# 确保使用--prod标志
-RUN pnpm install --prod && \
-    pnpm store prune
-# 安装Python依赖
-RUN pip3 install --no-cache-dir -r requirements.txt
-
-# 创建非root用户和组
+# 创建非root用户和组（在复制文件前）
 RUN groupadd -r nodeapp && \
     useradd -r -g nodeapp -d /usr/src/app nodeapp
 
+COPY package*.json pnpm-lock.yaml ./
+RUN pnpm install --prod && \
+    pnpm store prune
+
+# 从development阶段复制构建产物
 COPY --from=development /usr/src/app/dist ./dist
 
+# 复制应用文件
 COPY . .
-# 创建必要的目录
-RUN mkdir -p /usr/src/app/uploads && \
-    mkdir -p /usr/src/app/tmp && \
-    mkdir -p /usr/src/app/logs
 
-# 设置适当的权限
-RUN chown -R nodeapp:nodeapp /usr/src/app/uploads /usr/src/app/tmp /usr/src/app/logs
+# 创建必要的目录并设置权限（一步完成）
+RUN mkdir -p /usr/src/app/uploads /usr/src/app/tmp /usr/src/app/logs && \
+    chown -R nodeapp:nodeapp /usr/src/app
 
 # 切换到非root用户
 USER nodeapp
