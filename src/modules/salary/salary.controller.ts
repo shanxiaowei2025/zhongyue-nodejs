@@ -117,9 +117,6 @@ class SalaryCreateExample {
 
 // 创建更新示例类
 class SalaryUpdateExample {
-  @ApiProperty({ example: 8500, description: '工资基数' })
-  baseSalary: number;
-
   @ApiProperty({ example: 1200, description: '底薪临时增加金额' })
   temporaryIncrease: number;
 
