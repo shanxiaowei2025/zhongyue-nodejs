@@ -19,7 +19,7 @@ export class SocialInsuranceController {
   constructor(private readonly socialInsuranceService: SocialInsuranceService) {}
 
   @Post()
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '创建社保信息记录' })
   @ApiResponse({ status: 201, description: '创建成功' })
   @ApiResponse({ status: 403, description: '没有权限' })
@@ -29,7 +29,7 @@ export class SocialInsuranceController {
   }
 
   @Post('import')
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '导入社保信息数据(CSV/XLSX)' })
   @ApiResponse({ status: 201, description: '导入成功', schema: {
     type: 'object',
@@ -118,7 +118,7 @@ export class SocialInsuranceController {
   }
 
   @Get()
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '获取社保信息列表' })
   @ApiResponse({ status: 200, description: '获取成功' })
   findAll(@Query() query: QuerySocialInsuranceDto) {
@@ -126,7 +126,7 @@ export class SocialInsuranceController {
   }
 
   @Get(':id')
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '获取社保信息详情' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiResponse({ status: 404, description: '记录不存在' })
@@ -140,7 +140,7 @@ export class SocialInsuranceController {
   }
 
   @Patch(':id')
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '更新社保信息记录' })
   @ApiResponse({ status: 200, description: '更新成功' })
   @ApiResponse({ status: 404, description: '记录不存在' })
@@ -155,7 +155,7 @@ export class SocialInsuranceController {
   }
 
   @Delete(':id')
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '删除社保信息记录' })
   @ApiResponse({ status: 200, description: '删除成功' })
   @ApiResponse({ status: 404, description: '记录不存在' })

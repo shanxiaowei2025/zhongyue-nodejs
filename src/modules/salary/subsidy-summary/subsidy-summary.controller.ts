@@ -19,7 +19,7 @@ export class SubsidySummaryController {
   constructor(private readonly subsidySummaryService: SubsidySummaryService) {}
 
   @Post()
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '创建补贴合计记录' })
   @ApiResponse({ status: 201, description: '创建成功' })
   @ApiResponse({ status: 403, description: '没有权限' })
@@ -29,7 +29,7 @@ export class SubsidySummaryController {
   }
 
   @Post('import')
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '导入补贴合计数据(CSV/XLSX)' })
   @ApiResponse({ status: 201, description: '导入成功', schema: {
     type: 'object',
@@ -118,7 +118,7 @@ export class SubsidySummaryController {
   }
 
   @Get()
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '获取补贴合计列表' })
   @ApiResponse({ status: 200, description: '获取成功' })
   findAll(@Query() query: QuerySubsidySummaryDto) {
@@ -126,7 +126,7 @@ export class SubsidySummaryController {
   }
 
   @Get(':id')
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '获取补贴合计详情' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiResponse({ status: 404, description: '记录不存在' })
@@ -140,7 +140,7 @@ export class SubsidySummaryController {
   }
 
   @Patch(':id')
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '更新补贴合计记录' })
   @ApiResponse({ status: 200, description: '更新成功' })
   @ApiResponse({ status: 404, description: '记录不存在' })
@@ -155,7 +155,7 @@ export class SubsidySummaryController {
   }
 
   @Delete(':id')
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '删除补贴合计记录' })
   @ApiResponse({ status: 200, description: '删除成功' })
   @ApiResponse({ status: 404, description: '记录不存在' })

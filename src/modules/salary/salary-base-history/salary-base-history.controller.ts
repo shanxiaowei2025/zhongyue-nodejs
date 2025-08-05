@@ -14,7 +14,7 @@ export class SalaryBaseHistoryController {
 
   @Get()
   @ApiOperation({ summary: '查询工资基数历程记录' })
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   async findAll(@Query() query: QuerySalaryBaseHistoryDto) {
     return this.salaryBaseHistoryService.findAll(query);
   }

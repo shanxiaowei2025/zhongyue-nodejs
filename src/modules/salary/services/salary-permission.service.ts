@@ -22,6 +22,35 @@ export class SalaryPermissionService {
     private departmentRepository: Repository<Department>,
   ) {}
 
+  /**
+   * 检查用户是否是薪资管理员或超级管理员
+   * @param userId 用户ID
+   * @returns 是否有薪资管理权限
+   */
+  async isSalaryAdminOrSuperAdmin(userId: number): Promise<boolean> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    
+    if (!user || !user.roles || user.roles.length === 0) {
+      return false;
+    }
+
+    // 检查是否包含 salary_admin 或 super_admin 角色
+    return user.roles.includes('salary_admin') || user.roles.includes('super_admin');
+  }
+
+  /**
+   * 检查薪资管理权限（除确认薪资外的所有操作）
+   * @param userId 用户ID
+   * @returns 是否有权限
+   */
+  async checkSalaryManagementPermission(userId: number): Promise<boolean> {
+    const hasPermission = await this.isSalaryAdminOrSuperAdmin(userId);
+    if (!hasPermission) {
+      throw new ForbiddenException('只有薪资管理员和超级管理员可以执行此操作');
+    }
+    return true;
+  }
+
   // 获取用户的所有权限名称
   async getUserPermissions(userId: number): Promise<string[]> {
     // 查询用户信息获取角色
@@ -58,20 +87,17 @@ export class SalaryPermissionService {
 
   // 检查用户是否有创建薪资记录的权限
   async hasSalaryCreatePermission(userId: number): Promise<boolean> {
-    const permissions = await this.getUserPermissions(userId);
-    return permissions.includes('salary_action_create');
+    return await this.isSalaryAdminOrSuperAdmin(userId);
   }
 
   // 检查用户是否有编辑薪资记录的权限
   async hasSalaryEditPermission(userId: number): Promise<boolean> {
-    const permissions = await this.getUserPermissions(userId);
-    return permissions.includes('salary_action_edit');
+    return await this.isSalaryAdminOrSuperAdmin(userId);
   }
 
   // 检查用户是否有删除薪资记录的权限
   async hasSalaryDeletePermission(userId: number): Promise<boolean> {
-    const permissions = await this.getUserPermissions(userId);
-    return permissions.includes('salary_action_delete');
+    return await this.isSalaryAdminOrSuperAdmin(userId);
   }
 
   // 兼容旧的权限检查方法
@@ -90,13 +116,20 @@ export class SalaryPermissionService {
     } else if (req.method === 'DELETE') {
       return this.hasSalaryDeletePermission(userId);
     } else {
-      // 查询操作，将在buildSalaryQueryFilter中处理
-    return true;
+      // 查询操作，检查是否是薪资管理员或超级管理员
+      return await this.isSalaryAdminOrSuperAdmin(userId);
     }
   }
 
   // 根据用户权限构建薪资查询条件
   async buildSalaryQueryFilter(userId: number): Promise<any> {
+    // 首先检查是否是薪资管理员或超级管理员
+    const isSalaryAdmin = await this.isSalaryAdminOrSuperAdmin(userId);
+    if (isSalaryAdmin) {
+      // 薪资管理员和超级管理员可以查看所有记录
+      return {};
+    }
+
     const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: ['department'],

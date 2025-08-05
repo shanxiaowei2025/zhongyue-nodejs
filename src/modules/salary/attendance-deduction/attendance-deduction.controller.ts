@@ -19,7 +19,7 @@ export class AttendanceDeductionController {
   constructor(private readonly attendanceDeductionService: AttendanceDeductionService) {}
 
   @Post()
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '创建考勤扣款记录' })
   @ApiResponse({ status: 201, description: '创建成功' })
   @ApiResponse({ status: 403, description: '没有权限' })
@@ -29,7 +29,7 @@ export class AttendanceDeductionController {
   }
 
   @Post('import')
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '导入考勤扣款数据(CSV/XLSX)' })
   @ApiResponse({ status: 201, description: '导入成功', schema: {
     type: 'object',
@@ -118,7 +118,7 @@ export class AttendanceDeductionController {
   }
 
   @Get()
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '获取考勤扣款列表' })
   @ApiResponse({ status: 200, description: '获取成功' })
   findAll(@Query() query: QueryAttendanceDeductionDto) {
@@ -126,7 +126,7 @@ export class AttendanceDeductionController {
   }
 
   @Get(':id')
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '获取考勤扣款详情' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiResponse({ status: 404, description: '记录不存在' })
@@ -140,7 +140,7 @@ export class AttendanceDeductionController {
   }
 
   @Patch(':id')
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '更新考勤扣款记录' })
   @ApiResponse({ status: 200, description: '更新成功' })
   @ApiResponse({ status: 404, description: '记录不存在' })
@@ -155,7 +155,7 @@ export class AttendanceDeductionController {
   }
 
   @Delete(':id')
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '删除考勤扣款记录' })
   @ApiResponse({ status: 200, description: '删除成功' })
   @ApiResponse({ status: 404, description: '记录不存在' })

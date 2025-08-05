@@ -5,6 +5,8 @@ import { UpdateSalaryDto } from './dto/update-salary.dto';
 import { QuerySalaryDto } from './dto/query-salary.dto';
 import { ConfirmSalaryDto } from './dto/confirm-salary.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { SalaryPermissionService } from './services/salary-permission.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiQuery, ApiProperty } from '@nestjs/swagger';
 import { safeIdParam } from 'src/common/utils';
@@ -135,7 +137,7 @@ class SalaryUpdateExample {
 
 @ApiTags('薪资管理')
 @Controller('salary')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class SalaryController {
   constructor(
     private readonly salaryService: SalaryService,
@@ -144,11 +146,13 @@ export class SalaryController {
   ) {}
 
   @Post()
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '创建薪资记录', description: '创建新的薪资记录' })
   @ApiBody({ type: SalaryCreateExample })
   @ApiResponse({ status: HttpStatus.CREATED, description: '创建成功' })
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: '请求参数错误' })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: '权限不足' })
   async create(@Body() createSalaryDto: CreateSalaryDto, @Req() req: RequestWithUser) {
     try {
       return this.salaryService.create(createSalaryDto, req.user.id);
@@ -160,8 +164,9 @@ export class SalaryController {
     }
   }
 
-  @Get()
-  @ApiOperation({ summary: '获取薪资列表', description: '分页获取薪资列表，支持多条件筛选' })
+  @Get('admin')
+  @Roles('salary_admin', 'super_admin')
+  @ApiOperation({ summary: '获取薪资列表（管理员）', description: '管理员分页获取所有薪资列表，支持多条件筛选' })
   @ApiQuery({
     name: 'department',
     required: false,
@@ -234,7 +239,8 @@ export class SalaryController {
   })
   @ApiResponse({ status: HttpStatus.OK, description: '查询成功' })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权' })
-  async findAll(@Query() query: QuerySalaryDto, @Req() req: RequestWithUser) {
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: '权限不足' })
+  async findAllForAdmin(@Query() query: QuerySalaryDto, @Req() req: RequestWithUser) {
     try {
       return this.salaryService.findAll(query, req.user.id);
     } catch (error) {
@@ -245,13 +251,67 @@ export class SalaryController {
     }
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: '获取薪资详情', description: '根据ID获取薪资详情' })
+  @Get('my')
+  @ApiOperation({ summary: '获取我的薪资列表（员工）', description: '员工获取自己的薪资列表，支持时间筛选' })
+  @ApiQuery({
+    name: 'yearMonth',
+    required: false,
+    type: String,
+    description: '年月',
+    example: '2023-06-01'
+  })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    type: String,
+    description: '开始日期',
+    example: '2023-01-01'
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    type: String,
+    description: '结束日期',
+    example: '2023-12-31'
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: '页码',
+    example: 1
+  })
+  @ApiQuery({
+    name: 'pageSize',
+    required: false,
+    type: Number,
+    description: '每页数量',
+    example: 10
+  })
+  @ApiResponse({ status: HttpStatus.OK, description: '查询成功' })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权' })
+  async findMyAll(@Query() query: QuerySalaryDto, @Req() req: RequestWithUser) {
+    try {
+      // 员工只能查看自己的薪资记录，强制设置用户ID筛选
+      const myQuery = { ...query, userId: req.user.id };
+      return this.salaryService.findMySalary(myQuery, req.user.id);
+    } catch (error) {
+      throw new HttpException(
+        error.message || '获取我的薪资列表失败',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('admin/:id')
+  @Roles('salary_admin', 'super_admin')
+  @ApiOperation({ summary: '获取薪资详情（管理员）', description: '管理员根据ID获取任意薪资详情' })
   @ApiParam({ name: 'id', description: '薪资记录ID' })
   @ApiResponse({ status: HttpStatus.OK, description: '获取成功' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: '薪资记录不存在' })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权' })
-  async findOne(@Param('id') id: string, @Req() req: RequestWithUser) {
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: '权限不足' })
+  async findOneForAdmin(@Param('id') id: string, @Req() req: RequestWithUser) {
     try {
     const safeId = safeIdParam(id);
       return this.salaryService.findOne(safeId, req.user.id);
@@ -263,13 +323,33 @@ export class SalaryController {
     }
   }
 
+  @Get('my/:id')
+  @ApiOperation({ summary: '获取我的薪资详情（员工）', description: '员工根据ID获取自己的薪资详情' })
+  @ApiParam({ name: 'id', description: '薪资记录ID' })
+  @ApiResponse({ status: HttpStatus.OK, description: '获取成功' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: '薪资记录不存在或无权访问' })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权' })
+  async findMyOne(@Param('id') id: string, @Req() req: RequestWithUser) {
+    try {
+    const safeId = safeIdParam(id);
+      return this.salaryService.findMySalaryById(safeId, req.user.id);
+    } catch (error) {
+      throw new HttpException(
+        error.message || '获取我的薪资详情失败',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @Patch(':id')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '更新薪资记录', description: '根据ID更新薪资记录' })
   @ApiParam({ name: 'id', description: '薪资记录ID' })
   @ApiBody({ type: SalaryUpdateExample })
   @ApiResponse({ status: HttpStatus.OK, description: '更新成功' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: '薪资记录不存在' })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: '权限不足' })
   async update(
     @Param('id') id: string,
     @Body() updateSalaryDto: UpdateSalaryDto,
@@ -287,11 +367,13 @@ export class SalaryController {
   }
 
   @Delete(':id')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '删除薪资记录', description: '根据ID删除薪资记录' })
   @ApiParam({ name: 'id', description: '薪资记录ID' })
   @ApiResponse({ status: HttpStatus.OK, description: '删除成功' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: '薪资记录不存在' })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: '权限不足' })
   async remove(@Param('id') id: string, @Req() req: RequestWithUser) {
     try {
     const safeId = safeIdParam(id);
@@ -329,6 +411,7 @@ export class SalaryController {
   }
 
   @Post('auto-generate')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '自动生成薪资数据', description: '测试自动生成上个月的薪资数据' })
   @ApiQuery({ name: 'month', required: false, type: String, description: '指定月份（格式：YYYY-MM-DD），不指定则默认为上个月' })
   @ApiResponse({ status: HttpStatus.OK, description: '操作结果', schema: { 
@@ -339,6 +422,7 @@ export class SalaryController {
     } 
   } })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: '权限不足' })
   async autoGenerateSalaries(@Query('month') month: string, @Req() req: RequestWithUser) {
     try {
       await this.salaryPermissionService.checkPermission(req);

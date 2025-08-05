@@ -20,7 +20,7 @@ export class FriendCirclePaymentController {
   constructor(private readonly friendCirclePaymentService: FriendCirclePaymentService) {}
 
   @Post()
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '创建朋友圈扣款记录' })
   @ApiResponse({ status: 201, description: '创建成功' })
   @ApiResponse({ status: 403, description: '没有权限' })
@@ -30,7 +30,7 @@ export class FriendCirclePaymentController {
   }
 
   @Post('import')
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '导入朋友圈扣款数据(CSV/XLSX)' })
   @ApiResponse({ status: 201, description: '导入成功', schema: {
     type: 'object',
@@ -119,7 +119,7 @@ export class FriendCirclePaymentController {
   }
 
   @Get()
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '获取朋友圈扣款列表' })
   @ApiResponse({ status: 200, description: '获取成功' })
   findAll(@Query() query: QueryFriendCirclePaymentDto, @Req() req: Request) {
@@ -127,7 +127,7 @@ export class FriendCirclePaymentController {
   }
 
   @Get(':id')
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '获取朋友圈扣款详情' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiResponse({ status: 404, description: '记录不存在' })
@@ -137,7 +137,7 @@ export class FriendCirclePaymentController {
   }
 
   @Patch(':id')
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '更新朋友圈扣款记录' })
   @ApiResponse({ status: 200, description: '更新成功' })
   @ApiResponse({ status: 404, description: '记录不存在' })
@@ -148,7 +148,7 @@ export class FriendCirclePaymentController {
   }
 
   @Delete(':id')
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '删除朋友圈扣款记录' })
   @ApiResponse({ status: 200, description: '删除成功' })
   @ApiResponse({ status: 404, description: '记录不存在' })

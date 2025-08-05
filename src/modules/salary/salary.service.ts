@@ -8,12 +8,15 @@ import { QuerySalaryDto } from './dto/query-salary.dto';
 import { ConfirmSalaryDto } from './dto/confirm-salary.dto';
 import { safeDateParam, safePaginationParams } from 'src/common/utils';
 import { SalaryPermissionService } from './services/salary-permission.service';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class SalaryService {
   constructor(
     @InjectRepository(Salary)
     private readonly salaryRepository: Repository<Salary>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     private readonly salaryPermissionService: SalaryPermissionService,
     private readonly dataSource: DataSource,
   ) {}
@@ -518,6 +521,129 @@ export class SalaryService {
     
     await this.salaryRepository.update(safeId, updateData);
     return this.findOne(safeId, userId);
+  }
+  
+  // 员工查看自己的薪资列表
+  async findMySalary(query: QuerySalaryDto, userId: number) {
+    console.log('员工薪资查询参数:', JSON.stringify(query));
+    
+    // 确保分页参数是有效的数字
+    let { page = 1, pageSize = 10, yearMonth, startDate, endDate } = query;
+    
+    // 使用安全的分页参数处理函数
+    const { page: safePage, pageSize: safePageSize } = safePaginationParams(page, pageSize);
+    page = safePage;
+    pageSize = safePageSize;
+    
+    // 获取当前用户信息，通过身份证号关联薪资记录
+    const user = await this.userRepository.findOne({
+      where: { id: userId }
+    });
+    
+    if (!user || !user.idCardNumber) {
+      throw new ForbiddenException('用户信息不完整，无法查询薪资记录。请联系管理员补充身份证号信息。');
+    }
+    
+    const queryBuilder = this.salaryRepository.createQueryBuilder('salary');
+    
+    // 只能查看与自己身份证号匹配的薪资记录
+    queryBuilder.andWhere('salary.idCard = :idCard', { idCard: user.idCardNumber });
+    
+    // 处理日期参数
+    try {
+      // 安全处理yearMonth参数
+      const safeYearMonth = safeDateParam(yearMonth);
+      if (safeYearMonth) {
+        queryBuilder.andWhere('salary.yearMonth = :yearMonth', { yearMonth: safeYearMonth });
+      }
+      
+      // 安全处理startDate和endDate参数
+      const safeStartDate = safeDateParam(startDate);
+      const safeEndDate = safeDateParam(endDate);
+      
+      if (safeStartDate && safeEndDate) {
+        queryBuilder.andWhere('salary.yearMonth BETWEEN :startDate AND :endDate', { 
+          startDate: safeStartDate, 
+          endDate: safeEndDate 
+        });
+      }
+    } catch (error) {
+      console.error('员工薪资日期参数处理错误:', error);
+    }
+    
+    // 获取数据
+    let total = 0;
+    let data = [];
+    
+    try {
+      total = await queryBuilder.getCount();
+      
+      data = await queryBuilder
+        .orderBy('salary.createdAt', 'DESC')
+        .skip((page - 1) * pageSize)
+        .take(pageSize)
+        .getMany();
+
+      // 获取员工保证金总和
+      if (data.length > 0) {
+        const depositTotal = await this.getEmployeeDepositTotal(user.username || data[0].name);
+        
+        // 将保证金总和添加到每个薪资记录中
+        data = data.map(item => ({
+          ...item,
+          depositTotal
+        }));
+      }
+    } catch (error) {
+      console.error('获取员工薪资列表出错:', error);
+    }
+    
+    return {
+      data,
+      total,
+      page,
+      pageSize,
+    };
+  }
+
+  // 员工查看自己的薪资详情
+  async findMySalaryById(id: number, userId: number): Promise<Salary & { depositTotal?: number }> {
+    // 确保id是有效的数字
+    const safeId = Number(id);
+    if (isNaN(safeId)) {
+      console.error(`无效的ID值: ${id}, 转换后: ${safeId}`);
+      throw new NotFoundException(`无效的薪资记录ID: ${id}`);
+    }
+    
+    // 获取当前用户信息
+    const user = await this.userRepository.findOne({
+      where: { id: userId }
+    });
+    
+    if (!user || !user.idCardNumber) {
+      throw new ForbiddenException('用户信息不完整，无法查询薪资记录。请联系管理员补充身份证号信息。');
+    }
+    
+    // 获取薪资记录，并验证是否属于当前用户
+    const salary = await this.salaryRepository.findOne({ 
+      where: { 
+        id: safeId,
+        idCard: user.idCardNumber 
+      } 
+    });
+    
+    if (!salary) {
+      throw new NotFoundException(`薪资记录不存在或您无权查看该记录`);
+    }
+    
+    // 获取员工保证金总和
+    const depositTotal = await this.getEmployeeDepositTotal(salary.name);
+    
+    // 返回附加了保证金总和的薪资记录
+    return {
+      ...salary,
+      depositTotal
+    };
   }
   
   // 检查薪资记录是否符合访问条件

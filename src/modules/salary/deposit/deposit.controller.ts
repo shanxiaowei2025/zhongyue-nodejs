@@ -31,7 +31,7 @@ export class DepositController {
   constructor(private readonly depositService: DepositService) {}
 
   @Post()
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '创建保证金记录' })
   @ApiBody({ type: CreateDepositDto })
   @ApiResponse({ status: 201, description: '创建成功' })
@@ -50,7 +50,7 @@ export class DepositController {
   }
 
   @Post('upload')
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '通过Excel文件导入保证金记录' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -117,7 +117,7 @@ export class DepositController {
   }
 
   @Get()
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '获取保证金列表' })
   @ApiResponse({ status: 200, description: '查询成功' })
   @ApiResponse({ status: 401, description: '未授权' })
@@ -133,7 +133,7 @@ export class DepositController {
   }
 
   @Get(':id')
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '获取保证金详情' })
   @ApiParam({ name: 'id', description: '保证金记录ID' })
   @ApiResponse({ status: 200, description: '查询成功' })
@@ -151,7 +151,7 @@ export class DepositController {
   }
 
   @Patch(':id')
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '更新保证金记录' })
   @ApiParam({ name: 'id', description: '保证金记录ID' })
   @ApiBody({ type: UpdateDepositDto })
@@ -174,7 +174,7 @@ export class DepositController {
   }
 
   @Delete(':id')
-  @Roles('admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '删除保证金记录' })
   @ApiParam({ name: 'id', description: '保证金记录ID' })
   @ApiResponse({ status: 200, description: '删除成功' })
