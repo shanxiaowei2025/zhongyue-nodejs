@@ -493,11 +493,8 @@ export class SalaryService {
    * @returns 更新后的薪资记录
    */
   async confirmSalary(id: number, confirmSalaryDto: ConfirmSalaryDto, userId: number): Promise<Salary> {
-    // 检查权限
-    const hasPermission = await this.salaryPermissionService.hasSalaryEditPermission(userId);
-    if (!hasPermission) {
-      throw new ForbiddenException('没有确认薪资记录的权限');
-    }
+    // 注意：已移除管理员权限检查，所有登录用户都可以调用此接口
+    // 但用户只能确认他们有权限查看的薪资记录（通过findOne方法的权限检查）
     
     // 确保id是有效的数字
     const safeId = Number(id);
@@ -516,7 +513,6 @@ export class SalaryService {
     const updateData = {
       isConfirmed: confirmSalaryDto.isConfirmed,
       confirmedAt: confirmSalaryDto.isConfirmed ? new Date() : null,
-      ...(confirmSalaryDto.remark ? { remark: confirmSalaryDto.remark } : {})
     };
     
     await this.salaryRepository.update(safeId, updateData);

@@ -1,4 +1,4 @@
-import { IsBoolean, IsOptional } from 'class-validator';
+import { IsBoolean } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class ConfirmSalaryDto {
@@ -11,12 +11,4 @@ export class ConfirmSalaryDto {
   })
   @IsBoolean()
   isConfirmed: boolean;
-
-  @ApiProperty({
-    description: '备注',
-    required: false,
-    example: '已确认本月薪资'
-  })
-  @IsOptional()
-  remark?: string;
 } 
