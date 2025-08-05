@@ -1575,11 +1575,17 @@ export class CustomerService {
 
   /**
    * 根据企业名称或统一社会信用代码查询客户档案信息（公开接口）
-   * @param searchDto 查询条件，可选。如果不提供任何条件，返回所有客户档案信息
+   * @param searchDto 查询条件，必须提供企业名称或统一社会信用代码中的至少一个参数
    * @returns 客户档案信息列表
    */
   async searchCustomerArchive(searchDto: SearchCustomerArchiveDto) {
     const { companyName, unifiedSocialCreditCode } = searchDto;
+
+    // 验证是否提供了至少一个查询参数
+    if ((!companyName || companyName.trim() === '') && 
+        (!unifiedSocialCreditCode || unifiedSocialCreditCode.trim() === '')) {
+      throw new BadRequestException('请输入企业名称或统一社会信用代码');
+    }
 
     // 创建查询构建器，只选择需要的字段
     const queryBuilder = this.customerRepository.createQueryBuilder('customer')
@@ -1596,20 +1602,18 @@ export class CustomerService {
     const whereConditions = [];
     const parameters: any = {};
 
-    if (companyName) {
+    if (companyName && companyName.trim() !== '') {
       whereConditions.push('customer.companyName LIKE :companyName');
-      parameters.companyName = `%${companyName}%`;
+      parameters.companyName = `%${companyName.trim()}%`;
     }
 
-    if (unifiedSocialCreditCode) {
+    if (unifiedSocialCreditCode && unifiedSocialCreditCode.trim() !== '') {
       whereConditions.push('customer.unifiedSocialCreditCode LIKE :unifiedSocialCreditCode');
-      parameters.unifiedSocialCreditCode = `%${unifiedSocialCreditCode}%`;
+      parameters.unifiedSocialCreditCode = `%${unifiedSocialCreditCode.trim()}%`;
     }
 
-    // 如果有查询条件，使用OR连接查询条件；如果没有条件，查询所有记录
-    if (whereConditions.length > 0) {
-      queryBuilder.where(`(${whereConditions.join(' OR ')})`, parameters);
-    }
+    // 使用OR连接查询条件
+    queryBuilder.where(`(${whereConditions.join(' OR ')})`, parameters);
 
     // 添加排序
     queryBuilder.orderBy('customer.companyName', 'ASC');

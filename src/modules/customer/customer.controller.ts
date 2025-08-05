@@ -307,12 +307,16 @@ export class CustomerController {
   @Public() // 公开接口，无需身份验证
   @ApiOperation({ 
     summary: '查询客户档案信息', 
-    description: '根据企业名称或统一社会信用代码查询客户的档案相关信息，支持模糊查询。不提供任何参数时返回所有客户档案信息（公开接口）' 
+    description: '根据企业名称或统一社会信用代码查询客户的档案相关信息，支持模糊查询。必须提供企业名称或统一社会信用代码中的至少一个参数（公开接口）' 
   })
   @ApiResponse({ 
     status: 200, 
     description: '查询成功',
     type: [CustomerArchiveResponseDto]
+  })
+  @ApiResponse({ 
+    status: 400, 
+    description: '参数错误：请输入企业名称或统一社会信用代码'
   })
   async searchCustomerArchive(
     @Query() searchDto: SearchCustomerArchiveDto,

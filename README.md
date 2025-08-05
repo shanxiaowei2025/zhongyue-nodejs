@@ -161,11 +161,11 @@ src/
 #### 客户档案查询接口详情
 **接口地址**: `GET /api/customer/archive/search`
 **访问权限**: 🌐 **公开接口，无需身份验证**
-**功能说明**: 根据企业名称或统一社会信用代码筛选客户档案信息，不提供参数时返回所有客户档案信息
+**功能说明**: 根据企业名称或统一社会信用代码筛选客户档案信息，必须提供至少一个查询参数
 **查询参数**:
-- `companyName` (可选): 企业名称，支持模糊查询
-- `unifiedSocialCreditCode` (可选): 统一社会信用代码，支持模糊查询
-- 注意：所有参数均为可选，不提供任何参数时返回所有客户档案信息
+- `companyName` (必填其一): 企业名称，支持模糊查询
+- `unifiedSocialCreditCode` (必填其一): 统一社会信用代码，支持模糊查询
+- 注意：必须提供企业名称或统一社会信用代码中的至少一个参数，否则返回错误提示
 
 **返回字段**:
 - `companyName`: 企业名称
@@ -177,9 +177,6 @@ src/
 
 **使用示例**:
 ```bash
-# 获取所有客户档案信息（无参数查询）
-GET /api/customer/archive/search
-
 # 按企业名称查询（无需认证Header）
 GET /api/customer/archive/search?companyName=阿里巴巴
 
@@ -190,11 +187,20 @@ GET /api/customer/archive/search?unifiedSocialCreditCode=91330100
 GET /api/customer/archive/search?companyName=阿里&unifiedSocialCreditCode=913301
 ```
 
+**错误响应**:
+```json
+{
+  "statusCode": 400,
+  "message": "请输入企业名称或统一社会信用代码",
+  "error": "Bad Request"
+}
+```
+
 **注意事项**:
 - ✅ 此接口为公开接口，无需提供JWT Token或任何身份认证
 - ✅ 可直接通过浏览器或任何HTTP客户端访问
-- ✅ 所有查询参数均为可选，不提供任何参数时返回所有客户档案信息
-- ⚠️ 无参数查询可能返回大量数据，请根据实际需要使用筛选条件
+- ⚠️ 必须提供企业名称或统一社会信用代码中的至少一个参数
+- ⚠️ 不提供任何参数时将返回400错误，提示"请输入企业名称或统一社会信用代码"
 
 ## 认证系统
 
