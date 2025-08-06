@@ -49,6 +49,17 @@ export class User {
   @Column({ nullable: true, length: 18, comment: '身份证号', unique: true })
   idCardNumber: string;
 
+  @ApiHideProperty()
+  // 薪资查看二级密码，响应时会自动隐藏
+  @Column({ nullable: true, length: 100, comment: '薪资查看二级密码' })
+  @Exclude() // 在响应中排除薪资密码
+  salaryPassword: string;
+
+  @ApiProperty({ description: '薪资密码最后更新时间', required: false })
+  // 薪资密码最后更新时间
+  @Column({ type: 'datetime', nullable: true, comment: '薪资密码最后更新时间' })
+  salaryPasswordUpdatedAt: Date;
+
   @ApiProperty({ 
     description: '角色列表', 
     example: ['admin', 'user'],

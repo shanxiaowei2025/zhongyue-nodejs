@@ -18,6 +18,7 @@ import { LoginDto } from './dto/login.dto';
 // 登录数据传输对象：定义登录需要的数据格式（用户名和密码）
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { SalaryAuthDto, SetSalaryPasswordDto, ChangeSalaryPasswordDto } from './dto/salary-auth.dto';
 // 更新个人资料数据传输对象：定义更新个人资料需要的数据格式
 
 @Injectable() // 表示这是一个服务，可以被其他组件使用
@@ -169,5 +170,151 @@ export class AuthService {
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
+  }
+
+  // 薪资二级密码相关方法
+
+  /**
+   * 验证薪资密码并生成临时访问令牌
+   * @param userId 用户ID
+   * @param salaryPassword 薪资密码
+   * @returns 薪资访问令牌和过期时间
+   */
+  async verifySalaryPassword(userId: number, salaryPassword: string) {
+    const user = await this.usersService.findById(userId);
+    
+    if (!user) {
+      throw new UnauthorizedException('用户不存在');
+    }
+
+    // 检查是否设置了薪资密码
+    if (!user.salaryPassword) {
+      throw new BadRequestException('请先设置薪资查看密码');
+    }
+    
+    // 验证薪资密码
+    const isValid = await this.usersService.validateSalaryPassword(userId, salaryPassword);
+    if (!isValid) {
+      throw new UnauthorizedException('薪资密码不正确');
+    }
+    
+    // 生成薪资访问令牌（短期有效，30分钟）
+    const salaryPayload = {
+      userId: user.id,
+      username: user.username,
+      type: 'salary_access',
+      iat: Math.floor(Date.now() / 1000),
+    };
+    
+    const salarySecret = process.env.SALARY_JWT_SECRET || process.env.JWT_SECRET + '_salary';
+    
+    return {
+      salaryAccessToken: this.jwtService.sign(salaryPayload, {
+        expiresIn: '30m', // 30分钟有效期
+        secret: salarySecret,
+      }),
+      expiresIn: 30 * 60, // 30分钟（秒）
+      message: '薪资访问权限验证成功',
+    };
+  }
+
+  /**
+   * 设置薪资密码（首次设置）
+   * @param userId 用户ID
+   * @param salaryPassword 薪资密码
+   * @returns 设置结果
+   */
+  async setSalaryPassword(userId: number, salaryPassword: string) {
+    const user = await this.usersService.findById(userId);
+    
+    if (!user) {
+      throw new UnauthorizedException('用户不存在');
+    }
+
+    // 检查是否已设置薪资密码
+    const hasPassword = await this.usersService.hasSalaryPassword(userId);
+    if (hasPassword) {
+      throw new BadRequestException('已设置薪资密码，请使用修改密码功能');
+    }
+    
+    // 加密薪资密码
+    const hashedPassword = await this.hashPassword(salaryPassword);
+    
+    // 保存薪资密码
+    await this.usersService.updateSalaryPassword(userId, {
+      salaryPassword: hashedPassword,
+      salaryPasswordUpdatedAt: new Date(),
+    });
+    
+    return { 
+      message: '薪资密码设置成功',
+      timestamp: new Date()
+    };
+  }
+
+  /**
+   * 修改薪资密码
+   * @param userId 用户ID
+   * @param currentPassword 当前薪资密码
+   * @param newPassword 新薪资密码
+   * @returns 修改结果
+   */
+  async changeSalaryPassword(userId: number, currentPassword: string, newPassword: string) {
+    const user = await this.usersService.findById(userId);
+    
+    if (!user) {
+      throw new UnauthorizedException('用户不存在');
+    }
+
+    // 检查是否已设置薪资密码
+    const hasPassword = await this.usersService.hasSalaryPassword(userId);
+    if (!hasPassword) {
+      throw new BadRequestException('尚未设置薪资密码，请先设置密码');
+    }
+
+    // 验证当前薪资密码
+    const isCurrentValid = await this.usersService.validateSalaryPassword(userId, currentPassword);
+    if (!isCurrentValid) {
+      throw new UnauthorizedException('当前薪资密码不正确');
+    }
+    
+    // 加密新薪资密码
+    const hashedNewPassword = await this.hashPassword(newPassword);
+    
+    // 更新薪资密码
+    await this.usersService.updateSalaryPassword(userId, {
+      salaryPassword: hashedNewPassword,
+      salaryPasswordUpdatedAt: new Date(),
+    });
+    
+    return { 
+      message: '薪资密码修改成功',
+      timestamp: new Date()
+    };
+  }
+
+  /**
+   * 检查薪资密码状态
+   * @param userId 用户ID
+   * @returns 薪资密码状态信息
+   */
+  async checkSalaryPasswordStatus(userId: number) {
+    const user = await this.usersService.findById(userId);
+    
+    if (!user) {
+      throw new UnauthorizedException('用户不存在');
+    }
+
+    return await this.usersService.getSalaryPasswordInfo(userId);
+  }
+
+  /**
+   * 加密密码的通用方法
+   * @param password 原始密码
+   * @returns 加密后的密码
+   */
+  private async hashPassword(password: string): Promise<string> {
+    const bcrypt = require('bcryptjs');
+    return bcrypt.hash(password, 10);
   }
 }

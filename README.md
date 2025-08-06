@@ -116,6 +116,7 @@ src/
 - ~~薪资自动生成功能~~ **已取消定时任务**：原每月13号自动生成薪资的功能已禁用，保留手动生成功能
 - 各种薪资相关组件（社保、补贴、考勤扣款等）
 - 提成表管理（仅限管理员和超级管理员）
+- **薪资二级密码保护**：员工查看个人薪资需要设置并验证二级密码，提供额外安全保护
 
 ## 权限控制
 
@@ -204,7 +205,7 @@ GET /api/customer/archive/search?companyName=阿里&unifiedSocialCreditCode=9133
 
 ## 认证系统
 
-系统支持两种认证方式：
+系统支持三种认证方式：
 
 ### 1. JWT认证
 - 用户登录后获取JWT令牌
@@ -215,6 +216,65 @@ GET /api/customer/archive/search?companyName=阿里&unifiedSocialCreditCode=9133
 - 为未登录用户提供临时访问特定资源的能力
 - 主要用于合同签署和文件上传
 - 令牌有效期默认为30分钟
+
+### 3. 薪资二级密码认证
+- 为薪资查看提供额外的安全保护
+- 用户需要先设置薪资密码，验证后获得临时访问令牌
+- 薪资访问令牌有效期为30分钟
+- 适用于员工查看个人薪资的场景
+
+## 薪资二级密码使用说明
+
+为了保护薪资信息的安全性，系统为以下薪资查看接口实现了二级密码保护：
+
+### 受保护的接口
+- `GET /api/salary/my` - 获取我的薪资列表
+- `GET /api/salary/my/{id}` - 获取我的薪资详情  
+- `PATCH /api/salary/{id}/confirm` - 确认薪资记录
+
+### 使用流程
+
+#### 1. 设置薪资密码
+```bash
+POST /api/auth/salary/set-password
+Headers: Authorization: Bearer <jwt_token>
+Body: {
+  "salaryPassword": "your_salary_password"
+}
+```
+
+#### 2. 验证薪资密码获取访问令牌
+```bash
+POST /api/auth/salary/verify
+Headers: Authorization: Bearer <jwt_token>
+Body: {
+  "salaryPassword": "your_salary_password"
+}
+
+Response: {
+  "salaryAccessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "expiresIn": 1800,
+  "message": "薪资访问权限验证成功"
+}
+```
+
+#### 3. 使用薪资访问令牌访问薪资接口
+```bash
+GET /api/salary/my
+Headers: 
+  Authorization: Bearer <jwt_token>
+  X-Salary-Token: <salary_access_token>
+```
+
+### 其他管理接口
+- `GET /api/auth/salary/check-password` - 检查是否已设置薪资密码
+- `POST /api/auth/salary/change-password` - 修改薪资密码
+
+### 注意事项
+- 薪资访问令牌有效期为30分钟，过期后需要重新验证
+- 每个用户需要单独设置自己的薪资密码
+- 薪资密码与登录密码独立，可以设置不同的密码
+- 管理员查看薪资不需要二级密码验证
 
 ## 文件存储系统
 
@@ -283,6 +343,7 @@ http://localhost:3000/api/docs
 ### JWT配置
 - `JWT_SECRET`: JWT密钥 (必填)
 - `JWT_EXPIRES_IN`: JWT有效期 (默认: 1d)
+- `SALARY_JWT_SECRET`: 薪资访问JWT密钥 (可选，不设置时使用JWT_SECRET + '_salary')
 
 ### MinIO配置
 - `MINIO_ENDPOINT`: MinIO服务地址 (默认: localhost)

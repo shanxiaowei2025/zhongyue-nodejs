@@ -8,9 +8,10 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { SalaryPermissionService } from './services/salary-permission.service';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiQuery, ApiProperty } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiQuery, ApiProperty, ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
 import { safeIdParam } from 'src/common/utils';
 import { SalaryAutoUpdateService } from './services/salary-auto-update.service';
+import { SalaryCombinedGuard } from '../auth/guards/salary-combined.guard';
 
 // 扩展Request类型以包含用户信息
 interface RequestWithUser extends Request {
@@ -18,6 +19,12 @@ interface RequestWithUser extends Request {
     id: number;
     username: string;
     [key: string]: any;
+  };
+  salaryAccess?: {
+    userId: number;
+    username: string;
+    grantedAt: number;
+    tokenType: string;
   };
 }
 
@@ -252,7 +259,18 @@ export class SalaryController {
   }
 
   @Get('my')
-  @ApiOperation({ summary: '获取我的薪资列表（员工）', description: '员工获取自己的薪资列表，支持时间筛选' })
+  @UseGuards(SalaryCombinedGuard)  // 添加薪资二级密码验证
+  @ApiBearerAuth()
+  @ApiOperation({ 
+    summary: '获取我的薪资列表（员工）', 
+    description: '员工获取自己的薪资列表，支持时间筛选。需要先通过 POST /api/auth/salary/verify 验证薪资密码获取访问令牌，然后在请求头中添加 X-Salary-Token。' 
+  })
+  @ApiHeader({
+    name: 'X-Salary-Token',
+    description: '薪资访问令牌（通过 POST /api/auth/salary/verify 获取）',
+    required: true,
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+  })
   @ApiQuery({
     name: 'yearMonth',
     required: false,
@@ -289,7 +307,7 @@ export class SalaryController {
     example: 10
   })
   @ApiResponse({ status: HttpStatus.OK, description: '查询成功' })
-  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权' })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权或需要薪资访问权限' })
   async findMyAll(@Query() query: QuerySalaryDto, @Req() req: RequestWithUser) {
     try {
       // 员工只能查看自己的薪资记录，强制设置用户ID筛选
@@ -324,11 +342,22 @@ export class SalaryController {
   }
 
   @Get('my/:id')
-  @ApiOperation({ summary: '获取我的薪资详情（员工）', description: '员工根据ID获取自己的薪资详情' })
+  @UseGuards(SalaryCombinedGuard)  // 添加薪资二级密码验证
+  @ApiBearerAuth()
+  @ApiOperation({ 
+    summary: '获取我的薪资详情（员工）', 
+    description: '员工根据ID获取自己的薪资详情。需要先通过 POST /api/auth/salary/verify 验证薪资密码获取访问令牌，然后在请求头中添加 X-Salary-Token。' 
+  })
+  @ApiHeader({
+    name: 'X-Salary-Token',
+    description: '薪资访问令牌（通过 POST /api/auth/salary/verify 获取）',
+    required: true,
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+  })
   @ApiParam({ name: 'id', description: '薪资记录ID' })
   @ApiResponse({ status: HttpStatus.OK, description: '获取成功' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: '薪资记录不存在或无权访问' })
-  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权' })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权或需要薪资访问权限' })
   async findMyOne(@Param('id') id: string, @Req() req: RequestWithUser) {
     try {
     const safeId = safeIdParam(id);
@@ -388,12 +417,23 @@ export class SalaryController {
   }
   
   @Patch(':id/confirm')
-  @ApiOperation({ summary: '确认薪资记录', description: '根据ID确认薪资记录' })
+  @UseGuards(SalaryCombinedGuard)  // 添加薪资二级密码验证
+  @ApiBearerAuth()
+  @ApiOperation({ 
+    summary: '确认薪资记录', 
+    description: '根据ID确认薪资记录。需要先通过 POST /api/auth/salary/verify 验证薪资密码获取访问令牌，然后在请求头中添加 X-Salary-Token。' 
+  })
+  @ApiHeader({
+    name: 'X-Salary-Token',
+    description: '薪资访问令牌（通过 POST /api/auth/salary/verify 获取）',
+    required: true,
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+  })
   @ApiParam({ name: 'id', description: '薪资记录ID' })
   @ApiBody({ type: ConfirmSalaryDto })
   @ApiResponse({ status: HttpStatus.OK, description: '确认成功' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: '薪资记录不存在' })
-  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权' })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权或需要薪资访问权限' })
   async confirmSalary(
     @Param('id') id: string,
     @Body() confirmSalaryDto: ConfirmSalaryDto,

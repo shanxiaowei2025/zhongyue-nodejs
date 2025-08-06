@@ -13,6 +13,8 @@ import { UsersModule } from '../users/users.module';
 import { ContractModule } from '../contract/contract.module';
 import { ContractTokenAuthGuard } from './guards/contract-token-auth.guard';
 import { CombinedAuthGuard } from './guards/combined-auth.guard';
+import { SalaryAccessGuard } from './guards/salary-access.guard';
+import { SalaryCombinedGuard } from './guards/salary-combined.guard';
 
 @Module({
   imports: [
@@ -46,6 +48,8 @@ import { CombinedAuthGuard } from './guards/combined-auth.guard';
     RolesGuard,
     ContractTokenAuthGuard,
     CombinedAuthGuard,
+    SalaryAccessGuard,
+    SalaryCombinedGuard,
   ],
 
   // 5. 声明控制器（处理HTTP请求）
@@ -57,7 +61,9 @@ import { CombinedAuthGuard } from './guards/combined-auth.guard';
     JwtAuthGuard, 
     RolesGuard,
     ContractTokenAuthGuard,
-    CombinedAuthGuard
+    CombinedAuthGuard,
+    SalaryAccessGuard,
+    SalaryCombinedGuard
   ],
 })
 export class AuthModule {}

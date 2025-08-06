@@ -6,6 +6,7 @@ import { SalaryController } from './salary.controller';
 import { SalaryService } from './salary.service';
 import { SalaryPermissionService } from './services/salary-permission.service';
 import { SalaryAutoUpdateService } from './services/salary-auto-update.service';
+import { AuthModule } from '../auth/auth.module';
 // 暂时注释考勤补贴模块导入，后续再实现
 // import { AttendanceSubsidyModule } from './attendance-subsidy/attendance-subsidy.module';
 import { SubsidySummaryModule } from './subsidy-summary/subsidy-summary.module';
@@ -31,6 +32,8 @@ import {
 
 @Module({
   imports: [
+    // 导入认证模块，获取守卫
+    AuthModule,
     // 引入定时任务模块
     ScheduleModule.forRoot(),
     // 先注册子模块，确保更具体的路由先注册

@@ -416,4 +416,78 @@ export class UsersService {
     user.isActive = isActive;
     return this.userRepository.save(user);
   }
+
+  /**
+   * 设置用户薪资密码
+   * @param userId 用户ID
+   * @param salaryPassword 加密后的薪资密码
+   * @returns 更新结果
+   */
+  async updateSalaryPassword(userId: number, salaryPasswordData: {
+    salaryPassword: string;
+    salaryPasswordUpdatedAt: Date;
+  }): Promise<void> {
+    const result = await this.userRepository.update(userId, salaryPasswordData);
+    
+    if (result.affected === 0) {
+      throw new NotFoundException(`用户ID ${userId} 不存在`);
+    }
+  }
+
+  /**
+   * 验证用户薪资密码
+   * @param userId 用户ID
+   * @param salaryPassword 原始薪资密码
+   * @returns 是否验证成功
+   */
+  async validateSalaryPassword(userId: number, salaryPassword: string): Promise<boolean> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      select: ['id', 'salaryPassword'] // 只选择需要的字段
+    });
+    
+    if (!user || !user.salaryPassword) {
+      return false;
+    }
+    
+    return bcrypt.compare(salaryPassword, user.salaryPassword);
+  }
+
+  /**
+   * 检查用户是否设置了薪资密码
+   * @param userId 用户ID
+   * @returns 是否已设置薪资密码
+   */
+  async hasSalaryPassword(userId: number): Promise<boolean> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      select: ['id', 'salaryPassword', 'salaryPasswordUpdatedAt']
+    });
+    
+    return !!(user && user.salaryPassword);
+  }
+
+  /**
+   * 获取用户薪资密码信息（不包含密码本身）
+   * @param userId 用户ID
+   * @returns 薪资密码相关信息
+   */
+  async getSalaryPasswordInfo(userId: number): Promise<{
+    hasPassword: boolean;
+    lastUpdated: Date | null;
+  }> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      select: ['id', 'salaryPassword', 'salaryPasswordUpdatedAt']
+    });
+    
+    if (!user) {
+      throw new NotFoundException(`用户ID ${userId} 不存在`);
+    }
+    
+    return {
+      hasPassword: !!user.salaryPassword,
+      lastUpdated: user.salaryPasswordUpdatedAt || null,
+    };
+  }
 }
