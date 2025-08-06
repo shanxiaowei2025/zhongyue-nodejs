@@ -9,6 +9,7 @@ import { ConfirmSalaryDto } from './dto/confirm-salary.dto';
 import { safeDateParam, safePaginationParams } from 'src/common/utils';
 import { SalaryPermissionService } from './services/salary-permission.service';
 import { User } from '../users/entities/user.entity';
+import { Employee } from '../employee/entities/employee.entity';
 
 @Injectable()
 export class SalaryService {
@@ -17,6 +18,8 @@ export class SalaryService {
     private readonly salaryRepository: Repository<Salary>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Employee)
+    private readonly employeeRepository: Repository<Employee>,
     private readonly salaryPermissionService: SalaryPermissionService,
     private readonly dataSource: DataSource,
   ) {}
@@ -126,6 +129,81 @@ export class SalaryService {
     delete result.skipPerformanceCalculation;
     
     return result;
+  }
+
+  /**
+   * 为薪资数据添加发工资公司信息
+   * @param salaries 薪资数据数组
+   * @returns 附加发工资公司信息的薪资数据
+   */
+  private async addPayrollCompanyToSalaries<T extends Salary>(salaries: T[]): Promise<(T & { payrollCompany?: string })[]> {
+    if (!salaries || salaries.length === 0) {
+      return salaries;
+    }
+
+    // 提取所有姓名和身份证号
+    const employeeKeys = salaries.map(salary => ({
+      name: salary.name,
+      idCard: salary.idCard
+    }));
+
+    // 批量查询员工信息
+    const employees = await this.employeeRepository.find({
+      select: ['name', 'idCardNumber', 'payrollCompany'],
+    });
+
+    // 创建员工信息映射（优先根据身份证号匹配，其次根据姓名匹配）
+    const employeeMap = new Map<string, string>();
+    
+    employees.forEach(employee => {
+      if (employee.idCardNumber) {
+        employeeMap.set(`id:${employee.idCardNumber}`, employee.payrollCompany || '');
+      }
+      if (employee.name) {
+        employeeMap.set(`name:${employee.name}`, employee.payrollCompany || '');
+      }
+    });
+
+    // 为每个薪资记录添加发工资公司信息
+    return salaries.map(salary => ({
+      ...salary,
+      payrollCompany: employeeMap.get(`id:${salary.idCard}`) || 
+                     employeeMap.get(`name:${salary.name}`) || 
+                     ''
+    }));
+  }
+
+  /**
+   * 为单个薪资数据添加发工资公司信息
+   * @param salary 薪资数据
+   * @returns 附加发工资公司信息的薪资数据
+   */
+  private async addPayrollCompanyToSalary<T extends Salary>(salary: T): Promise<T & { payrollCompany?: string }> {
+    if (!salary) {
+      return salary;
+    }
+
+    // 查询员工信息（优先根据身份证号查询，其次根据姓名查询）
+    let employee = null;
+    
+    if (salary.idCard) {
+      employee = await this.employeeRepository.findOne({
+        where: { idCardNumber: salary.idCard },
+        select: ['payrollCompany']
+      });
+    }
+    
+    if (!employee && salary.name) {
+      employee = await this.employeeRepository.findOne({
+        where: { name: salary.name },
+        select: ['payrollCompany']
+      });
+    }
+
+    return {
+      ...salary,
+      payrollCompany: employee?.payrollCompany || ''
+    };
   }
 
   /**
@@ -322,13 +400,16 @@ export class SalaryService {
         .take(pageSize)
         .getMany();
 
-      // 如果有数据，获取所有员工的保证金总和
+      // 如果有数据，获取所有员工的保证金总和和发工资公司信息
       if (data.length > 0) {
         const employeeNames = data.map(item => item.name);
         const depositTotals = await this.getMultipleEmployeeDepositTotals(employeeNames);
         
+        // 添加发工资公司信息
+        const dataWithPayrollCompany = await this.addPayrollCompanyToSalaries(data);
+        
         // 将保证金总和添加到每个薪资记录中
-        data = data.map(item => ({
+        data = dataWithPayrollCompany.map(item => ({
           ...item,
           depositTotal: depositTotals.get(item.name) || 0
         }));
@@ -345,7 +426,7 @@ export class SalaryService {
     };
   }
 
-  async findOne(id: number, userId: number): Promise<Salary & { depositTotal?: number }> {
+  async findOne(id: number, userId: number): Promise<Salary & { depositTotal?: number; payrollCompany?: string }> {
     // 确保id是有效的数字
     const safeId = Number(id);
     if (isNaN(safeId)) {
@@ -384,9 +465,12 @@ export class SalaryService {
     // 获取员工保证金总和
     const depositTotal = await this.getEmployeeDepositTotal(salary.name);
     
-    // 返回附加了保证金总和的薪资记录
+    // 添加发工资公司信息
+    const salaryWithPayrollCompany = await this.addPayrollCompanyToSalary(salary);
+    
+    // 返回附加了保证金总和和发工资公司信息的薪资记录
     return {
-      ...salary,
+      ...salaryWithPayrollCompany,
       depositTotal
     };
   }
@@ -580,12 +664,15 @@ export class SalaryService {
         .take(pageSize)
         .getMany();
 
-      // 获取员工保证金总和
+      // 获取员工保证金总和和发工资公司信息
       if (data.length > 0) {
         const depositTotal = await this.getEmployeeDepositTotal(user.username || data[0].name);
         
+        // 添加发工资公司信息
+        const dataWithPayrollCompany = await this.addPayrollCompanyToSalaries(data);
+        
         // 将保证金总和添加到每个薪资记录中
-        data = data.map(item => ({
+        data = dataWithPayrollCompany.map(item => ({
           ...item,
           depositTotal
         }));
@@ -603,7 +690,7 @@ export class SalaryService {
   }
 
   // 员工查看自己的薪资详情
-  async findMySalaryById(id: number, userId: number): Promise<Salary & { depositTotal?: number }> {
+  async findMySalaryById(id: number, userId: number): Promise<Salary & { depositTotal?: number; payrollCompany?: string }> {
     // 确保id是有效的数字
     const safeId = Number(id);
     if (isNaN(safeId)) {
@@ -635,9 +722,12 @@ export class SalaryService {
     // 获取员工保证金总和
     const depositTotal = await this.getEmployeeDepositTotal(salary.name);
     
-    // 返回附加了保证金总和的薪资记录
+    // 添加发工资公司信息
+    const salaryWithPayrollCompany = await this.addPayrollCompanyToSalary(salary);
+    
+    // 返回附加了保证金总和和发工资公司信息的薪资记录
     return {
-      ...salary,
+      ...salaryWithPayrollCompany,
       depositTotal
     };
   }

@@ -22,6 +22,7 @@ import { User } from '../users/entities/user.entity';
 import { Role } from '../roles/entities/role.entity';
 import { Permission } from '../permissions/entities/permission.entity';
 import { Department } from '../department/entities/department.entity';
+import { Employee } from '../employee/entities/employee.entity';
 
 // 提成表实体
 import { 
@@ -57,6 +58,7 @@ import {
       Role,
       Permission,
       Department,
+      Employee,
     ]),
     // 暂时注释考勤补贴模块，后续再实现
     // AttendanceSubsidyModule,
