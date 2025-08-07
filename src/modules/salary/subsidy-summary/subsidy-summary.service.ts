@@ -225,11 +225,20 @@ export class SubsidySummaryService {
     
     // 处理日期参数，避免NaN值
     try {
-      // 安全处理yearMonth参数
+      // 安全处理yearMonth参数 - 支持模糊查询
       const safeYearMonth = safeDateParam(yearMonth);
       if (safeYearMonth) {
-        queryBuilder.andWhere('subsidySummary.yearMonth = :yearMonth', { yearMonth: safeYearMonth });
-        console.log('使用yearMonth参数:', safeYearMonth);
+        // 将日期转换为字符串格式 YYYY-MM-DD
+        const yearMonthStr = typeof safeYearMonth === 'string' 
+          ? safeYearMonth 
+          : safeYearMonth.toISOString().split('T')[0];
+        // 提取年月部分 YYYY-MM
+        const yearMonthPart = yearMonthStr.substring(0, 7);
+        
+        // 使用DATE_FORMAT函数进行模糊查询
+        queryBuilder.andWhere('DATE_FORMAT(subsidySummary.yearMonth, "%Y-%m") LIKE :yearMonth', 
+          { yearMonth: `%${yearMonthPart}%` });
+        console.log('使用年月模糊查询:', yearMonthPart);
       }
       
       // 安全处理startDate和endDate参数

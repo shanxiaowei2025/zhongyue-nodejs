@@ -124,6 +124,7 @@ src/
   - 朋友圈扣款导入：`POST /api/friend-circle-payment/import`
   - 考勤扣款导入：`POST /api/attendance-deduction/import`
   - 保证金导入：`POST /api/deposit/upload`
+- **年月查询统一优化**：所有薪资模块支持 `yearMonth=2025-06` 格式的年月查询参数
 
 ## 权限控制
 
@@ -501,6 +502,7 @@ POST /api/salary/auto-generate?month=2025-08-01
 - **数据库操作**：使用事务确保数据一致性
 - **日期匹配**：使用MySQL的DATE_FORMAT函数进行年月匹配
 - **错误恢复**：单条记录失败不影响整批导入
+- **查询优化**：统一使用 `DATE_FORMAT(field, "%Y-%m") LIKE "%YYYY-MM%"` 进行年月模糊查询
 
 详细文档请查看 [docs/README.md](docs/README.md)
 

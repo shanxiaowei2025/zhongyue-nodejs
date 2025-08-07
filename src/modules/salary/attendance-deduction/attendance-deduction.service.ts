@@ -212,17 +212,20 @@ export class AttendanceDeductionService {
     
     // 处理日期筛选
     if (yearMonth) {
-      // 确保yearMonth是Date对象
-      const date = safeDateParam(yearMonth);
-      if (date instanceof Date) {
-        // 获取年月的第一天和最后一天
-        const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-        const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      // 安全处理yearMonth参数 - 支持模糊查询
+      const safeYearMonth = safeDateParam(yearMonth);
+      if (safeYearMonth) {
+        // 将日期转换为字符串格式 YYYY-MM-DD
+        const yearMonthStr = typeof safeYearMonth === 'string' 
+          ? safeYearMonth 
+          : safeYearMonth.toISOString().split('T')[0];
+        // 提取年月部分 YYYY-MM
+        const yearMonthPart = yearMonthStr.substring(0, 7);
         
-        queryBuilder.andWhere('deduction.yearMonth BETWEEN :firstDay AND :lastDay', {
-          firstDay,
-          lastDay
-        });
+        // 使用DATE_FORMAT函数进行模糊查询
+        queryBuilder.andWhere('DATE_FORMAT(deduction.yearMonth, "%Y-%m") LIKE :yearMonth', 
+          { yearMonth: `%${yearMonthPart}%` });
+        console.log('使用年月模糊查询:', yearMonthPart);
       }
     } else if (startDate || endDate) {
       // 处理日期范围筛选

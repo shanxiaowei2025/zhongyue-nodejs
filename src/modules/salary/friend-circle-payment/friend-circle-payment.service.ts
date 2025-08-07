@@ -5,7 +5,7 @@ import { FriendCirclePayment } from './entities/friend-circle-payment.entity';
 import { CreateFriendCirclePaymentDto } from './dto/create-friend-circle-payment.dto';
 import { UpdateFriendCirclePaymentDto } from './dto/update-friend-circle-payment.dto';
 import { QueryFriendCirclePaymentDto } from './dto/query-friend-circle-payment.dto';
-import { safePaginationParams } from 'src/common/utils';
+import { safeDateParam, safePaginationParams } from 'src/common/utils';
 import { Request } from 'express';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -79,9 +79,23 @@ export class FriendCirclePaymentService {
       queryBuilder.andWhere('friendCirclePayment.isCompleted = :isCompleted', { isCompleted: boolValue });
     }
     
-    // 年月查询
+    // 年月查询 - 支持模糊查询
     if (yearMonth) {
-      queryBuilder.andWhere('friendCirclePayment.yearMonth = :yearMonth', { yearMonth });
+      // 安全处理yearMonth参数
+      const safeYearMonth = safeDateParam(yearMonth);
+      if (safeYearMonth) {
+        // 将日期转换为字符串格式 YYYY-MM-DD
+        const yearMonthStr = typeof safeYearMonth === 'string' 
+          ? safeYearMonth 
+          : safeYearMonth.toISOString().split('T')[0];
+        // 提取年月部分 YYYY-MM
+        const yearMonthPart = yearMonthStr.substring(0, 7);
+        
+        // 使用DATE_FORMAT函数进行模糊查询
+        queryBuilder.andWhere('DATE_FORMAT(friendCirclePayment.yearMonth, "%Y-%m") LIKE :yearMonth', 
+          { yearMonth: `%${yearMonthPart}%` });
+        console.log('使用年月模糊查询:', yearMonthPart);
+      }
     }
     
     // 获取总记录数和分页数据
