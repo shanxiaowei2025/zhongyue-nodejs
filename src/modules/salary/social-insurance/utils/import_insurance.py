@@ -20,12 +20,13 @@ def debug_print(message):
     if DEBUG:
         print(f"DEBUG: {message}")
 
-def import_insurance_data(file_path):
+def import_insurance_data(file_path, overwrite_mode=False):
     try:
         debug_print("开始导入社保信息数据函数")
         debug_print(f"Python版本: {sys.version}")
         debug_print(f"当前工作目录: {os.getcwd()}")
         debug_print(f"命令行参数: {sys.argv}")
+        debug_print(f"覆盖模式: {overwrite_mode}")
         
         # 配置数据库连接
         # 从环境变量获取数据库连接信息
@@ -226,6 +227,8 @@ def import_insurance_data(file_path):
             # 导入过滤后的数据
             success = True
             error_message = ""
+            imported_count = 0
+            
             if db_data.empty:
                 print("没有可导入的有效记录")
                 error_message = "没有可导入的有效记录"
@@ -234,8 +237,67 @@ def import_insurance_data(file_path):
                 try:
                     # 将数据导入到数据库表
                     print("开始导入数据到数据库...")
-                    db_data.to_sql('sys_social_insurance', engine, if_exists='append', index=False)
-                    print("数据导入成功!")
+                    
+                    with engine.begin() as conn:
+                        for index, row in db_data.iterrows():
+                            try:
+                                # 如果是覆盖模式，先删除相同姓名和年月的现有记录
+                                if overwrite_mode and row['name'] and row['yearMonth']:
+                                    # 提取年月信息（YYYY-MM格式）
+                                    year_month_str = str(row['yearMonth'])[:7]  # 提取YYYY-MM部分
+                                    
+                                    delete_sql = text("""
+                                        DELETE FROM sys_social_insurance 
+                                        WHERE name = :name 
+                                        AND DATE_FORMAT(yearMonth, '%Y-%m') = :year_month
+                                    """)
+                                    delete_params = {
+                                        'name': row['name'],
+                                        'year_month': year_month_str
+                                    }
+                                    
+                                    result = conn.execute(delete_sql, delete_params)
+                                    deleted_count = result.rowcount
+                                    if deleted_count > 0:
+                                        debug_print(f"删除了 {deleted_count} 条现有记录 (姓名: {row['name']}, 年月: {year_month_str})")
+                                
+                                # 构建插入SQL
+                                insert_sql = text("""
+                                    INSERT INTO sys_social_insurance 
+                                    (name, personalMedical, personalPension, personalUnemployment, personalTotal,
+                                     companyMedical, companyPension, companyUnemployment, companyInjury, companyTotal,
+                                     grandTotal, yearMonth, remark, createdAt, updatedAt) 
+                                    VALUES (:name, :personalMedical, :personalPension, :personalUnemployment, :personalTotal,
+                                            :companyMedical, :companyPension, :companyUnemployment, :companyInjury, :companyTotal,
+                                            :grandTotal, :yearMonth, :remark, NOW(), NOW())
+                                """)
+                                
+                                # 执行插入
+                                params = {
+                                    'name': row['name'],
+                                    'personalMedical': row['personalMedical'] or 0,
+                                    'personalPension': row['personalPension'] or 0,
+                                    'personalUnemployment': row['personalUnemployment'] or 0,
+                                    'personalTotal': row['personalTotal'] or 0,
+                                    'companyMedical': row['companyMedical'] or 0,
+                                    'companyPension': row['companyPension'] or 0,
+                                    'companyUnemployment': row['companyUnemployment'] or 0,
+                                    'companyInjury': row['companyInjury'] or 0,
+                                    'companyTotal': row['companyTotal'] or 0,
+                                    'grandTotal': row['grandTotal'] or 0,
+                                    'yearMonth': row['yearMonth'],
+                                    'remark': row.get('remark', None)
+                                }
+                                
+                                conn.execute(insert_sql, params)
+                                imported_count += 1
+                                
+                            except Exception as row_error:
+                                print(f"插入第 {index + 1} 行数据失败: {str(row_error)}")
+                                # 继续处理下一行，不中断整个导入过程
+                                
+                    print(f"数据导入成功! 共导入 {imported_count} 条记录")
+                    
                 except Exception as e:
                     success = False
                     error_message = str(e)
@@ -244,8 +306,8 @@ def import_insurance_data(file_path):
             
             # 准备结果对象
             result = {
-                'success': success and len(db_data) > 0,
-                'imported_count': len(db_data) if success else 0,
+                'success': success and imported_count > 0,
+                'imported_count': imported_count if success else 0,
                 'failed_count': len(validation_errors),
                 'failed_records': validation_errors,
                 'error_message': error_message
@@ -337,6 +399,7 @@ def main():
         # 创建命令行参数解析器
         parser = argparse.ArgumentParser(description='导入社保信息数据到数据库')
         parser.add_argument('--file', type=str, help='Excel/CSV文件路径')
+        parser.add_argument('--overwrite', action='store_true', help='如果目标表已存在，则覆盖现有数据')
         args = parser.parse_args()
         
         # 获取文件路径
@@ -348,7 +411,7 @@ def main():
         
         # 导入数据
         print(f"开始导入文件: {file_path}")
-        result = import_insurance_data(file_path)
+        result = import_insurance_data(file_path, args.overwrite)
         
         # 返回结果状态码
         if result and isinstance(result, dict):

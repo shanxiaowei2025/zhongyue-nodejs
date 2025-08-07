@@ -20,12 +20,13 @@ def debug_print(message):
     if DEBUG:
         print(f"DEBUG: {message}")
 
-def import_deposit_data(file_path):
+def import_deposit_data(file_path, overwrite_mode=False):
     try:
         debug_print("开始导入保证金数据函数")
         debug_print(f"Python版本: {sys.version}")
         debug_print(f"当前工作目录: {os.getcwd()}")
         debug_print(f"命令行参数: {sys.argv}")
+        debug_print(f"覆盖模式: {overwrite_mode}")
         
         # 配置数据库连接
         # 从环境变量获取数据库连接信息
@@ -237,6 +238,27 @@ def import_deposit_data(file_path):
                     # 处理备注字段
                     remark = row.get('备注', None)
                     
+                    # 提取年月信息（YYYY-MM格式）
+                    deduction_date = row['扣除日期']
+                    year_month = deduction_date[:7]  # 提取YYYY-MM部分
+                    
+                    # 如果是覆盖模式，先删除相同姓名和年月的现有记录
+                    if overwrite_mode:
+                        delete_sql = text("""
+                            DELETE FROM sys_deposit 
+                            WHERE name = :name 
+                            AND DATE_FORMAT(deductionDate, '%Y-%m') = :year_month
+                        """)
+                        delete_params = {
+                            'name': row['姓名'],
+                            'year_month': year_month
+                        }
+                        
+                        result = conn.execute(delete_sql, delete_params)
+                        deleted_count = result.rowcount
+                        if deleted_count > 0:
+                            debug_print(f"删除了 {deleted_count} 条现有记录 (姓名: {row['姓名']}, 年月: {year_month})")
+                    
                     # 构建插入SQL
                     insert_sql = text("""
                         INSERT INTO sys_deposit 
@@ -296,9 +318,10 @@ def main():
     # 解析命令行参数
     parser = argparse.ArgumentParser(description='导入保证金数据')
     parser.add_argument('--file', required=True, help='CSV或Excel文件路径')
+    parser.add_argument('--overwrite', action='store_true', help='如果存在相同姓名和年月的记录，则覆盖')
     args = parser.parse_args()
     
-    import_deposit_data(args.file)
+    import_deposit_data(args.file, args.overwrite)
 
 if __name__ == "__main__":
     main() 

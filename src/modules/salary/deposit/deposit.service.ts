@@ -100,8 +100,8 @@ export class DepositService {
         console.log('Python脚本路径:', scriptPath);
         console.log('临时文件路径:', tempFilePath);
         
-        // 创建子进程运行Python脚本
-        const pythonProcess = spawn('python3', [scriptPath, '--file', tempFilePath], {
+        // 创建子进程运行Python脚本，添加覆盖模式参数
+        const pythonProcess = spawn('python3', [scriptPath, '--file', tempFilePath, '--overwrite'], {
           env: {
             ...process.env,
             DB_HOST: process.env.DB_HOST || 'localhost',

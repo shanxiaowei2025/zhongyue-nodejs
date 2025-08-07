@@ -180,7 +180,7 @@ export class FriendCirclePaymentService {
       // 直接通过内存处理文件，不写入临时文件
       return new Promise<any>((resolve, reject) => {
         // 启动Python进程
-        const pythonProcess = spawn('python3', [scriptPath, originalFilename]);
+        const pythonProcess = spawn('python3', [scriptPath, originalFilename, '--overwrite']);
         
         let stdoutData = '';
         let stderrData = '';
@@ -220,6 +220,26 @@ export class FriendCirclePaymentService {
             const failedCount = result.failedRecords.length;
             
             if (importedCount > 0) {
+              // 检查是否是覆盖模式 - 从Python脚本结果中获取
+              const overwriteMode = result.overwriteMode || false;
+              
+              if (overwriteMode) {
+                for (const item of result.data) {
+                  if (item.name && item.yearMonth) {
+                    // 提取年月信息（YYYY-MM格式）
+                    const yearMonthStr = item.yearMonth.toString().substring(0, 7);
+                    
+                    // 删除相同姓名和年月的现有记录
+                    await this.friendCirclePaymentRepo
+                      .createQueryBuilder()
+                      .delete()
+                      .where('name = :name', { name: item.name })
+                      .andWhere('DATE_FORMAT(yearMonth, "%Y-%m") = :yearMonth', { yearMonth: yearMonthStr })
+                      .execute();
+                  }
+                }
+              }
+              
               // 批量创建记录
               const entities = result.data.map(item => this.friendCirclePaymentRepo.create(item));
               await this.friendCirclePaymentRepo.save(entities);

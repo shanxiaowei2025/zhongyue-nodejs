@@ -9,6 +9,7 @@ def main():
     # 从标准输入读取文件内容
     file_content = sys.stdin.buffer.read()
     filename = sys.argv[1] if len(sys.argv) > 1 else ''
+    overwrite_mode = '--overwrite' in sys.argv
     
     try:
         # 根据文件类型处理
@@ -26,7 +27,8 @@ def main():
         result = {
             "success": True,
             "data": [],
-            "failedRecords": []
+            "failedRecords": [],
+            "overwriteMode": overwrite_mode
         }
         
         # 字段映射
