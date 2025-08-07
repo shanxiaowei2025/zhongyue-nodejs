@@ -7,6 +7,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';  // 用于读取�
 import { AuthService } from './auth.service';  // 认证相关的业务逻辑
 import { JwtStrategy } from './strategies/jwt.strategy';  // JWT认证策略
 import { AuthController } from './auth.controller';  // 处理认证相关的请求
+import { SalaryAuthController } from './salary-auth.controller';  // 处理薪资二级密码相关的请求
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { UsersModule } from '../users/users.module';
@@ -53,7 +54,7 @@ import { SalaryCombinedGuard } from './guards/salary-combined.guard';
   ],
 
   // 5. 声明控制器（处理HTTP请求）
-  controllers: [AuthController],
+  controllers: [AuthController, SalaryAuthController],
 
   // 6. 导出服务（允许其他模块使用认证服务）
   exports: [

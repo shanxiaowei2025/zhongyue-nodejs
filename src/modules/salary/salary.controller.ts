@@ -452,8 +452,16 @@ export class SalaryController {
 
   @Post('auto-generate')
   @Roles('salary_admin', 'super_admin')
-  @ApiOperation({ summary: '自动生成薪资数据', description: '测试自动生成上个月的薪资数据' })
-  @ApiQuery({ name: 'month', required: false, type: String, description: '指定月份（格式：YYYY-MM-DD），不指定则默认为上个月' })
+  @ApiOperation({ 
+    summary: '自动生成薪资数据', 
+    description: '自动生成指定月份的薪资数据。注意：不能生成2025年6月及其之前的薪资数据。' 
+  })
+  @ApiQuery({ 
+    name: 'month', 
+    required: false, 
+    type: String, 
+    description: '指定月份（格式：YYYY-MM-DD），不指定则默认为上个月。注意：不能生成2025年6月及其之前的薪资数据。' 
+  })
   @ApiResponse({ status: HttpStatus.OK, description: '操作结果', schema: { 
     example: { 
       success: true, 
@@ -461,12 +469,23 @@ export class SalaryController {
       details: { updated: 5, created: 10 } 
     } 
   } })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: '时间限制：不能生成2025年6月及其之前的薪资数据' })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权' })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: '权限不足' })
   async autoGenerateSalaries(@Query('month') month: string, @Req() req: RequestWithUser) {
     try {
       await this.salaryPermissionService.checkPermission(req);
-      return this.salaryAutoUpdateService.manualGenerateSalaries(month);
+      const result = await this.salaryAutoUpdateService.manualGenerateSalaries(month);
+      
+      // 检查是否是时间限制错误
+      if (!result.success && result.error === 'TIME_RESTRICTION') {
+        throw new HttpException(
+          result.message,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      
+      return result;
     } catch (error) {
       throw new HttpException(
         error.message || '手动生成薪资失败',

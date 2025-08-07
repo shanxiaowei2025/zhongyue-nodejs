@@ -724,6 +724,14 @@ export class SalaryAutoUpdateService {
     const now = targetMonth ? moment(targetMonth) : moment();
     const lastMonth = now.clone().subtract(1, 'month');
     
+    // 检查时间限制：不能生成2025年6月及其之前的薪资数据
+    const restrictedDate = moment('2025-06-30'); // 2025年6月30日
+    if (lastMonth.isSameOrBefore(restrictedDate)) {
+      const errorMessage = `不能生成2025年6月及其之前的薪资数据。尝试生成的月份：${lastMonth.format('YYYY-MM')}`;
+      this.logger.error(errorMessage);
+      throw new Error(errorMessage);
+    }
+    
     // 获取上个月的第一天和最后一天
     const firstDayOfLastMonth = lastMonth.startOf('month').format('YYYY-MM-DD');
     const lastDayOfLastMonth = lastMonth.endOf('month').format('YYYY-MM-DD');
@@ -942,6 +950,16 @@ export class SalaryAutoUpdateService {
       };
     } catch (error) {
       this.logger.error(`手动生成薪资数据失败: ${error.message}`, error.stack);
+      
+      // 检查是否是时间限制错误
+      if (error.message && error.message.includes('不能生成2025年6月及其之前的薪资数据')) {
+        return {
+          success: false,
+          message: error.message,
+          error: 'TIME_RESTRICTION'
+        };
+      }
+      
       return {
         success: false,
         message: `薪资数据生成失败: ${error.message}`
