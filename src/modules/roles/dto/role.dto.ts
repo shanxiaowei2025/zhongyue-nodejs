@@ -1,5 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsEnum, IsOptional, IsArray, ValidateNested, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsEnum,
+  IsOptional,
+  IsArray,
+  ValidateNested,
+  IsBoolean,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class PermissionDto {
@@ -32,12 +39,12 @@ export class BaseRoleDto {
   @IsOptional()
   remark?: string;
 
-//   @ApiPropertyOptional({ description: '权限列表' })
-//   @IsArray()
-//   @ValidateNested({ each: true }) 
-//   @Type(() => PermissionDto)
-//   @IsOptional()
-//   permissions?: PermissionDto[];
+  //   @ApiPropertyOptional({ description: '权限列表' })
+  //   @IsArray()
+  //   @ValidateNested({ each: true })
+  //   @Type(() => PermissionDto)
+  //   @IsOptional()
+  //   permissions?: PermissionDto[];
 }
 
 export class CreateRoleDto extends BaseRoleDto {
@@ -65,7 +72,7 @@ export class UpdateRoleDto extends BaseRoleDto {
 export class UpdateRolePermissionDto {
   @ApiProperty({ description: '权限列表' })
   @IsArray()
-  @ValidateNested({ each: true }) 
+  @ValidateNested({ each: true })
   @Type(() => PermissionDto)
   permissions: PermissionDto[];
 }

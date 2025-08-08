@@ -20,7 +20,11 @@ export class CreateAttendanceDto {
   @IsString()
   departs_name: string;
 
-  @ApiProperty({ description: '记录类型：1-固定上下班；2-外出；3-按班次上下班；4-自由签到；5-加班；7-无规则', example: 1 })
+  @ApiProperty({
+    description:
+      '记录类型：1-固定上下班；2-外出；3-按班次上下班；4-自由签到；5-加班；7-无规则',
+    example: 1,
+  })
   @IsNumber()
   @Type(() => Number)
   record_type: number;
@@ -30,12 +34,20 @@ export class CreateAttendanceDto {
   @Type(() => Number)
   day_type: number;
 
-  @ApiProperty({ description: '上班时间 HH:MM', required: false, example: '09:00' })
+  @ApiProperty({
+    description: '上班时间 HH:MM',
+    required: false,
+    example: '09:00',
+  })
   @IsOptional()
   @IsString()
   checkintime_work?: string;
 
-  @ApiProperty({ description: '下班时间 HH:MM', required: false, example: '18:00' })
+  @ApiProperty({
+    description: '下班时间 HH:MM',
+    required: false,
+    example: '18:00',
+  })
   @IsOptional()
   @IsString()
   checkintime_off_work?: string;
@@ -46,13 +58,21 @@ export class CreateAttendanceDto {
   @Type(() => Number)
   checkin_count?: number;
 
-  @ApiProperty({ description: '当日实际工作时长(小时)', required: false, example: 8.5 })
+  @ApiProperty({
+    description: '当日实际工作时长(小时)',
+    required: false,
+    example: 8.5,
+  })
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
   regular_work_sec?: number;
 
-  @ApiProperty({ description: '当日标准工作时长(小时)', required: false, example: 8.0 })
+  @ApiProperty({
+    description: '当日标准工作时长(小时)',
+    required: false,
+    example: 8.0,
+  })
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
@@ -86,7 +106,7 @@ export class CreateAttendanceDto {
   @Min(0)
   @Type(() => Number)
   exception_missing?: number;
-  
+
   @ApiProperty({ description: '地点异常次数', required: false, default: 0 })
   @IsOptional()
   @IsNumber()
@@ -102,7 +122,11 @@ export class CreateAttendanceDto {
   exception_device?: number;
 
   // 加班信息
-  @ApiProperty({ description: '加班状态：0-无加班；1-正常；2-缺时长', required: false, default: 0 })
+  @ApiProperty({
+    description: '加班状态：0-无加班；1-正常；2-缺时长',
+    required: false,
+    default: 0,
+  })
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
@@ -113,4 +137,4 @@ export class CreateAttendanceDto {
   @IsNumber()
   @Type(() => Number)
   ot_duration?: number;
-} 
+}

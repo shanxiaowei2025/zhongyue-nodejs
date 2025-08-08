@@ -440,7 +440,7 @@ export class ExpenseService {
       await this.expensePermissionService.buildExpenseQueryFilter(userId);
 
     // 记录原始权限过滤条件，稍后用于构建复合查询
-    let originalPermissionFilter = permissionFilter;
+    const originalPermissionFilter = permissionFilter;
 
     // 创建查询构建器
     const queryBuilder = this.expenseRepository.createQueryBuilder('expense');
@@ -493,52 +493,62 @@ export class ExpenseService {
     // 然后在权限过滤的基础上应用查询参数
     if (query.companyName !== undefined) {
       if (query.companyName === '') {
-        queryBuilder.andWhere('(expense.companyName IS NULL OR expense.companyName = \'\')');
+        queryBuilder.andWhere(
+          "(expense.companyName IS NULL OR expense.companyName = '')",
+        );
       } else {
-      queryBuilder.andWhere('expense.companyName LIKE :companyName', {
-        companyName: `%${query.companyName}%`,
-      });
+        queryBuilder.andWhere('expense.companyName LIKE :companyName', {
+          companyName: `%${query.companyName}%`,
+        });
       }
     }
 
     if (query.unifiedSocialCreditCode !== undefined) {
       if (query.unifiedSocialCreditCode === '') {
-        queryBuilder.andWhere('(expense.unifiedSocialCreditCode IS NULL OR expense.unifiedSocialCreditCode = \'\')');
+        queryBuilder.andWhere(
+          "(expense.unifiedSocialCreditCode IS NULL OR expense.unifiedSocialCreditCode = '')",
+        );
       } else {
-      queryBuilder.andWhere(
-        'expense.unifiedSocialCreditCode LIKE :unifiedSocialCreditCode',
-        { unifiedSocialCreditCode: `%${query.unifiedSocialCreditCode}%` },
-      );
+        queryBuilder.andWhere(
+          'expense.unifiedSocialCreditCode LIKE :unifiedSocialCreditCode',
+          { unifiedSocialCreditCode: `%${query.unifiedSocialCreditCode}%` },
+        );
       }
     }
 
     if (query.companyType !== undefined) {
       if (query.companyType === '') {
-        queryBuilder.andWhere('(expense.companyType IS NULL OR expense.companyType = \'\')');
+        queryBuilder.andWhere(
+          "(expense.companyType IS NULL OR expense.companyType = '')",
+        );
       } else {
-      queryBuilder.andWhere('expense.companyType LIKE :companyType', {
-        companyType: `%${query.companyType}%`,
-      });
+        queryBuilder.andWhere('expense.companyType LIKE :companyType', {
+          companyType: `%${query.companyType}%`,
+        });
       }
     }
 
     if (query.companyLocation !== undefined) {
       if (query.companyLocation === '') {
-        queryBuilder.andWhere('(expense.companyLocation IS NULL OR expense.companyLocation = \'\')');
+        queryBuilder.andWhere(
+          "(expense.companyLocation IS NULL OR expense.companyLocation = '')",
+        );
       } else {
-      queryBuilder.andWhere('expense.companyLocation LIKE :companyLocation', {
-        companyLocation: `%${query.companyLocation}%`,
-      });
+        queryBuilder.andWhere('expense.companyLocation LIKE :companyLocation', {
+          companyLocation: `%${query.companyLocation}%`,
+        });
       }
     }
 
     if (query.businessType !== undefined) {
       if (query.businessType === '') {
-        queryBuilder.andWhere('(expense.businessType IS NULL OR expense.businessType = \'\')');
+        queryBuilder.andWhere(
+          "(expense.businessType IS NULL OR expense.businessType = '')",
+        );
       } else {
-      queryBuilder.andWhere('expense.businessType LIKE :businessType', {
-        businessType: `%${query.businessType}%`,
-      });
+        queryBuilder.andWhere('expense.businessType LIKE :businessType', {
+          businessType: `%${query.businessType}%`,
+        });
       }
     }
 
@@ -550,42 +560,50 @@ export class ExpenseService {
 
     if (query.salesperson !== undefined) {
       if (query.salesperson === '') {
-        queryBuilder.andWhere('(expense.salesperson IS NULL OR expense.salesperson = \'\')');
+        queryBuilder.andWhere(
+          "(expense.salesperson IS NULL OR expense.salesperson = '')",
+        );
       } else {
-      queryBuilder.andWhere('expense.salesperson LIKE :salesperson', {
-        salesperson: `%${query.salesperson}%`,
-      });
-    }
+        queryBuilder.andWhere('expense.salesperson LIKE :salesperson', {
+          salesperson: `%${query.salesperson}%`,
+        });
+      }
     }
 
     if (query.chargeMethod !== undefined) {
       if (query.chargeMethod === '') {
-        queryBuilder.andWhere('(expense.chargeMethod IS NULL OR expense.chargeMethod = \'\')');
+        queryBuilder.andWhere(
+          "(expense.chargeMethod IS NULL OR expense.chargeMethod = '')",
+        );
       } else {
         queryBuilder.andWhere('expense.chargeMethod LIKE :chargeMethod', {
           chargeMethod: `%${query.chargeMethod}%`,
-      });
+        });
       }
     }
 
     if (query.receiptNo !== undefined) {
       if (query.receiptNo === '') {
-        queryBuilder.andWhere('(expense.receiptNo IS NULL OR expense.receiptNo = \'\')');
+        queryBuilder.andWhere(
+          "(expense.receiptNo IS NULL OR expense.receiptNo = '')",
+        );
       } else {
-      queryBuilder.andWhere('expense.receiptNo LIKE :receiptNo', {
-        receiptNo: `%${query.receiptNo}%`,
-      });
+        queryBuilder.andWhere('expense.receiptNo LIKE :receiptNo', {
+          receiptNo: `%${query.receiptNo}%`,
+        });
       }
     }
 
     if (query.auditor !== undefined) {
       if (query.auditor === '') {
-        queryBuilder.andWhere('(expense.auditor IS NULL OR expense.auditor = \'\')');
+        queryBuilder.andWhere(
+          "(expense.auditor IS NULL OR expense.auditor = '')",
+        );
       } else {
-      queryBuilder.andWhere('expense.auditor LIKE :auditor', {
-        auditor: `%${query.auditor}%`,
-      });
-    }
+        queryBuilder.andWhere('expense.auditor LIKE :auditor', {
+          auditor: `%${query.auditor}%`,
+        });
+      }
     }
 
     if (query.chargeDateStart && query.chargeDateEnd) {
@@ -609,7 +627,7 @@ export class ExpenseService {
       // 对于结束日期，设置为当天的23:59:59.999，以包含整天
       const endDate = new Date(query.endDate);
       endDate.setHours(23, 59, 59, 999);
-      
+
       queryBuilder.andWhere(
         'expense.createdAt BETWEEN :createdStartDate AND :createdEndDate',
         {
@@ -617,8 +635,10 @@ export class ExpenseService {
           createdEndDate: endDate,
         },
       );
-      
-      console.log(`日期查询范围: ${startDate.toISOString()} - ${endDate.toISOString()}`);
+
+      console.log(
+        `日期查询范围: ${startDate.toISOString()} - ${endDate.toISOString()}`,
+      );
     }
 
     // 修改排序逻辑：首先按照创建时间降序排序
@@ -997,7 +1017,9 @@ export class ExpenseService {
 
     // 后端保护：检查费用记录状态，已审核通过的记录不能直接删除
     if (expense.status === 1) {
-      throw new BadRequestException('已审核通过的费用记录不能直接删除，请先取消审核');
+      throw new BadRequestException(
+        '已审核通过的费用记录不能直接删除，请先取消审核',
+      );
     }
 
     return await this.expenseRepository.remove(expense);
@@ -1091,7 +1113,7 @@ export class ExpenseService {
                 : customer.contributionAmount;
           }
 
-          let feeAmount =
+          const feeAmount =
             typeof expense.totalFee === 'string'
               ? parseFloat(expense.totalFee)
               : expense.totalFee;
@@ -1199,7 +1221,7 @@ export class ExpenseService {
                 : customer.contributionAmount;
           }
 
-          let feeAmount =
+          const feeAmount =
             typeof expense.totalFee === 'string'
               ? parseFloat(expense.totalFee)
               : expense.totalFee;
@@ -1555,52 +1577,62 @@ export class ExpenseService {
     // 然后在权限过滤的基础上应用查询参数
     if (query.companyName !== undefined) {
       if (query.companyName === '') {
-        queryBuilder.andWhere('(expense.companyName IS NULL OR expense.companyName = \'\')');
+        queryBuilder.andWhere(
+          "(expense.companyName IS NULL OR expense.companyName = '')",
+        );
       } else {
-      queryBuilder.andWhere('expense.companyName LIKE :companyName', {
-        companyName: `%${query.companyName}%`,
-      });
+        queryBuilder.andWhere('expense.companyName LIKE :companyName', {
+          companyName: `%${query.companyName}%`,
+        });
       }
     }
 
     if (query.unifiedSocialCreditCode !== undefined) {
       if (query.unifiedSocialCreditCode === '') {
-        queryBuilder.andWhere('(expense.unifiedSocialCreditCode IS NULL OR expense.unifiedSocialCreditCode = \'\')');
+        queryBuilder.andWhere(
+          "(expense.unifiedSocialCreditCode IS NULL OR expense.unifiedSocialCreditCode = '')",
+        );
       } else {
-      queryBuilder.andWhere(
-        'expense.unifiedSocialCreditCode LIKE :unifiedSocialCreditCode',
-        { unifiedSocialCreditCode: `%${query.unifiedSocialCreditCode}%` },
-      );
+        queryBuilder.andWhere(
+          'expense.unifiedSocialCreditCode LIKE :unifiedSocialCreditCode',
+          { unifiedSocialCreditCode: `%${query.unifiedSocialCreditCode}%` },
+        );
       }
     }
 
     if (query.companyType !== undefined) {
       if (query.companyType === '') {
-        queryBuilder.andWhere('(expense.companyType IS NULL OR expense.companyType = \'\')');
+        queryBuilder.andWhere(
+          "(expense.companyType IS NULL OR expense.companyType = '')",
+        );
       } else {
-      queryBuilder.andWhere('expense.companyType = :companyType', {
-        companyType: query.companyType,
-      });
+        queryBuilder.andWhere('expense.companyType = :companyType', {
+          companyType: query.companyType,
+        });
       }
     }
 
     if (query.companyLocation !== undefined) {
       if (query.companyLocation === '') {
-        queryBuilder.andWhere('(expense.companyLocation IS NULL OR expense.companyLocation = \'\')');
+        queryBuilder.andWhere(
+          "(expense.companyLocation IS NULL OR expense.companyLocation = '')",
+        );
       } else {
-      queryBuilder.andWhere('expense.companyLocation = :companyLocation', {
-        companyLocation: query.companyLocation,
-      });
+        queryBuilder.andWhere('expense.companyLocation = :companyLocation', {
+          companyLocation: query.companyLocation,
+        });
       }
     }
 
     if (query.businessType !== undefined) {
       if (query.businessType === '') {
-        queryBuilder.andWhere('(expense.businessType IS NULL OR expense.businessType = \'\')');
+        queryBuilder.andWhere(
+          "(expense.businessType IS NULL OR expense.businessType = '')",
+        );
       } else {
-      queryBuilder.andWhere('expense.businessType = :businessType', {
-        businessType: query.businessType,
-      });
+        queryBuilder.andWhere('expense.businessType = :businessType', {
+          businessType: query.businessType,
+        });
       }
     }
 
@@ -1612,17 +1644,21 @@ export class ExpenseService {
 
     if (query.salesperson !== undefined) {
       if (query.salesperson === '') {
-        queryBuilder.andWhere('(expense.salesperson IS NULL OR expense.salesperson = \'\')');
+        queryBuilder.andWhere(
+          "(expense.salesperson IS NULL OR expense.salesperson = '')",
+        );
       } else {
-      queryBuilder.andWhere('expense.salesperson LIKE :salesperson', {
-        salesperson: `%${query.salesperson}%`,
-      });
+        queryBuilder.andWhere('expense.salesperson LIKE :salesperson', {
+          salesperson: `%${query.salesperson}%`,
+        });
       }
     }
 
     if (query.chargeMethod !== undefined) {
       if (query.chargeMethod === '') {
-        queryBuilder.andWhere('(expense.chargeMethod IS NULL OR expense.chargeMethod = \'\')');
+        queryBuilder.andWhere(
+          "(expense.chargeMethod IS NULL OR expense.chargeMethod = '')",
+        );
       } else {
         queryBuilder.andWhere('expense.chargeMethod LIKE :chargeMethod', {
           chargeMethod: `%${query.chargeMethod}%`,
@@ -1632,7 +1668,9 @@ export class ExpenseService {
 
     if (query.receiptNo !== undefined) {
       if (query.receiptNo === '') {
-        queryBuilder.andWhere('(expense.receiptNo IS NULL OR expense.receiptNo = \'\')');
+        queryBuilder.andWhere(
+          "(expense.receiptNo IS NULL OR expense.receiptNo = '')",
+        );
       } else {
         queryBuilder.andWhere('expense.receiptNo LIKE :receiptNo', {
           receiptNo: `%${query.receiptNo}%`,
@@ -1642,7 +1680,9 @@ export class ExpenseService {
 
     if (query.auditor !== undefined) {
       if (query.auditor === '') {
-        queryBuilder.andWhere('(expense.auditor IS NULL OR expense.auditor = \'\')');
+        queryBuilder.andWhere(
+          "(expense.auditor IS NULL OR expense.auditor = '')",
+        );
       } else {
         queryBuilder.andWhere('expense.auditor LIKE :auditor', {
           auditor: `%${query.auditor}%`,
@@ -1664,7 +1704,7 @@ export class ExpenseService {
         endDate: query.chargeDateEnd,
       });
     }
-    
+
     // 添加对创建日期范围的处理
     if (query.startDate && query.endDate) {
       // 创建日期对象
@@ -1672,7 +1712,7 @@ export class ExpenseService {
       // 对于结束日期，设置为当天的23:59:59.999，以包含整天
       const endDate = new Date(query.endDate);
       endDate.setHours(23, 59, 59, 999);
-      
+
       queryBuilder.andWhere(
         'expense.createdAt BETWEEN :createdStartDate AND :createdEndDate',
         {
@@ -1680,8 +1720,10 @@ export class ExpenseService {
           createdEndDate: endDate,
         },
       );
-      
-      console.log(`导出日期查询范围: ${startDate.toISOString()} - ${endDate.toISOString()}`);
+
+      console.log(
+        `导出日期查询范围: ${startDate.toISOString()} - ${endDate.toISOString()}`,
+      );
     }
 
     // 查询数据
@@ -1712,7 +1754,7 @@ export class ExpenseService {
       totalFeeExcludeRecordSeal: '总费用（除备案章费用）',
       businessType: '业务类型',
       giftAgencyDuration: '赠送代理时长',
-      createdAt: '创建时间'
+      createdAt: '创建时间',
     };
 
     // 处理导出数据
@@ -1724,7 +1766,7 @@ export class ExpenseService {
       const totalFee = parseFloat(item.totalFee) || 0;
       const recordSealFee = parseFloat(item.recordSealFee) || 0;
       item.totalFeeExcludeRecordSeal = totalFee - recordSealFee;
-      
+
       // 格式化创建时间为YYYY-MM-DD
       if (item.createdAt) {
         const date = new Date(item.createdAt);

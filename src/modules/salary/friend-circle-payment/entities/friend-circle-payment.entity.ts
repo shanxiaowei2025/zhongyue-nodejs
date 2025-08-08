@@ -1,4 +1,10 @@
-import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 // 朋友圈补贴表
 @Entity('sys_friend_circle_payment')
 export class FriendCirclePayment {
@@ -23,7 +29,14 @@ export class FriendCirclePayment {
   @Column({ comment: '总数', type: 'int', default: 0, nullable: true })
   totalCount: number;
 
-  @Column({ comment: '扣款', type: 'decimal', precision: 10, scale: 2, default: 0, nullable: true })
+  @Column({
+    comment: '扣款',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0,
+    nullable: true,
+  })
   payment: number;
 
   @Column({ comment: '是否完成', type: 'boolean', default: false })
@@ -37,4 +50,4 @@ export class FriendCirclePayment {
 
   @UpdateDateColumn({ comment: '更新时间' })
   updatedAt: Date;
-} 
+}

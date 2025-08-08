@@ -68,11 +68,15 @@ export class StorageService implements OnModuleInit {
     try {
       // 1. 正确处理原始文件名，Multer在某些情况下可能会使用latin1编码
       let originalName = file.originalname;
-      this.logger.debug(`原始文件名编码前: ${originalName}, Buffer表示: ${Buffer.from(originalName).toString('hex')}`);
+      this.logger.debug(
+        `原始文件名编码前: ${originalName}, Buffer表示: ${Buffer.from(originalName).toString('hex')}`,
+      );
 
       // 检查originalName是否包含乱码字符
       if (/\uFFFD/.test(originalName)) {
-        this.logger.debug(`检测到可能的编码问题，尝试修复文件名: ${originalName}`);
+        this.logger.debug(
+          `检测到可能的编码问题，尝试修复文件名: ${originalName}`,
+        );
         try {
           // 尝试从latin1到utf8的转换
           originalName = Buffer.from(originalName, 'latin1').toString('utf8');
@@ -102,12 +106,12 @@ export class StorageService implements OnModuleInit {
       const lastDotIndex = cleanedName.lastIndexOf('.');
       let nameWithoutExt = cleanedName;
       let extension = '';
-      
+
       if (lastDotIndex !== -1) {
         nameWithoutExt = cleanedName.substring(0, lastDotIndex);
         extension = cleanedName.substring(lastDotIndex); // 包含点号
       }
-      
+
       // 4. 构建文件名，使用"原始文件名_时间戳.扩展名"的格式
       const fileName = `${nameWithoutExt}_${timestamp}${extension}`;
 
@@ -124,7 +128,7 @@ export class StorageService implements OnModuleInit {
         'Content-Type': file.mimetype,
         'Cache-Control': 'max-age=31536000',
         'X-Amz-Meta-Filename-Encoding': 'base64',
-        'X-Amz-Meta-Filename-Base64': encodedOriginalName
+        'X-Amz-Meta-Filename-Base64': encodedOriginalName,
       };
 
       await this.minioClient.putObject(

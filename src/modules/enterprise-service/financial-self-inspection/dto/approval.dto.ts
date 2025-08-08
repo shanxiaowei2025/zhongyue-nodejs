@@ -20,12 +20,12 @@ export class ApprovalDto {
     type: [ApprovalRecordItemDto],
     example: [
       { date: '2023-02-15', remark: '已与客户沟通确认' },
-      { date: '2023-03-01', remark: '再次确认无误' }
-    ]
+      { date: '2023-03-01', remark: '再次确认无误' },
+    ],
   })
   @IsNotEmpty({ message: '审核通过记录不能为空' })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ApprovalRecordItemDto)
   approvalRecords: ApprovalRecordItemDto[];
-} 
+}

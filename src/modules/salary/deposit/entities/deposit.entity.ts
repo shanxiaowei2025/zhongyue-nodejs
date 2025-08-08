@@ -1,4 +1,10 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 
 @Entity('sys_deposit')
@@ -11,7 +17,13 @@ export class Deposit {
   @ApiProperty({ description: '姓名' })
   name: string;
 
-  @Column({ comment: '保证金扣除', type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Column({
+    comment: '保证金扣除',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
   @ApiProperty({ description: '保证金扣除金额' })
   amount: number;
 
@@ -30,4 +42,4 @@ export class Deposit {
   @UpdateDateColumn({ comment: '更新时间' })
   @ApiProperty({ description: '更新时间' })
   updatedAt: Date;
-} 
+}

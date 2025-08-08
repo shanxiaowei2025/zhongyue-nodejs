@@ -88,6 +88,4 @@ export class AuthController {
   changePassword(@Request() req, @Body() changePasswordDto: ChangePasswordDto) {
     return this.authService.changePassword(req.user.id, changePasswordDto);
   }
-
-
 }

@@ -1,4 +1,10 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('sys_business_other_commission')
 export class BusinessOtherCommission {
@@ -16,4 +22,4 @@ export class BusinessOtherCommission {
 
   @UpdateDateColumn({ comment: '更新时间' })
   updatedAt: Date;
-} 
+}

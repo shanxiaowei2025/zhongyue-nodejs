@@ -56,11 +56,11 @@ import { SocialInsurance } from './modules/salary/social-insurance/entities/soci
 import { AttendanceDeduction } from './modules/salary/attendance-deduction/entities/attendance-deduction.entity'; // 新增考勤扣款表实体
 import { Attendance } from './modules/attendance/entities/attendance.entity'; // 新增考勤实体
 import { SalaryBaseHistory } from './modules/salary/salary-base-history/entities/salary-base-history.entity'; // 新增工资基数历程表实体
-import { 
-  BusinessSalesCommission, 
-  BusinessConsultantCommission, 
+import {
+  BusinessSalesCommission,
+  BusinessConsultantCommission,
   BusinessOtherCommission,
-  PerformanceCommission
+  PerformanceCommission,
 } from './modules/salary/commission/entities'; // 新增提成表实体
 
 @Module({

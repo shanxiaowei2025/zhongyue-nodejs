@@ -6,12 +6,9 @@ import { SalaryBaseHistoryController } from './salary-base-history.controller';
 import { AuthModule } from '../../auth/auth.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([SalaryBaseHistory]),
-    AuthModule
-  ],
+  imports: [TypeOrmModule.forFeature([SalaryBaseHistory]), AuthModule],
   controllers: [SalaryBaseHistoryController],
   providers: [SalaryBaseHistoryService],
-  exports: [SalaryBaseHistoryService]
+  exports: [SalaryBaseHistoryService],
 })
-export class SalaryBaseHistoryModule {} 
+export class SalaryBaseHistoryModule {}

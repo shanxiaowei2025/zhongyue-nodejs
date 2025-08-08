@@ -36,4 +36,4 @@ export class QueryFriendCirclePaymentDto extends PaginationDto {
   @IsDate()
   @Type(() => Date)
   endDate?: Date;
-} 
+}

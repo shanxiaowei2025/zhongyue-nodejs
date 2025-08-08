@@ -4,8 +4,14 @@
 // 1. 定义数据库表字段
 // 2. 设置字段类型和属性
 // 3. 定义表关系
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-import {  BusinessStatus } from '../enums/customer.enum';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { BusinessStatus } from '../enums/customer.enum';
 
 @Entity('sys_customer')
 export class Customer {
@@ -45,10 +51,10 @@ export class Customer {
   @Column({ nullable: true, comment: '所属分局' })
   taxBureau: string;
 
-  @Column({ 
-    nullable: true, 
-    type: 'json', 
-    comment: '实际负责人，数组对象[{姓名, 电话}]'
+  @Column({
+    nullable: true,
+    type: 'json',
+    comment: '实际负责人，数组对象[{姓名, 电话}]',
   })
   actualResponsibles: Array<{
     name?: string;
@@ -85,7 +91,13 @@ export class Customer {
   @Column({ nullable: true, type: 'date', comment: '营业执照期限' })
   licenseExpiryDate: Date;
 
-  @Column({ nullable: true, type: 'decimal', precision: 15, scale: 2, comment: '注册资金' })
+  @Column({
+    nullable: true,
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    comment: '注册资金',
+  })
   registeredCapital: number;
 
   @Column({ nullable: true, type: 'date', comment: '认缴到期日期' })
@@ -94,10 +106,10 @@ export class Customer {
   @Column({ nullable: true, type: 'date', comment: '认缴到期日期2' })
   capitalContributionDeadline2: Date;
 
-  @Column({ 
-    nullable: true, 
-    type: 'json', 
-    comment: '已实缴金额，数组对象[{姓名, 出资日期, 出资金额, 图片}]'
+  @Column({
+    nullable: true,
+    type: 'json',
+    comment: '已实缴金额，数组对象[{姓名, 出资日期, 出资金额, 图片}]',
   })
   paidInCapital: Array<{
     name?: string;
@@ -106,25 +118,46 @@ export class Customer {
     images?: Record<string, any>;
   }>;
 
-  @Column({ nullable: true, type: 'json', comment: '法定代表人身份证的扫描件或照片地址' })
+  @Column({
+    nullable: true,
+    type: 'json',
+    comment: '法定代表人身份证的扫描件或照片地址',
+  })
   legalPersonIdImages: Record<string, any>;
 
-  @Column({ nullable: true, type: 'json', comment: '其他相关人员身份证的扫描件或照片地址' })
+  @Column({
+    nullable: true,
+    type: 'json',
+    comment: '其他相关人员身份证的扫描件或照片地址',
+  })
   otherIdImages: Record<string, any>;
 
-  @Column({ nullable: true, type: 'json', comment: '企业营业执照的扫描件或照片地址' })
+  @Column({
+    nullable: true,
+    type: 'json',
+    comment: '企业营业执照的扫描件或照片地址',
+  })
   businessLicenseImages: Record<string, any>;
 
-  @Column({ nullable: true, type: 'json', comment: '企业开户许可证的扫描件或照片地址' })
+  @Column({
+    nullable: true,
+    type: 'json',
+    comment: '企业开户许可证的扫描件或照片地址',
+  })
   bankAccountLicenseImages: Record<string, any>;
 
-  @Column({ nullable: true,type: 'json', comment: '其他补充的扫描件或照片地址' })
+  @Column({
+    nullable: true,
+    type: 'json',
+    comment: '其他补充的扫描件或照片地址',
+  })
   supplementaryImages: Record<string, any>;
 
-  @Column({ 
-    nullable: true, 
-    type: 'json', 
-    comment: '行政许可，数组对象[{行政许可类型, 行政许可开始日期, 行政许可到期日期, 图片}]'
+  @Column({
+    nullable: true,
+    type: 'json',
+    comment:
+      '行政许可，数组对象[{行政许可类型, 行政许可开始日期, 行政许可到期日期, 图片}]',
   })
   administrativeLicense: Array<{
     licenseType?: string;
@@ -247,56 +280,56 @@ export class Customer {
   @Column({ nullable: true, comment: '章存放编号' })
   sealStorageNumber: string;
 
-  @Column({ 
+  @Column({
     nullable: true,
     type: 'varchar',
     length: 50,
-    comment: '企业当前的经营状态' 
+    comment: '企业当前的经营状态',
   })
   enterpriseStatus: string;
   // normal: '工商正常',
   // abnormal: '工商异常',
   // cancelled: '已注销',
   // revoked: '已吊销',
-  
-  @Column({ 
+
+  @Column({
     nullable: true,
     type: 'varchar',
     length: 50,
-    comment: '客户分级' 
+    comment: '客户分级',
   })
   customerLevel: string;
 
-  @Column({ 
+  @Column({
     nullable: true,
     type: 'decimal',
     precision: 15,
     scale: 2,
-    comment: '费用贡献金额' 
+    comment: '费用贡献金额',
   })
   contributionAmount: number;
 
-  @Column({ 
+  @Column({
     nullable: true,
     type: 'varchar',
     length: 50,
-    comment: '当前业务的状态' 
+    comment: '当前业务的状态',
   })
   businessStatus: string;
 
-  @CreateDateColumn({ 
-    nullable: true, 
+  @CreateDateColumn({
+    nullable: true,
     comment: '记录的创建时间',
     type: 'timestamp',
-    precision: 0
+    precision: 0,
   })
   createTime: Date;
 
-  @UpdateDateColumn({ 
-    nullable: true, 
+  @UpdateDateColumn({
+    nullable: true,
     comment: '记录的最后更新时间',
     type: 'timestamp',
-    precision: 0
+    precision: 0,
   })
   updateTime: Date;
 

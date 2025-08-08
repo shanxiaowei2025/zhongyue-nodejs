@@ -1,8 +1,29 @@
-import { Controller, Post, Get, Patch, Delete, Query, Body, Param, ParseIntPipe, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Delete,
+  Query,
+  Body,
+  Param,
+  ParseIntPipe,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { AttendanceScheduleService } from './attendance-schedule.service';
 import { AttendanceService } from './attendance.service';
-import { ApiTags, ApiOperation, ApiQuery, ApiParam, ApiResponse } from '@nestjs/swagger';
-import { QueryAttendanceDto, AttendanceExceptionType } from './dto/query-attendance.dto';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiQuery,
+  ApiParam,
+  ApiResponse,
+} from '@nestjs/swagger';
+import {
+  QueryAttendanceDto,
+  AttendanceExceptionType,
+} from './dto/query-attendance.dto';
 import { CreateAttendanceDto } from './dto/create-attendance.dto';
 import { UpdateAttendanceDto } from './dto/update-attendance.dto';
 import { Attendance } from './entities/attendance.entity';
@@ -30,7 +51,7 @@ export class AttendanceController {
   @ApiOperation({ summary: '查询考勤数据列表' })
   async findAll(@Query() query: QueryAttendanceDto) {
     const { items, total } = await this.attendanceService.findAll(query);
-    
+
     // 构建返回数据，包含查询条件信息
     return {
       code: 0,
@@ -53,7 +74,7 @@ export class AttendanceController {
         sort: {
           field: query.sortField || 'date',
           order: query.sortOrder || 'DESC',
-        }
+        },
       },
       message: '查询成功',
     };
@@ -94,11 +115,11 @@ export class AttendanceController {
   @ApiResponse({ status: 400, description: '参数错误' })
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateAttendanceDto: UpdateAttendanceDto
+    @Body() updateAttendanceDto: UpdateAttendanceDto,
   ) {
     // 确保ID一致
     updateAttendanceDto.id = id;
-    
+
     const attendance = await this.attendanceService.update(updateAttendanceDto);
     return {
       code: 0,
@@ -120,4 +141,4 @@ export class AttendanceController {
       message: '删除成功',
     };
   }
-} 
+}

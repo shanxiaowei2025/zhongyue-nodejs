@@ -17,4 +17,4 @@ import { memoryStorage } from 'multer';
   providers: [DepositService],
   exports: [DepositService],
 })
-export class DepositModule {} 
+export class DepositModule {}

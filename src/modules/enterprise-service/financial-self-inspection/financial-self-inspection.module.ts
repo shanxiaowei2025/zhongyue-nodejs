@@ -10,10 +10,10 @@ import { EmployeeModule } from '../../employee/employee.module';
   imports: [
     TypeOrmModule.forFeature([FinancialSelfInspection]),
     AuthModule,
-    EmployeeModule
+    EmployeeModule,
   ],
   controllers: [FinancialSelfInspectionController],
   providers: [FinancialSelfInspectionService],
   exports: [FinancialSelfInspectionService],
 })
-export class FinancialSelfInspectionModule {} 
+export class FinancialSelfInspectionModule {}

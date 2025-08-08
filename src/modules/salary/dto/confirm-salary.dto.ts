@@ -7,8 +7,8 @@ export class ConfirmSalaryDto {
     type: 'boolean',
     required: true,
     default: true,
-    example: true
+    example: true,
   })
   @IsBoolean()
   isConfirmed: boolean;
-} 
+}

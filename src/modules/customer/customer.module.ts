@@ -45,4 +45,4 @@ export class CustomerModule {
       fs.mkdirSync(uploadPath, { recursive: true });
     }
   }
-} 
+}

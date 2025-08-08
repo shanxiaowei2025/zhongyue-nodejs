@@ -11,5 +11,5 @@ export * from './query-performance-commission.dto';
 
 // 更新DTO
 export * from './update-business-sales-commission.dto';
-export * from './update-business-commission.dto'; 
-export * from './update-performance-commission.dto'; 
+export * from './update-business-commission.dto';
+export * from './update-performance-commission.dto';

@@ -1,4 +1,10 @@
-import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 // 补贴合计表
 @Entity('sys_subsidy_summary')
 export class SubsidySummary {
@@ -14,19 +20,54 @@ export class SubsidySummary {
   @Column({ comment: '职位', type: 'varchar', length: 100, nullable: true })
   position: string;
 
-  @Column({ comment: '部门负责人补贴', type: 'decimal', precision: 10, scale: 2, default: 0, nullable: true })
+  @Column({
+    comment: '部门负责人补贴',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0,
+    nullable: true,
+  })
   departmentHeadSubsidy: number;
 
-  @Column({ comment: '岗位津贴', type: 'decimal', precision: 10, scale: 2, default: 0, nullable: true })
+  @Column({
+    comment: '岗位津贴',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0,
+    nullable: true,
+  })
   positionAllowance: number;
 
-  @Column({ comment: '油补', type: 'decimal', precision: 10, scale: 2, default: 0, nullable: true })
+  @Column({
+    comment: '油补',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0,
+    nullable: true,
+  })
   oilSubsidy: number;
 
-  @Column({ comment: '餐补8元/天', type: 'decimal', precision: 10, scale: 2, default: 0, nullable: true })
+  @Column({
+    comment: '餐补8元/天',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0,
+    nullable: true,
+  })
   mealSubsidy: number;
 
-  @Column({ comment: '补贴合计', type: 'decimal', precision: 10, scale: 2, default: 0, nullable: true })
+  @Column({
+    comment: '补贴合计',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0,
+    nullable: true,
+  })
   totalSubsidy: number;
 
   @Column({ comment: '年月', type: 'date', nullable: true })
@@ -37,4 +78,4 @@ export class SubsidySummary {
 
   @UpdateDateColumn({ comment: '更新时间' })
   updatedAt: Date;
-} 
+}

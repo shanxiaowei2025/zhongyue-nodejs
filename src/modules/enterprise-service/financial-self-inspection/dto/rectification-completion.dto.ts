@@ -15,17 +15,17 @@ export class RectificationRecordItemDto {
 }
 
 export class RectificationCompletionDto {
-  @ApiProperty({ 
-    description: '整改记录', 
-    type: [RectificationRecordItemDto], 
+  @ApiProperty({
+    description: '整改记录',
+    type: [RectificationRecordItemDto],
     example: [
       { date: '2023-02-01', result: '已完成账务调整' },
-      { date: '2023-02-15', result: '已完成其他整改事项' }
-    ] 
+      { date: '2023-02-15', result: '已完成其他整改事项' },
+    ],
   })
   @IsNotEmpty({ message: '整改记录不能为空' })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => RectificationRecordItemDto)
   rectificationRecords: RectificationRecordItemDto[];
-} 
+}

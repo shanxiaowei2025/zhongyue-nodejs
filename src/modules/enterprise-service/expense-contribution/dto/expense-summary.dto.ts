@@ -20,4 +20,4 @@ export class ExpenseSummaryDto {
 
   @ApiProperty({ description: '费用总计' })
   totalAmount: number;
-} 
+}

@@ -8,12 +8,12 @@ export class CreateAttendanceDeductionDto {
   @IsOptional()
   name?: string;
 
-  @ApiProperty({ description: '考勤扣款', required: false, example: 100.00 })
+  @ApiProperty({ description: '考勤扣款', required: false, example: 100.0 })
   @IsNumber()
   @IsOptional()
   attendanceDeduction?: number;
 
-  @ApiProperty({ description: '全勤奖励', required: false, example: 200.00 })
+  @ApiProperty({ description: '全勤奖励', required: false, example: 200.0 })
   @IsNumber()
   @IsOptional()
   fullAttendanceBonus?: number;
@@ -28,4 +28,4 @@ export class CreateAttendanceDeductionDto {
   @IsString()
   @IsOptional()
   remark?: string;
-} 
+}

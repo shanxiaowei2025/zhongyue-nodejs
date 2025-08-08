@@ -40,4 +40,4 @@ export class QueryBusinessSalesCommissionDto {
   @IsString()
   @IsOptional()
   commissionRate?: string;
-} 
+}

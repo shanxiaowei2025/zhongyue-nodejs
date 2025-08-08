@@ -6,12 +6,9 @@ import { SocialInsuranceController } from './social-insurance.controller';
 import { SocialInsurance } from './entities/social-insurance.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([SocialInsurance]),
-    AuthModule
-  ],
+  imports: [TypeOrmModule.forFeature([SocialInsurance]), AuthModule],
   controllers: [SocialInsuranceController],
   providers: [SocialInsuranceService],
   exports: [SocialInsuranceService],
 })
-export class SocialInsuranceModule {} 
+export class SocialInsuranceModule {}

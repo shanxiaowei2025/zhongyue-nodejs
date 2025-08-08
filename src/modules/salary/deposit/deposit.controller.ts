@@ -1,21 +1,28 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Patch, 
-  Param, 
-  Delete, 
-  Query, 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
   UseGuards,
   HttpException,
   HttpStatus,
   ParseIntPipe,
   UseInterceptors,
   UploadedFile,
-  ParseFilePipe
+  ParseFilePipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiConsumes } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiBody,
+  ApiConsumes,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
@@ -60,10 +67,11 @@ export class DepositController {
         file: {
           type: 'string',
           format: 'binary',
-          description: 'CSV或Excel文件，包含以下列：姓名、保证金扣除、扣除日期、备注（可选）'
-        }
-      }
-    }
+          description:
+            'CSV或Excel文件，包含以下列：姓名、保证金扣除、扣除日期、备注（可选）',
+        },
+      },
+    },
   })
   @ApiResponse({ status: 201, description: '导入成功' })
   @ApiResponse({ status: 400, description: '参数错误' })
@@ -74,25 +82,31 @@ export class DepositController {
       fileFilter: (req, file, cb) => {
         // 只允许上传CSV和XLSX文件
         const allowedTypes = [
-          'text/csv', 
+          'text/csv',
           'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           'application/vnd.ms-excel',
-          'application/octet-stream' // 有些浏览器可能会用这个MIME类型
+          'application/octet-stream', // 有些浏览器可能会用这个MIME类型
         ];
-        
+
         // 检查MIME类型
         const mimeTypeValid = allowedTypes.includes(file.mimetype);
-        
+
         // 检查文件扩展名
         const originalName = file.originalname.toLowerCase();
-        const extValid = originalName.endsWith('.csv') || 
-                       originalName.endsWith('.xlsx') || 
-                       originalName.endsWith('.xls');
-        
+        const extValid =
+          originalName.endsWith('.csv') ||
+          originalName.endsWith('.xlsx') ||
+          originalName.endsWith('.xls');
+
         if (mimeTypeValid && extValid) {
           cb(null, true);
         } else {
-          cb(new Error(`只允许上传 CSV 或 Excel (XLSX/XLS) 文件! 当前文件: ${file.originalname}, MIME类型: ${file.mimetype}`), false);
+          cb(
+            new Error(
+              `只允许上传 CSV 或 Excel (XLSX/XLS) 文件! 当前文件: ${file.originalname}, MIME类型: ${file.mimetype}`,
+            ),
+            false,
+          );
         }
       },
     }),
@@ -100,7 +114,7 @@ export class DepositController {
   async uploadFile(
     @UploadedFile(
       new ParseFilePipe({
-        validators: [],  // 移除这里的验证器，因为我们已经在fileFilter中处理了
+        validators: [], // 移除这里的验证器，因为我们已经在fileFilter中处理了
         fileIsRequired: true,
       }),
     )
@@ -191,4 +205,4 @@ export class DepositController {
       );
     }
   }
-} 
+}

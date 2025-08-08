@@ -67,19 +67,20 @@ export class QueryExpenseDto {
   @IsString()
   auditor?: string;
 
-  @ApiProperty({ 
-    description: '创建开始日期（筛选创建时间开始日期）', 
-    required: false, 
-    example: '2023-01-01'
+  @ApiProperty({
+    description: '创建开始日期（筛选创建时间开始日期）',
+    required: false,
+    example: '2023-01-01',
   })
   @IsOptional()
   @IsDateString()
   startDate?: string;
 
-  @ApiProperty({ 
-    description: '创建结束日期（筛选创建时间结束日期，当与startDate相同时，会查询整天的数据）', 
-    required: false, 
-    example: '2023-12-31'
+  @ApiProperty({
+    description:
+      '创建结束日期（筛选创建时间结束日期，当与startDate相同时，会查询整天的数据）',
+    required: false,
+    example: '2023-12-31',
   })
   @IsOptional()
   @IsDateString()

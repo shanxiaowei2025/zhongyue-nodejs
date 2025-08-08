@@ -26,4 +26,4 @@ export class QueryAttendanceDeductionDto extends PaginationDto {
   @IsDate()
   @Type(() => Date)
   endDate?: Date;
-} 
+}

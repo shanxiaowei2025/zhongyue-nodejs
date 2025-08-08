@@ -16,4 +16,4 @@ export class PaginationDto {
   @IsOptional()
   @Min(1)
   pageSize?: number;
-} 
+}

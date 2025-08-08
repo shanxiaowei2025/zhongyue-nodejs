@@ -73,7 +73,10 @@ export class QueryEmployeeDto extends PaginationDto {
    * 实际生日
    * @example '农历1990年正月初一'
    */
-  @ApiPropertyOptional({ description: '实际生日', example: '农历1990年正月初一' })
+  @ApiPropertyOptional({
+    description: '实际生日',
+    example: '农历1990年正月初一',
+  })
   @IsString()
   @IsOptional()
   actualBirthday?: string;
@@ -82,11 +85,14 @@ export class QueryEmployeeDto extends PaginationDto {
    * 身份证号
    * @example '110101199001011234'
    */
-  @ApiPropertyOptional({ description: '身份证号', example: '110101199001011234' })
+  @ApiPropertyOptional({
+    description: '身份证号',
+    example: '110101199001011234',
+  })
   @IsString()
   @IsOptional()
   idCardNumber?: string;
-  
+
   /**
    * 开户银行
    * @example '中国工商银行'
@@ -100,8 +106,11 @@ export class QueryEmployeeDto extends PaginationDto {
    * 发工资公司
    * @example '北京中岳企业管理有限公司'
    */
-  @ApiPropertyOptional({ description: '发工资公司', example: '北京中岳企业管理有限公司' })
+  @ApiPropertyOptional({
+    description: '发工资公司',
+    example: '北京中岳企业管理有限公司',
+  })
   @IsString()
   @IsOptional()
   payrollCompany?: string;
-} 
+}

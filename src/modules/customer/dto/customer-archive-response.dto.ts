@@ -1,39 +1,39 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CustomerArchiveResponseDto {
-  @ApiProperty({ 
+  @ApiProperty({
     description: '企业名称',
-    example: '阿里巴巴网络技术有限公司'
+    example: '阿里巴巴网络技术有限公司',
   })
   companyName: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: '统一社会信用代码',
-    example: '91330100MA27'
+    example: '91330100MA27',
   })
   unifiedSocialCreditCode: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: '章存放编号',
-    example: 'SEAL001'
+    example: 'SEAL001',
   })
   sealStorageNumber: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: '网银托管档案号',
-    example: 'BANK001'
+    example: 'BANK001',
   })
   onlineBankingArchiveNumber: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: '纸质资料档案编号',
-    example: 'PAPER001'
+    example: 'PAPER001',
   })
   paperArchiveNumber: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: '档案存放备注',
-    example: '存放在A区1号柜'
+    example: '存放在A区1号柜',
   })
   archiveStorageRemarks: string;
-} 
+}

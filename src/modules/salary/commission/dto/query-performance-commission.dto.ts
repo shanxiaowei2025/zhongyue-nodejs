@@ -49,4 +49,4 @@ export class QueryPerformanceCommissionDto {
   @IsOptional()
   @IsNumber()
   performance?: number;
-} 
+}

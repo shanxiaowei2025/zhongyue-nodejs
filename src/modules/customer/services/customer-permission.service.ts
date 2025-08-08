@@ -92,12 +92,12 @@ export class CustomerPermissionService {
   // 检查用户是否有导入客户数据的权限
   async hasCustomerImportPermission(userId: number): Promise<boolean> {
     const permissions = await this.getUserPermissions(userId);
-    
+
     // 查看是否有导入权限，如果有专门的导入权限则使用，否则退化为检查创建权限
     if (permissions.includes('customer_action_import')) {
       return true;
     }
-    
+
     // 如果没有专门的导入权限，则检查是否有创建客户的权限
     return permissions.includes('customer_action_create');
   }
@@ -112,20 +112,27 @@ export class CustomerPermissionService {
    * 用于批量操作的权限检查（如导入导出等），不关联特定客户ID
    * 此方法仅检查用户是否有相应权限，不会构建查询条件
    */
-  async checkBatchOperationPermission(userId: number, requiredPermission: string): Promise<boolean> {
+  async checkBatchOperationPermission(
+    userId: number,
+    requiredPermission: string,
+  ): Promise<boolean> {
     const permissions = await this.getUserPermissions(userId);
-    
+
     // 检查是否有请求的权限
     if (permissions.includes(requiredPermission)) {
       return true;
     }
-    
+
     // 如果没有特定权限，检查是否有管理员权限
     const user = await this.userRepository.findOne({ where: { id: userId } });
-    if (user && user.roles && (user.roles.includes('admin') || user.roles.includes('super_admin'))) {
+    if (
+      user &&
+      user.roles &&
+      (user.roles.includes('admin') || user.roles.includes('super_admin'))
+    ) {
       return true;
     }
-    
+
     return false;
   }
 
@@ -155,9 +162,9 @@ export class CustomerPermissionService {
     const conditions: any[] = [];
 
     // 检查是否有任何客户查看权限
-    const hasViewPermission = 
-      permissions.includes('customer_date_view_all') || 
-      permissions.includes('customer_date_view_by_location') || 
+    const hasViewPermission =
+      permissions.includes('customer_date_view_all') ||
+      permissions.includes('customer_date_view_by_location') ||
       permissions.includes('customer_date_view_own');
 
     // 如果没有任何查看权限，返回一个不可能满足的条件（确保查不到任何数据）
@@ -198,10 +205,11 @@ export class CustomerPermissionService {
 
     // 处理查看自己提交的权限
     if (permissions.includes('customer_date_view_own')) {
-      const isSpecialRole = roleCodes.includes('consultantAccountant') || 
-                          roleCodes.includes('bookkeepingAccountant') || 
-                          roleCodes.includes('invoiceOfficer');
-      
+      const isSpecialRole =
+        roleCodes.includes('consultantAccountant') ||
+        roleCodes.includes('bookkeepingAccountant') ||
+        roleCodes.includes('invoiceOfficer');
+
       // 如果是特殊角色，根据角色对应的字段筛选
       if (isSpecialRole) {
         if (roleCodes.includes('consultantAccountant')) {
@@ -209,13 +217,13 @@ export class CustomerPermissionService {
             consultantAccountant: user.username,
           });
         }
-        
+
         if (roleCodes.includes('bookkeepingAccountant')) {
           conditions.push({
             bookkeepingAccountant: user.username,
           });
         }
-        
+
         if (roleCodes.includes('invoiceOfficer')) {
           conditions.push({
             invoiceOfficer: user.username,

@@ -83,12 +83,13 @@ export class ContractPermissionService {
     console.log('用户权限:', permissions);
 
     // 检查用户是否有任何合同查看权限
-    const hasAnyContractViewPermission = permissions.some(p => 
-      p === 'contract_data_view_all' || 
-      p === 'contract_data_view_own' || 
-      p === 'contract_data_view_by_location'
+    const hasAnyContractViewPermission = permissions.some(
+      (p) =>
+        p === 'contract_data_view_all' ||
+        p === 'contract_data_view_own' ||
+        p === 'contract_data_view_by_location',
     );
-    
+
     // 如果用户没有任何合同查看权限，返回一个不可能满足的查询条件
     if (!hasAnyContractViewPermission) {
       console.log('用户没有任何合同查看权限');
@@ -128,11 +129,11 @@ export class ContractPermissionService {
       //     location: department.parent.name,
       //   });
       // }
-      
+
       // 当前合同实体中不存在location字段，添加临时条件以保证权限有效
-       conditions.push({
-         id: -1 // 使用一个不可能存在的ID作为替代条件
-       });
+      conditions.push({
+        id: -1, // 使用一个不可能存在的ID作为替代条件
+      });
     }
 
     // 处理查看自己提交的权限
@@ -167,33 +168,38 @@ export class ContractPermissionService {
   // 检查用户是否有权限查看某个合同
   async canView(contractId: number, userId: number): Promise<boolean> {
     const permissions = await this.getUserPermissions(userId);
-    
+
     // 如果有查看所有权限，直接返回true
     if (permissions.includes('contract_data_view_all')) {
       return true;
     }
-    
+
     // 获取合同信息
-    const contract = await this.contractRepository.findOne({ where: { id: contractId } });
+    const contract = await this.contractRepository.findOne({
+      where: { id: contractId },
+    });
     if (!contract) {
       return false;
     }
-    
+
     // 获取用户信息
     const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: ['department', 'department.parent'],
     });
-    
+
     if (!user) {
       return false;
     }
-    
+
     // 如果是合同的提交者，并且有查看自己权限，则可以查看
-    if (permissions.includes('contract_data_view_own') && contract.submitter === user.username) {
+    if (
+      permissions.includes('contract_data_view_own') &&
+      contract.submitter === user.username
+    ) {
       return true;
     }
-    
+
     // 处理按区域查看权限
     if (permissions.includes('contract_data_view_by_location')) {
       // 暂时注释掉location相关的权限检查
@@ -201,7 +207,7 @@ export class ContractPermissionService {
       //   where: { id: user.dept_id },
       //   relations: ['parent'],
       // });
-      
+
       // // 如果合同有区域信息，检查是否匹配
       // if (contract.location) {
       //   if (department.type === 2 && contract.location === department.name) {
@@ -210,49 +216,54 @@ export class ContractPermissionService {
       //     return true;
       //   }
       // }
-      
+
       // 暂时直接返回false，依靠其他权限检查
       return false;
     }
-    
+
     return false;
   }
 
   // 检查用户是否有权限更新某个合同
   async canUpdate(contractId: number, userId: number): Promise<boolean> {
     const permissions = await this.getUserPermissions(userId);
-    
+
     // 检查是否有编辑权限
     if (!permissions.includes('contract_action_edit')) {
       return false;
     }
-    
+
     // 如果有查看所有权限，则可以编辑所有合同
     if (permissions.includes('contract_data_view_all')) {
       return true;
     }
-    
+
     // 获取合同信息
-    const contract = await this.contractRepository.findOne({ where: { id: contractId } });
+    const contract = await this.contractRepository.findOne({
+      where: { id: contractId },
+    });
     if (!contract) {
       return false;
     }
-    
+
     // 获取用户信息
     const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: ['department', 'department.parent'],
     });
-    
+
     if (!user) {
       return false;
     }
-    
+
     // 如果是合同的提交者，并且有查看自己权限，则可以编辑
-    if (permissions.includes('contract_data_view_own') && contract.submitter === user.username) {
+    if (
+      permissions.includes('contract_data_view_own') &&
+      contract.submitter === user.username
+    ) {
       return true;
     }
-    
+
     // 处理按区域查看权限
     if (permissions.includes('contract_data_view_by_location')) {
       // 暂时注释掉location相关的权限检查
@@ -260,7 +271,7 @@ export class ContractPermissionService {
       //   where: { id: user.dept_id },
       //   relations: ['parent'],
       // });
-      
+
       // // 如果合同有区域信息，检查是否匹配
       // if (contract.location) {
       //   if (department.type === 2 && contract.location === department.name) {
@@ -269,49 +280,54 @@ export class ContractPermissionService {
       //     return true;
       //   }
       // }
-      
+
       // 暂时直接返回false，依靠其他权限检查
       return false;
     }
-    
+
     return false;
   }
 
   // 检查用户是否有权限删除某个合同
   async canDelete(contractId: number, userId: number): Promise<boolean> {
     const permissions = await this.getUserPermissions(userId);
-    
+
     // 检查是否有删除权限
     if (!permissions.includes('contract_action_delete')) {
       return false;
     }
-    
+
     // 如果有查看所有权限，则可以删除所有合同
     if (permissions.includes('contract_data_view_all')) {
       return true;
     }
-    
+
     // 获取合同信息
-    const contract = await this.contractRepository.findOne({ where: { id: contractId } });
+    const contract = await this.contractRepository.findOne({
+      where: { id: contractId },
+    });
     if (!contract) {
       return false;
     }
-    
+
     // 获取用户信息
     const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: ['department', 'department.parent'],
     });
-    
+
     if (!user) {
       return false;
     }
-    
+
     // 如果是合同的提交者，并且有查看自己权限，则可以删除
-    if (permissions.includes('contract_data_view_own') && contract.submitter === user.username) {
+    if (
+      permissions.includes('contract_data_view_own') &&
+      contract.submitter === user.username
+    ) {
       return true;
     }
-    
+
     // 处理按区域查看权限
     if (permissions.includes('contract_data_view_by_location')) {
       // 暂时注释掉location相关的权限检查
@@ -319,7 +335,7 @@ export class ContractPermissionService {
       //   where: { id: user.dept_id },
       //   relations: ['parent'],
       // });
-      
+
       // // 如果合同有区域信息，检查是否匹配
       // if (contract.location) {
       //   if (department.type === 2 && contract.location === department.name) {
@@ -328,11 +344,11 @@ export class ContractPermissionService {
       //     return true;
       //   }
       // }
-      
+
       // 暂时直接返回false，依靠其他权限检查
       return false;
     }
-    
+
     return false;
   }
-} 
+}

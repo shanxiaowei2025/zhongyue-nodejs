@@ -1,5 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsEnum, IsOptional, IsNumber, IsEmail, IsArray } from 'class-validator';
+import {
+  IsString,
+  IsEnum,
+  IsOptional,
+  IsNumber,
+  IsEmail,
+  IsArray,
+} from 'class-validator';
 
 export class CreateDepartmentDto {
   @ApiProperty({ description: '部门名称', example: '技术部' })
@@ -85,12 +92,12 @@ export class DepartmentQueryDto {
   type?: number;
 }
 export class BulkDeleteDto {
-    @ApiProperty({ 
-      description: '要删除的部门ID数组', 
-      example: [5, 6, 7],
-      type: [Number]
-    })
-    @IsArray()
-    @IsNumber({}, { each: true })
-    ids: number[];
-  }
+  @ApiProperty({
+    description: '要删除的部门ID数组',
+    example: [5, 6, 7],
+    type: [Number],
+  })
+  @IsArray()
+  @IsNumber({}, { each: true })
+  ids: number[];
+}

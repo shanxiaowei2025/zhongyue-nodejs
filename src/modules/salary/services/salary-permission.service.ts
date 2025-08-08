@@ -29,13 +29,15 @@ export class SalaryPermissionService {
    */
   async isSalaryAdminOrSuperAdmin(userId: number): Promise<boolean> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
-    
+
     if (!user || !user.roles || user.roles.length === 0) {
       return false;
     }
 
     // 检查是否包含 salary_admin 或 super_admin 角色
-    return user.roles.includes('salary_admin') || user.roles.includes('super_admin');
+    return (
+      user.roles.includes('salary_admin') || user.roles.includes('super_admin')
+    );
   }
 
   /**
@@ -105,9 +107,9 @@ export class SalaryPermissionService {
     if (!req.user || !req.user.id) {
       throw new ForbiddenException('未能获取有效的用户身份');
     }
-    
+
     const userId = req.user.id;
-    
+
     // 根据操作类型检查不同权限
     if (req.method === 'POST') {
       return this.hasSalaryCreatePermission(userId);
@@ -153,9 +155,9 @@ export class SalaryPermissionService {
     const conditions: any[] = [];
 
     // 检查是否有任何薪资查看权限
-    const hasViewPermission = 
-      permissions.includes('salary_date_view_all') || 
-      permissions.includes('salary_date_view_by_location') || 
+    const hasViewPermission =
+      permissions.includes('salary_date_view_all') ||
+      permissions.includes('salary_date_view_by_location') ||
       permissions.includes('salary_date_view_own');
 
     // 如果没有任何查看权限，返回一个不可能满足的条件
@@ -178,9 +180,12 @@ export class SalaryPermissionService {
 
       if (department) {
         const departmentName = department.name;
-        
+
         // 检查部门名称是否以"分公司"结尾
-        if (departmentName.length >= 3 && departmentName.substring(departmentName.length - 3) === '分公司') {
+        if (
+          departmentName.length >= 3 &&
+          departmentName.substring(departmentName.length - 3) === '分公司'
+        ) {
           // 如果部门是分公司，则只能查看该分公司的记录
           conditions.push({
             department: departmentName,

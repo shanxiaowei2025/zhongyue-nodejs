@@ -1,4 +1,10 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('sys_performance_commission')
 export class PerformanceCommission {
@@ -14,10 +20,22 @@ export class PerformanceCommission {
   @Column({ comment: '户数', type: 'varchar', length: 50, nullable: true })
   householdCount: string;
 
-  @Column({ comment: '底薪(元)', type: 'decimal', precision: 10, scale: 2, nullable: true })
+  @Column({
+    comment: '底薪(元)',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+  })
   baseSalary: number;
 
-  @Column({ comment: '绩效(元)', type: 'decimal', precision: 10, scale: 2, nullable: true })
+  @Column({
+    comment: '绩效(元)',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+  })
   performance: number;
 
   @CreateDateColumn({ comment: '创建时间' })
@@ -25,4 +43,4 @@ export class PerformanceCommission {
 
   @UpdateDateColumn({ comment: '更新时间' })
   updatedAt: Date;
-} 
+}

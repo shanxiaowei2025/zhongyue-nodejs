@@ -41,16 +41,19 @@ export class SalaryBaseHistoryService {
    * @param employeeName 员工姓名（可选）
    */
   async findHistory(employeeName?: string) {
-    const queryBuilder = this.salaryBaseHistoryRepository.createQueryBuilder('history');
-    
+    const queryBuilder =
+      this.salaryBaseHistoryRepository.createQueryBuilder('history');
+
     // 如果提供了员工姓名，则按姓名筛选
     if (employeeName) {
-      queryBuilder.where('history.employeeName LIKE :name', { name: `%${employeeName}%` });
+      queryBuilder.where('history.employeeName LIKE :name', {
+        name: `%${employeeName}%`,
+      });
     }
-    
+
     // 按修改时间降序排列
     queryBuilder.orderBy('history.modifiedAt', 'DESC');
-    
+
     return await queryBuilder.getMany();
   }
 
@@ -61,34 +64,39 @@ export class SalaryBaseHistoryService {
    */
   async findAll(query: QuerySalaryBaseHistoryDto) {
     const { employeeName, modifiedBy, startDate, endDate } = query;
-    const queryBuilder = this.salaryBaseHistoryRepository.createQueryBuilder('history');
-    
+    const queryBuilder =
+      this.salaryBaseHistoryRepository.createQueryBuilder('history');
+
     // 条件查询构建
     if (employeeName) {
-      queryBuilder.andWhere('history.employeeName LIKE :employeeName', { employeeName: `%${employeeName}%` });
+      queryBuilder.andWhere('history.employeeName LIKE :employeeName', {
+        employeeName: `%${employeeName}%`,
+      });
     }
-    
+
     if (modifiedBy) {
-      queryBuilder.andWhere('history.modifiedBy LIKE :modifiedBy', { modifiedBy: `%${modifiedBy}%` });
+      queryBuilder.andWhere('history.modifiedBy LIKE :modifiedBy', {
+        modifiedBy: `%${modifiedBy}%`,
+      });
     }
-    
+
     if (startDate) {
       queryBuilder.andWhere('history.modifiedAt >= :startDate', { startDate });
     }
-    
+
     if (endDate) {
       queryBuilder.andWhere('history.modifiedAt <= :endDate', { endDate });
     }
-    
+
     // 按修改时间降序排列
     queryBuilder.orderBy('history.modifiedAt', 'DESC');
-    
+
     const total = await queryBuilder.getCount();
     const data = await queryBuilder.getMany();
-    
+
     return {
       total,
-      data
+      data,
     };
   }
-} 
+}

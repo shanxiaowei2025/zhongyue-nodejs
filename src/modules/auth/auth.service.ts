@@ -18,7 +18,11 @@ import { LoginDto } from './dto/login.dto';
 // 登录数据传输对象：定义登录需要的数据格式（用户名和密码）
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
-import { SalaryAuthDto, SetSalaryPasswordDto, ChangeSalaryPasswordDto } from './dto/salary-auth.dto';
+import {
+  SalaryAuthDto,
+  SetSalaryPasswordDto,
+  ChangeSalaryPasswordDto,
+} from './dto/salary-auth.dto';
 // 更新个人资料数据传输对象：定义更新个人资料需要的数据格式
 
 @Injectable() // 表示这是一个服务，可以被其他组件使用
@@ -31,44 +35,47 @@ export class AuthService {
   // 用户登录
   async login(loginDto: LoginDto) {
     try {
-    // 1. 验证用户名和密码
-    const user = await this.validateUser(loginDto.username, loginDto.password);
+      // 1. 验证用户名和密码
+      const user = await this.validateUser(
+        loginDto.username,
+        loginDto.password,
+      );
 
-    // 2. 如果验证失败，抛出异常
-    if (!user) {
-      throw new UnauthorizedException('用户名或密码不正确');
-    }
+      // 2. 如果验证失败，抛出异常
+      if (!user) {
+        throw new UnauthorizedException('用户名或密码不正确');
+      }
 
-    // 3. 处理用户角色
-    // 确保roles是数组格式，如果不是，转换成数组
-    const roles = Array.isArray(user.roles)
-      ? user.roles
-      : user.roles
-        ? [user.roles]
-        : ['user'];
+      // 3. 处理用户角色
+      // 确保roles是数组格式，如果不是，转换成数组
+      const roles = Array.isArray(user.roles)
+        ? user.roles
+        : user.roles
+          ? [user.roles]
+          : ['user'];
 
-    // 4. 准备JWT载荷（payload）
-    const payload = {
-      username: user.username, // 用户名
-      sub: user.id, // 用户ID
-      roles: roles, // 用户角色
-    };
+      // 4. 准备JWT载荷（payload）
+      const payload = {
+        username: user.username, // 用户名
+        sub: user.id, // 用户ID
+        roles: roles, // 用户角色
+      };
 
-    // 5. 返回登录结果
-    return {
-      // 生成JWT令牌
-      access_token: this.jwtService.sign(payload),
-      // 返回用户信息
-      user_info: {
-        id: user.id,
-        username: user.username,
-        roles: roles,
-        phone: user.phone,
-        idCardNumber: user.idCardNumber,
-        avatar: user.avatar,
-        passwordUpdatedAt: user.passwordUpdatedAt,
-      },
-    };
+      // 5. 返回登录结果
+      return {
+        // 生成JWT令牌
+        access_token: this.jwtService.sign(payload),
+        // 返回用户信息
+        user_info: {
+          id: user.id,
+          username: user.username,
+          roles: roles,
+          phone: user.phone,
+          idCardNumber: user.idCardNumber,
+          avatar: user.avatar,
+          passwordUpdatedAt: user.passwordUpdatedAt,
+        },
+      };
     } catch (error) {
       // 捕获并重新抛出异常，保持原始错误消息
       throw error;
@@ -182,7 +189,7 @@ export class AuthService {
    */
   async verifySalaryPassword(userId: number, salaryPassword: string) {
     const user = await this.usersService.findById(userId);
-    
+
     if (!user) {
       throw new UnauthorizedException('用户不存在');
     }
@@ -191,13 +198,16 @@ export class AuthService {
     if (!user.salaryPassword) {
       throw new BadRequestException('请先设置薪资查看密码');
     }
-    
+
     // 验证薪资密码
-    const isValid = await this.usersService.validateSalaryPassword(userId, salaryPassword);
+    const isValid = await this.usersService.validateSalaryPassword(
+      userId,
+      salaryPassword,
+    );
     if (!isValid) {
       throw new UnauthorizedException('薪资密码不正确');
     }
-    
+
     // 生成薪资访问令牌（短期有效，30分钟）
     const salaryPayload = {
       userId: user.id,
@@ -205,9 +215,10 @@ export class AuthService {
       type: 'salary_access',
       iat: Math.floor(Date.now() / 1000),
     };
-    
-    const salarySecret = process.env.SALARY_JWT_SECRET || process.env.JWT_SECRET + '_salary';
-    
+
+    const salarySecret =
+      process.env.SALARY_JWT_SECRET || process.env.JWT_SECRET + '_salary';
+
     return {
       salaryAccessToken: this.jwtService.sign(salaryPayload, {
         expiresIn: '30m', // 30分钟有效期
@@ -226,7 +237,7 @@ export class AuthService {
    */
   async setSalaryPassword(userId: number, salaryPassword: string) {
     const user = await this.usersService.findById(userId);
-    
+
     if (!user) {
       throw new UnauthorizedException('用户不存在');
     }
@@ -236,19 +247,19 @@ export class AuthService {
     if (hasPassword) {
       throw new BadRequestException('已设置薪资密码，请使用修改密码功能');
     }
-    
+
     // 加密薪资密码
     const hashedPassword = await this.hashPassword(salaryPassword);
-    
+
     // 保存薪资密码
     await this.usersService.updateSalaryPassword(userId, {
       salaryPassword: hashedPassword,
       salaryPasswordUpdatedAt: new Date(),
     });
-    
-    return { 
+
+    return {
       message: '薪资密码设置成功',
-      timestamp: new Date()
+      timestamp: new Date(),
     };
   }
 
@@ -259,9 +270,13 @@ export class AuthService {
    * @param newPassword 新薪资密码
    * @returns 修改结果
    */
-  async changeSalaryPassword(userId: number, currentPassword: string, newPassword: string) {
+  async changeSalaryPassword(
+    userId: number,
+    currentPassword: string,
+    newPassword: string,
+  ) {
     const user = await this.usersService.findById(userId);
-    
+
     if (!user) {
       throw new UnauthorizedException('用户不存在');
     }
@@ -273,23 +288,26 @@ export class AuthService {
     }
 
     // 验证当前薪资密码
-    const isCurrentValid = await this.usersService.validateSalaryPassword(userId, currentPassword);
+    const isCurrentValid = await this.usersService.validateSalaryPassword(
+      userId,
+      currentPassword,
+    );
     if (!isCurrentValid) {
       throw new UnauthorizedException('当前薪资密码不正确');
     }
-    
+
     // 加密新薪资密码
     const hashedNewPassword = await this.hashPassword(newPassword);
-    
+
     // 更新薪资密码
     await this.usersService.updateSalaryPassword(userId, {
       salaryPassword: hashedNewPassword,
       salaryPasswordUpdatedAt: new Date(),
     });
-    
-    return { 
+
+    return {
       message: '薪资密码修改成功',
-      timestamp: new Date()
+      timestamp: new Date(),
     };
   }
 
@@ -300,7 +318,7 @@ export class AuthService {
    */
   async checkSalaryPasswordStatus(userId: number) {
     const user = await this.usersService.findById(userId);
-    
+
     if (!user) {
       throw new UnauthorizedException('用户不存在');
     }

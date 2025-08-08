@@ -6,12 +6,9 @@ import { AttendanceDeductionController } from './attendance-deduction.controller
 import { AttendanceDeduction } from './entities/attendance-deduction.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([AttendanceDeduction]),
-    AuthModule
-  ],
+  imports: [TypeOrmModule.forFeature([AttendanceDeduction]), AuthModule],
   controllers: [AttendanceDeductionController],
   providers: [AttendanceDeductionService],
   exports: [AttendanceDeductionService],
 })
-export class AttendanceDeductionModule {} 
+export class AttendanceDeductionModule {}

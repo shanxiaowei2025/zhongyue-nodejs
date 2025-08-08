@@ -9,4 +9,4 @@ export class ChangeHistoryService {
     @InjectRepository(ChangeHistory)
     private changeHistoryRepository: Repository<ChangeHistory>,
   ) {}
-} 
+}

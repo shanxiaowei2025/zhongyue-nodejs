@@ -13,4 +13,4 @@ export class UpdateBusinessCommissionDto {
   @Type(() => Number)
   @IsOptional()
   commissionRate?: number;
-} 
+}

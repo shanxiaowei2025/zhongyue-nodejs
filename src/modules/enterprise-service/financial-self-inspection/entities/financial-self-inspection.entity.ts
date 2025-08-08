@@ -1,14 +1,21 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('sys_financial_self_inspection')
 export class FinancialSelfInspection {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ 
-    type: 'int', 
-    default: 0, 
-    comment: '状态(0：已提交未整改 1：已整改 2：抽查人确认 3：抽查人退回 4：复查人(管理员)确认 5：复查人(管理员)退回)' 
+  @Column({
+    type: 'int',
+    default: 0,
+    comment:
+      '状态(0：已提交未整改 1：已整改 2：抽查人确认 3：抽查人退回 4：复查人(管理员)确认 5：复查人(管理员)退回)',
   })
   status: number;
 
@@ -18,7 +25,12 @@ export class FinancialSelfInspection {
   @Column({ type: 'varchar', length: 255, nullable: true, comment: '企业名称' })
   companyName: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true, comment: '统一社会信用代码' })
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    comment: '统一社会信用代码',
+  })
   unifiedSocialCreditCode: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true, comment: '记账会计' })
@@ -38,19 +50,19 @@ export class FinancialSelfInspection {
 
   @Column({ type: 'simple-json', nullable: true, comment: '整改记录' })
   rectificationRecords: Record<string, any>[];
-  
+
   @Column({ type: 'simple-json', nullable: true, comment: '审核通过记录' })
   approvalRecords: Record<string, any>[];
-  
+
   @Column({ type: 'simple-json', nullable: true, comment: '审核退回记录' })
   rejectRecords: Record<string, any>[];
 
   @Column({ type: 'varchar', length: 255, nullable: true, comment: '复查人' })
   reviewer: string;
-  
+
   @Column({ type: 'simple-json', nullable: true, comment: '复查审核通过记录' })
   reviewerApprovalRecords: Record<string, any>[];
-  
+
   @Column({ type: 'simple-json', nullable: true, comment: '复查审核退回记录' })
   reviewerRejectRecords: Record<string, any>[];
 
@@ -59,4 +71,4 @@ export class FinancialSelfInspection {
 
   @UpdateDateColumn({ comment: '更新时间' })
   updatedAt: Date;
-} 
+}

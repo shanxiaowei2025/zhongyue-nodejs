@@ -44,7 +44,13 @@ export class Employee {
   @ApiProperty({ description: '是否离职', default: false })
   isResigned: boolean;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '工资基数' })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    comment: '工资基数',
+  })
   @ApiProperty({ description: '工资基数', required: false })
   baseSalary: number;
 
@@ -91,4 +97,4 @@ export class Employee {
   @UpdateDateColumn({ comment: '更新时间' })
   @ApiProperty({ description: '更新时间' })
   updatedAt: Date;
-} 
+}

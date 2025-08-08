@@ -8,52 +8,52 @@ export class CreateSocialInsuranceDto {
   @IsOptional()
   name?: string;
 
-  @ApiProperty({ description: '个人医疗', required: false, example: 100.00 })
+  @ApiProperty({ description: '个人医疗', required: false, example: 100.0 })
   @IsNumber()
   @IsOptional()
   personalMedical?: number;
 
-  @ApiProperty({ description: '个人养老', required: false, example: 200.00 })
+  @ApiProperty({ description: '个人养老', required: false, example: 200.0 })
   @IsNumber()
   @IsOptional()
   personalPension?: number;
 
-  @ApiProperty({ description: '个人失业', required: false, example: 50.00 })
+  @ApiProperty({ description: '个人失业', required: false, example: 50.0 })
   @IsNumber()
   @IsOptional()
   personalUnemployment?: number;
 
-  @ApiProperty({ description: '社保个人合计', required: false, example: 350.00 })
+  @ApiProperty({ description: '社保个人合计', required: false, example: 350.0 })
   @IsNumber()
   @IsOptional()
   personalTotal?: number;
 
-  @ApiProperty({ description: '公司医疗', required: false, example: 200.00 })
+  @ApiProperty({ description: '公司医疗', required: false, example: 200.0 })
   @IsNumber()
   @IsOptional()
   companyMedical?: number;
 
-  @ApiProperty({ description: '公司养老', required: false, example: 400.00 })
+  @ApiProperty({ description: '公司养老', required: false, example: 400.0 })
   @IsNumber()
   @IsOptional()
   companyPension?: number;
 
-  @ApiProperty({ description: '公司失业', required: false, example: 100.00 })
+  @ApiProperty({ description: '公司失业', required: false, example: 100.0 })
   @IsNumber()
   @IsOptional()
   companyUnemployment?: number;
 
-  @ApiProperty({ description: '公司工伤', required: false, example: 50.00 })
+  @ApiProperty({ description: '公司工伤', required: false, example: 50.0 })
   @IsNumber()
   @IsOptional()
   companyInjury?: number;
 
-  @ApiProperty({ description: '公司承担合计', required: false, example: 750.00 })
+  @ApiProperty({ description: '公司承担合计', required: false, example: 750.0 })
   @IsNumber()
   @IsOptional()
   companyTotal?: number;
 
-  @ApiProperty({ description: '总合计', required: false, example: 1100.00 })
+  @ApiProperty({ description: '总合计', required: false, example: 1100.0 })
   @IsNumber()
   @IsOptional()
   grandTotal?: number;
@@ -68,4 +68,4 @@ export class CreateSocialInsuranceDto {
   @IsOptional()
   @IsString()
   remark?: string;
-} 
+}

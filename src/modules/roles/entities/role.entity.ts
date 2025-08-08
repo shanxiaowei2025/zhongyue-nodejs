@@ -1,4 +1,11 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+} from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Permission } from '../../permissions/entities/permission.entity';
 
@@ -17,10 +24,10 @@ export class Role {
   code: string;
 
   @ApiProperty({ description: '状态', enum: [0, 1] })
-  @Column({ 
+  @Column({
     type: 'int',
     default: 1,
-    comment: '状态：0-禁用，1-启用' 
+    comment: '状态：0-禁用，1-启用',
   })
   status: number;
 
@@ -37,8 +44,8 @@ export class Role {
   update_time: Date;
 
   // 角色与权限的一对多关系
-  @OneToMany(() => Permission, permission => permission.role, {
+  @OneToMany(() => Permission, (permission) => permission.role, {
     cascade: true, // 级联操作，创建/更新角色时自动处理权限
   })
   permissions: Permission[];
-} 
+}

@@ -9,4 +9,4 @@ export class UpdateAttendanceDto extends PartialType(CreateAttendanceDto) {
   @IsPositive()
   @Type(() => Number)
   id: number;
-} 
+}

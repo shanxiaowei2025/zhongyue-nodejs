@@ -63,17 +63,18 @@ export class QueryCustomerDto {
   @IsString()
   licenseType?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: '创建开始日期（筛选创建时间开始日期，格式：YYYY-MM-DD）',
-    example: '2023-01-01'
+    example: '2023-01-01',
   })
   @IsOptional()
   @IsString()
   startDate?: string;
 
-  @ApiPropertyOptional({ 
-    description: '创建结束日期（筛选创建时间结束日期，当与startDate相同时，会查询整天的数据，格式：YYYY-MM-DD）',
-    example: '2023-12-31'
+  @ApiPropertyOptional({
+    description:
+      '创建结束日期（筛选创建时间结束日期，当与startDate相同时，会查询整天的数据，格式：YYYY-MM-DD）',
+    example: '2023-12-31',
   })
   @IsOptional()
   @IsString()
@@ -93,7 +94,7 @@ export class QueryCustomerDto {
   @IsOptional()
   @IsString()
   remarks?: string;
-  
+
   @ApiPropertyOptional({ description: '归属地' })
   @IsOptional()
   @IsString()

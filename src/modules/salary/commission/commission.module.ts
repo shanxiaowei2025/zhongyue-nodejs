@@ -22,4 +22,4 @@ import {
   providers: [CommissionService],
   exports: [CommissionService],
 })
-export class CommissionModule {} 
+export class CommissionModule {}

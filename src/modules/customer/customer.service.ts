@@ -65,22 +65,28 @@ export class CustomerService {
     // 检查统一社会信用代码是否已存在
     if (createCustomerDto.unifiedSocialCreditCode) {
       const existingCustomer = await this.customerRepository.findOne({
-        where: { unifiedSocialCreditCode: createCustomerDto.unifiedSocialCreditCode }
+        where: {
+          unifiedSocialCreditCode: createCustomerDto.unifiedSocialCreditCode,
+        },
       });
-      
+
       if (existingCustomer) {
-        throw new ForbiddenException(`统一社会信用代码 ${createCustomerDto.unifiedSocialCreditCode} 已存在，不能重复创建`);
+        throw new ForbiddenException(
+          `统一社会信用代码 ${createCustomerDto.unifiedSocialCreditCode} 已存在，不能重复创建`,
+        );
       }
     }
 
     // 检查公司名称是否已存在
     if (createCustomerDto.companyName) {
       const existingCustomerByName = await this.customerRepository.findOne({
-        where: { companyName: createCustomerDto.companyName }
+        where: { companyName: createCustomerDto.companyName },
       });
-      
+
       if (existingCustomerByName) {
-        throw new ForbiddenException(`公司名称 ${createCustomerDto.companyName} 已存在，不能重复创建`);
+        throw new ForbiddenException(
+          `公司名称 ${createCustomerDto.companyName} 已存在，不能重复创建`,
+        );
       }
     }
 
@@ -99,7 +105,7 @@ export class CustomerService {
 
     // 保存客户信息
     const savedCustomer = await this.customerRepository.save(customer);
-    
+
     try {
       // 创建服务历程记录
       await this.serviceHistoryService.createFromCustomer(savedCustomer);
@@ -140,24 +146,32 @@ export class CustomerService {
     // 首先检查用户是否是管理员或超级管理员
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      select: ['id', 'username', 'roles']
+      select: ['id', 'username', 'roles'],
     });
-    
-    const isAdmin = user && user.roles && 
+
+    const isAdmin =
+      user &&
+      user.roles &&
       (user.roles.includes('admin') || user.roles.includes('super_admin'));
-    
+
     // 如果不是管理员，添加状态过滤条件
     if (!isAdmin) {
-      queryBuilder.andWhere('(customer.businessStatus != :lostStatus OR customer.businessStatus IS NULL)', 
-        { lostStatus: 'lost' });
-      queryBuilder.andWhere('(customer.enterpriseStatus != :cancelledStatus OR customer.enterpriseStatus IS NULL)', 
-        { cancelledStatus: 'cancelled' });
+      queryBuilder.andWhere(
+        '(customer.businessStatus != :lostStatus OR customer.businessStatus IS NULL)',
+        { lostStatus: 'lost' },
+      );
+      queryBuilder.andWhere(
+        '(customer.enterpriseStatus != :cancelledStatus OR customer.enterpriseStatus IS NULL)',
+        { cancelledStatus: 'cancelled' },
+      );
     }
 
     // 添加基础查询条件
     if (keyword !== undefined) {
       if (keyword === '') {
-        queryBuilder.andWhere('(customer.companyName IS NULL OR customer.companyName = \'\')');
+        queryBuilder.andWhere(
+          "(customer.companyName IS NULL OR customer.companyName = '')",
+        );
       } else {
         queryBuilder.andWhere('customer.companyName LIKE :keyword', {
           keyword: `%${keyword}%`,
@@ -167,17 +181,24 @@ export class CustomerService {
 
     if (unifiedSocialCreditCode !== undefined) {
       if (unifiedSocialCreditCode === '') {
-        queryBuilder.andWhere('(customer.unifiedSocialCreditCode IS NULL OR customer.unifiedSocialCreditCode = \'\')');
+        queryBuilder.andWhere(
+          "(customer.unifiedSocialCreditCode IS NULL OR customer.unifiedSocialCreditCode = '')",
+        );
       } else {
-        queryBuilder.andWhere('customer.unifiedSocialCreditCode LIKE :unifiedSocialCreditCode', {
-          unifiedSocialCreditCode: `%${unifiedSocialCreditCode}%`,
-        });
+        queryBuilder.andWhere(
+          'customer.unifiedSocialCreditCode LIKE :unifiedSocialCreditCode',
+          {
+            unifiedSocialCreditCode: `%${unifiedSocialCreditCode}%`,
+          },
+        );
       }
     }
 
     if (consultantAccountant !== undefined) {
       if (consultantAccountant === '') {
-        queryBuilder.andWhere('(customer.consultantAccountant IS NULL OR customer.consultantAccountant = \'\')');
+        queryBuilder.andWhere(
+          "(customer.consultantAccountant IS NULL OR customer.consultantAccountant = '')",
+        );
       } else {
         queryBuilder.andWhere(
           'customer.consultantAccountant LIKE :consultantAccountant',
@@ -190,7 +211,9 @@ export class CustomerService {
 
     if (bookkeepingAccountant !== undefined) {
       if (bookkeepingAccountant === '') {
-        queryBuilder.andWhere('(customer.bookkeepingAccountant IS NULL OR customer.bookkeepingAccountant = \'\')');
+        queryBuilder.andWhere(
+          "(customer.bookkeepingAccountant IS NULL OR customer.bookkeepingAccountant = '')",
+        );
       } else {
         queryBuilder.andWhere(
           'customer.bookkeepingAccountant LIKE :bookkeepingAccountant',
@@ -203,7 +226,9 @@ export class CustomerService {
 
     if (taxBureau !== undefined) {
       if (taxBureau === '') {
-        queryBuilder.andWhere('(customer.taxBureau IS NULL OR customer.taxBureau = \'\')');
+        queryBuilder.andWhere(
+          "(customer.taxBureau IS NULL OR customer.taxBureau = '')",
+        );
       } else {
         queryBuilder.andWhere('customer.taxBureau LIKE :taxBureau', {
           taxBureau: `%${taxBureau}%`,
@@ -214,7 +239,9 @@ export class CustomerService {
     if (enterpriseType !== undefined) {
       if (enterpriseType === '') {
         // 如果参数值为空字符串，则查询字段为 NULL 的记录
-        queryBuilder.andWhere('(customer.enterpriseType IS NULL OR customer.enterpriseType = \'\')');
+        queryBuilder.andWhere(
+          "(customer.enterpriseType IS NULL OR customer.enterpriseType = '')",
+        );
       } else {
         // 否则按照原来的方式查询
         queryBuilder.andWhere('customer.enterpriseType LIKE :enterpriseType', {
@@ -225,7 +252,9 @@ export class CustomerService {
 
     if (industryCategory !== undefined) {
       if (industryCategory === '') {
-        queryBuilder.andWhere('(customer.industryCategory IS NULL OR customer.industryCategory = \'\')');
+        queryBuilder.andWhere(
+          "(customer.industryCategory IS NULL OR customer.industryCategory = '')",
+        );
       } else {
         queryBuilder.andWhere(
           'customer.industryCategory LIKE :industryCategory',
@@ -238,7 +267,9 @@ export class CustomerService {
 
     if (enterpriseStatus !== undefined) {
       if (enterpriseStatus === '') {
-        queryBuilder.andWhere('(customer.enterpriseStatus IS NULL OR customer.enterpriseStatus = \'\')');
+        queryBuilder.andWhere(
+          "(customer.enterpriseStatus IS NULL OR customer.enterpriseStatus = '')",
+        );
       } else {
         queryBuilder.andWhere('customer.enterpriseStatus = :enterpriseStatus', {
           enterpriseStatus,
@@ -248,7 +279,9 @@ export class CustomerService {
 
     if (customerLevel !== undefined) {
       if (customerLevel === '') {
-        queryBuilder.andWhere('(customer.customerLevel IS NULL OR customer.customerLevel = \'\')');
+        queryBuilder.andWhere(
+          "(customer.customerLevel IS NULL OR customer.customerLevel = '')",
+        );
       } else {
         queryBuilder.andWhere('customer.customerLevel = :customerLevel', {
           customerLevel,
@@ -258,7 +291,9 @@ export class CustomerService {
 
     if (businessStatus !== undefined) {
       if (businessStatus === '') {
-        queryBuilder.andWhere('(customer.businessStatus IS NULL OR customer.businessStatus = \'\')');
+        queryBuilder.andWhere(
+          "(customer.businessStatus IS NULL OR customer.businessStatus = '')",
+        );
       } else {
         queryBuilder.andWhere('customer.businessStatus = :businessStatus', {
           businessStatus,
@@ -268,7 +303,9 @@ export class CustomerService {
 
     if (location !== undefined) {
       if (location === '') {
-        queryBuilder.andWhere('(customer.location IS NULL OR customer.location = \'\')');
+        queryBuilder.andWhere(
+          "(customer.location IS NULL OR customer.location = '')",
+        );
       } else {
         queryBuilder.andWhere('customer.location LIKE :location', {
           location: `%${location}%`,
@@ -279,7 +316,9 @@ export class CustomerService {
     // 添加对JSON字段的搜索条件
     if (contributorName !== undefined) {
       if (contributorName === '') {
-        queryBuilder.andWhere('(customer.paidInCapital IS NULL OR JSON_LENGTH(customer.paidInCapital) = 0 OR customer.paidInCapital = \'\')');
+        queryBuilder.andWhere(
+          "(customer.paidInCapital IS NULL OR JSON_LENGTH(customer.paidInCapital) = 0 OR customer.paidInCapital = '')",
+        );
       } else {
         // MySQL中搜索JSON数组中的对象字段
         queryBuilder.andWhere(
@@ -293,7 +332,9 @@ export class CustomerService {
 
     if (licenseType !== undefined) {
       if (licenseType === '') {
-        queryBuilder.andWhere('(customer.administrativeLicense IS NULL OR JSON_LENGTH(customer.administrativeLicense) = 0 OR customer.administrativeLicense = \'\')');
+        queryBuilder.andWhere(
+          "(customer.administrativeLicense IS NULL OR JSON_LENGTH(customer.administrativeLicense) = 0 OR customer.administrativeLicense = '')",
+        );
       } else {
         // MySQL中搜索JSON数组中的对象字段
         queryBuilder.andWhere(
@@ -311,7 +352,7 @@ export class CustomerService {
       // 对于结束日期，设置为当天的23:59:59.999，以包含整天
       const end = new Date(endDate);
       end.setHours(23, 59, 59, 999);
-      
+
       queryBuilder.andWhere(
         'customer.createTime BETWEEN :startDate AND :endDate',
         {
@@ -319,8 +360,10 @@ export class CustomerService {
           endDate: end,
         },
       );
-      
-      console.log(`客户查询日期范围: ${start.toISOString()} - ${end.toISOString()}`);
+
+      console.log(
+        `客户查询日期范围: ${start.toISOString()} - ${end.toISOString()}`,
+      );
     }
 
     // 获取权限过滤条件
@@ -392,10 +435,12 @@ export class CustomerService {
     // 检查用户是否是管理员或超级管理员
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      select: ['id', 'username', 'roles']
+      select: ['id', 'username', 'roles'],
     });
-    
-    const isAdmin = user && user.roles && 
+
+    const isAdmin =
+      user &&
+      user.roles &&
       (user.roles.includes('admin') || user.roles.includes('super_admin'));
 
     // 先检查用户是否有权限查看任何客户
@@ -420,8 +465,11 @@ export class CustomerService {
     }
 
     // 如果不是管理员，检查是否可以查看该状态的客户
-    if (!isAdmin && 
-        (customer.businessStatus === 'lost' || customer.enterpriseStatus === 'cancelled')) {
+    if (
+      !isAdmin &&
+      (customer.businessStatus === 'lost' ||
+        customer.enterpriseStatus === 'cancelled')
+    ) {
       throw new ForbiddenException('您没有权限查看该客户信息');
     }
 
@@ -475,38 +523,39 @@ export class CustomerService {
 
     // 如果更新了统一社会信用代码，检查是否与其他客户重复
     if (
-      updateCustomerDto.unifiedSocialCreditCode && 
-      updateCustomerDto.unifiedSocialCreditCode !== existingCustomer.unifiedSocialCreditCode
+      updateCustomerDto.unifiedSocialCreditCode &&
+      updateCustomerDto.unifiedSocialCreditCode !==
+        existingCustomer.unifiedSocialCreditCode
     ) {
       const duplicateCustomer = await this.customerRepository.findOne({
-        where: { 
+        where: {
           unifiedSocialCreditCode: updateCustomerDto.unifiedSocialCreditCode,
-          id: Not(id) // 排除当前客户自身
-        }
+          id: Not(id), // 排除当前客户自身
+        },
       });
 
       if (duplicateCustomer) {
         throw new ForbiddenException(
-          `统一社会信用代码 ${updateCustomerDto.unifiedSocialCreditCode} 已存在，不能重复使用`
+          `统一社会信用代码 ${updateCustomerDto.unifiedSocialCreditCode} 已存在，不能重复使用`,
         );
       }
     }
 
     // 如果更新了公司名称，检查是否与其他客户重复
     if (
-      updateCustomerDto.companyName && 
+      updateCustomerDto.companyName &&
       updateCustomerDto.companyName !== existingCustomer.companyName
     ) {
       const duplicateCustomerByName = await this.customerRepository.findOne({
-        where: { 
+        where: {
           companyName: updateCustomerDto.companyName,
-          id: Not(id) // 排除当前客户自身
-        }
+          id: Not(id), // 排除当前客户自身
+        },
       });
 
       if (duplicateCustomerByName) {
         throw new ForbiddenException(
-          `公司名称 ${updateCustomerDto.companyName} 已存在，不能重复使用`
+          `公司名称 ${updateCustomerDto.companyName} 已存在，不能重复使用`,
         );
       }
     }
@@ -521,26 +570,39 @@ export class CustomerService {
     }
 
     // 检查关键字段是否有变化，以决定是否需要创建服务历程记录
-    const needCreateServiceHistory = 
-      updateCustomerDto.consultantAccountant !== undefined && updateCustomerDto.consultantAccountant !== existingCustomer.consultantAccountant ||
-      updateCustomerDto.bookkeepingAccountant !== undefined && updateCustomerDto.bookkeepingAccountant !== existingCustomer.bookkeepingAccountant ||
-      updateCustomerDto.invoiceOfficer !== undefined && updateCustomerDto.invoiceOfficer !== existingCustomer.invoiceOfficer ||
-      updateCustomerDto.enterpriseStatus !== undefined && updateCustomerDto.enterpriseStatus !== existingCustomer.enterpriseStatus ||
-      updateCustomerDto.businessStatus !== undefined && updateCustomerDto.businessStatus !== existingCustomer.businessStatus;
+    const needCreateServiceHistory =
+      (updateCustomerDto.consultantAccountant !== undefined &&
+        updateCustomerDto.consultantAccountant !==
+          existingCustomer.consultantAccountant) ||
+      (updateCustomerDto.bookkeepingAccountant !== undefined &&
+        updateCustomerDto.bookkeepingAccountant !==
+          existingCustomer.bookkeepingAccountant) ||
+      (updateCustomerDto.invoiceOfficer !== undefined &&
+        updateCustomerDto.invoiceOfficer !== existingCustomer.invoiceOfficer) ||
+      (updateCustomerDto.enterpriseStatus !== undefined &&
+        updateCustomerDto.enterpriseStatus !==
+          existingCustomer.enterpriseStatus) ||
+      (updateCustomerDto.businessStatus !== undefined &&
+        updateCustomerDto.businessStatus !== existingCustomer.businessStatus);
 
     // 更新客户信息
     await this.customerRepository.update(id, updateCustomerDto);
 
     // 获取更新后的客户信息
     const updatedCustomer = await this.findOne(id, userId);
-    
+
     // 如果关键字段有变化，创建服务历程记录
     if (needCreateServiceHistory) {
       try {
         await this.serviceHistoryService.createFromCustomer(updatedCustomer);
-        this.logger.log(`已为客户 ${updatedCustomer.companyName} 创建服务历程记录`);
+        this.logger.log(
+          `已为客户 ${updatedCustomer.companyName} 创建服务历程记录`,
+        );
       } catch (error) {
-        this.logger.error(`创建服务历程记录失败: ${error.message}`, error.stack);
+        this.logger.error(
+          `创建服务历程记录失败: ${error.message}`,
+          error.stack,
+        );
         // 不阻止更新主流程，即使服务历程创建失败
       }
     }
@@ -571,42 +633,52 @@ export class CustomerService {
   async exportToCsv(query: any, userId: number): Promise<string> {
     try {
       // 首先获取查询权限
-      const permissionConditions = await this.customerPermissionService.buildCustomerQueryFilter(userId);
-      
+      const permissionConditions =
+        await this.customerPermissionService.buildCustomerQueryFilter(userId);
+
       console.log('导出CSV - 权限条件:', JSON.stringify(permissionConditions));
-      
+
       // 如果权限条件是 {id: -1}，说明用户没有任何查看权限
       if (
-        !Array.isArray(permissionConditions) && 
+        !Array.isArray(permissionConditions) &&
         permissionConditions.id === -1
       ) {
         throw new ForbiddenException('您没有权限导出客户数据');
       }
-      
+
       // 检查用户是否是管理员或超级管理员
       const user = await this.userRepository.findOne({
         where: { id: userId },
-        select: ['id', 'username', 'roles']
+        select: ['id', 'username', 'roles'],
       });
-      
-      const isAdmin = user && user.roles && 
+
+      const isAdmin =
+        user &&
+        user.roles &&
         (user.roles.includes('admin') || user.roles.includes('super_admin'));
-      
+
       // 创建查询构建器
-      const queryBuilder = this.customerRepository.createQueryBuilder('customer');
-      
+      const queryBuilder =
+        this.customerRepository.createQueryBuilder('customer');
+
       // 如果不是管理员，添加状态过滤条件
       if (!isAdmin) {
-        queryBuilder.andWhere('(customer.businessStatus != :lostStatus OR customer.businessStatus IS NULL)', 
-          { lostStatus: 'lost' });
-        queryBuilder.andWhere('(customer.enterpriseStatus != :cancelledStatus OR customer.enterpriseStatus IS NULL)', 
-          { cancelledStatus: 'cancelled' });
+        queryBuilder.andWhere(
+          '(customer.businessStatus != :lostStatus OR customer.businessStatus IS NULL)',
+          { lostStatus: 'lost' },
+        );
+        queryBuilder.andWhere(
+          '(customer.enterpriseStatus != :cancelledStatus OR customer.enterpriseStatus IS NULL)',
+          { cancelledStatus: 'cancelled' },
+        );
       }
-      
+
       // 添加过滤条件，参考findAll方法的查询条件部分
       if (query.keyword !== undefined) {
         if (query.keyword === '') {
-          queryBuilder.andWhere('(customer.companyName IS NULL OR customer.companyName = \'\')');
+          queryBuilder.andWhere(
+            "(customer.companyName IS NULL OR customer.companyName = '')",
+          );
         } else {
           queryBuilder.andWhere(
             '(customer.companyName LIKE :keyword OR customer.unifiedSocialCreditCode LIKE :keyword)',
@@ -619,59 +691,83 @@ export class CustomerService {
 
       if (query.unifiedSocialCreditCode !== undefined) {
         if (query.unifiedSocialCreditCode === '') {
-          queryBuilder.andWhere('(customer.unifiedSocialCreditCode IS NULL OR customer.unifiedSocialCreditCode = \'\')');
+          queryBuilder.andWhere(
+            "(customer.unifiedSocialCreditCode IS NULL OR customer.unifiedSocialCreditCode = '')",
+          );
         } else {
-          queryBuilder.andWhere('customer.unifiedSocialCreditCode LIKE :unifiedSocialCreditCode', {
-            unifiedSocialCreditCode: `%${query.unifiedSocialCreditCode}%`,
-          });
+          queryBuilder.andWhere(
+            'customer.unifiedSocialCreditCode LIKE :unifiedSocialCreditCode',
+            {
+              unifiedSocialCreditCode: `%${query.unifiedSocialCreditCode}%`,
+            },
+          );
         }
       }
 
       if (query.consultantAccountant !== undefined) {
         if (query.consultantAccountant === '') {
-          queryBuilder.andWhere('(customer.consultantAccountant IS NULL OR customer.consultantAccountant = \'\')');
+          queryBuilder.andWhere(
+            "(customer.consultantAccountant IS NULL OR customer.consultantAccountant = '')",
+          );
         } else {
-          queryBuilder.andWhere('customer.consultantAccountant = :consultantAccountant', {
-            consultantAccountant: query.consultantAccountant,
-          });
+          queryBuilder.andWhere(
+            'customer.consultantAccountant = :consultantAccountant',
+            {
+              consultantAccountant: query.consultantAccountant,
+            },
+          );
         }
       }
 
       if (query.bookkeepingAccountant !== undefined) {
         if (query.bookkeepingAccountant === '') {
-          queryBuilder.andWhere('(customer.bookkeepingAccountant IS NULL OR customer.bookkeepingAccountant = \'\')');
+          queryBuilder.andWhere(
+            "(customer.bookkeepingAccountant IS NULL OR customer.bookkeepingAccountant = '')",
+          );
         } else {
-          queryBuilder.andWhere('customer.bookkeepingAccountant = :bookkeepingAccountant', {
-            bookkeepingAccountant: query.bookkeepingAccountant,
-          });
+          queryBuilder.andWhere(
+            'customer.bookkeepingAccountant = :bookkeepingAccountant',
+            {
+              bookkeepingAccountant: query.bookkeepingAccountant,
+            },
+          );
         }
       }
 
       if (query.taxBureau !== undefined) {
         if (query.taxBureau === '') {
-          queryBuilder.andWhere('(customer.taxBureau IS NULL OR customer.taxBureau = \'\')');
+          queryBuilder.andWhere(
+            "(customer.taxBureau IS NULL OR customer.taxBureau = '')",
+          );
         } else {
           queryBuilder.andWhere('customer.taxBureau LIKE :taxBureau', {
             taxBureau: `%${query.taxBureau}%`,
           });
         }
       }
-      
+
       if (query.enterpriseType !== undefined) {
         if (query.enterpriseType === '') {
           // 如果参数值为空字符串，则查询字段为 NULL 的记录
-          queryBuilder.andWhere('(customer.enterpriseType IS NULL OR customer.enterpriseType = \'\')');
+          queryBuilder.andWhere(
+            "(customer.enterpriseType IS NULL OR customer.enterpriseType = '')",
+          );
         } else {
           // 否则按照原来的方式查询
-          queryBuilder.andWhere('customer.enterpriseType LIKE :enterpriseType', {
-            enterpriseType: `%${query.enterpriseType}%`,
-          });
+          queryBuilder.andWhere(
+            'customer.enterpriseType LIKE :enterpriseType',
+            {
+              enterpriseType: `%${query.enterpriseType}%`,
+            },
+          );
         }
       }
 
       if (query.industryCategory !== undefined) {
         if (query.industryCategory === '') {
-          queryBuilder.andWhere('(customer.industryCategory IS NULL OR customer.industryCategory = \'\')');
+          queryBuilder.andWhere(
+            "(customer.industryCategory IS NULL OR customer.industryCategory = '')",
+          );
         } else {
           queryBuilder.andWhere(
             'customer.industryCategory LIKE :industryCategory',
@@ -684,17 +780,24 @@ export class CustomerService {
 
       if (query.enterpriseStatus !== undefined) {
         if (query.enterpriseStatus === '') {
-          queryBuilder.andWhere('(customer.enterpriseStatus IS NULL OR customer.enterpriseStatus = \'\')');
+          queryBuilder.andWhere(
+            "(customer.enterpriseStatus IS NULL OR customer.enterpriseStatus = '')",
+          );
         } else {
-          queryBuilder.andWhere('customer.enterpriseStatus = :enterpriseStatus', {
-            enterpriseStatus: query.enterpriseStatus,
-          });
+          queryBuilder.andWhere(
+            'customer.enterpriseStatus = :enterpriseStatus',
+            {
+              enterpriseStatus: query.enterpriseStatus,
+            },
+          );
         }
       }
 
       if (query.customerLevel !== undefined) {
         if (query.customerLevel === '') {
-          queryBuilder.andWhere('(customer.customerLevel IS NULL OR customer.customerLevel = \'\')');
+          queryBuilder.andWhere(
+            "(customer.customerLevel IS NULL OR customer.customerLevel = '')",
+          );
         } else {
           queryBuilder.andWhere('customer.customerLevel = :customerLevel', {
             customerLevel: query.customerLevel,
@@ -704,7 +807,9 @@ export class CustomerService {
 
       if (query.location !== undefined) {
         if (query.location === '') {
-          queryBuilder.andWhere('(customer.location IS NULL OR customer.location = \'\')');
+          queryBuilder.andWhere(
+            "(customer.location IS NULL OR customer.location = '')",
+          );
         } else {
           queryBuilder.andWhere('customer.location LIKE :location', {
             location: `%${query.location}%`,
@@ -718,7 +823,7 @@ export class CustomerService {
         // 对于结束日期，设置为当天的23:59:59.999，以包含整天
         const end = new Date(query.endDate);
         end.setHours(23, 59, 59, 999);
-        
+
         queryBuilder.andWhere(
           'customer.createTime BETWEEN :startDate AND :endDate',
           {
@@ -726,10 +831,12 @@ export class CustomerService {
             endDate: end,
           },
         );
-        
-        console.log(`客户导出日期范围: ${start.toISOString()} - ${end.toISOString()}`);
+
+        console.log(
+          `客户导出日期范围: ${start.toISOString()} - ${end.toISOString()}`,
+        );
       }
-      
+
       // 处理权限条件
       if (Array.isArray(permissionConditions)) {
         // 如果是数组，说明有多个 OR 条件
@@ -742,13 +849,13 @@ export class CustomerService {
           // 如果没有空对象，添加权限条件
           const allParams = {};
           const orConditions = permissionConditions.map((condition, index) => {
-              const conditions = [];
+            const conditions = [];
 
-              Object.entries(condition).forEach(([key, value]) => {
-                  const paramKey = `perm_${key}_${index}`;
-                  allParams[paramKey] = value;
-                  conditions.push(`customer.${key} = :${paramKey}`);
-              });
+            Object.entries(condition).forEach(([key, value]) => {
+              const paramKey = `perm_${key}_${index}`;
+              allParams[paramKey] = value;
+              conditions.push(`customer.${key} = :${paramKey}`);
+            });
 
             return conditions.join(' AND ');
           });
@@ -762,17 +869,17 @@ export class CustomerService {
       } else if (Object.keys(permissionConditions).length > 0) {
         // 如果不是数组且不是空对象，添加权限条件
         Object.entries(permissionConditions).forEach(([key, value]) => {
-            queryBuilder.andWhere(`customer.${key} = :${key}`, { [key]: value });
-          });
+          queryBuilder.andWhere(`customer.${key} = :${key}`, { [key]: value });
+        });
       }
-      
+
       console.log('导出CSV - 最终SQL:', queryBuilder.getSql());
       console.log('导出CSV - 最终参数:', queryBuilder.getParameters());
-      
+
       // 查询数据
       const customers = await queryBuilder.getMany();
       console.log(`导出CSV - 查询到${customers.length}条记录`);
-      
+
       // 定义要导出的字段映射
       const fieldMapping = {
         companyName: '企业名称',
@@ -786,32 +893,32 @@ export class CustomerService {
         enterpriseStatus: '企业状态',
         customerLevel: '客户分级',
         sealStorageNumber: '章存放编号',
-        paperArchiveNumber: '纸质资料档案编号'
+        paperArchiveNumber: '纸质资料档案编号',
       };
-      
+
       // 处理导出数据，确保JSON字段正确转换
-      const exportData = customers.map(customer => {
+      const exportData = customers.map((customer) => {
         const item: any = {};
-        
+
         // 只导出需要的字段
-        Object.keys(fieldMapping).forEach(field => {
+        Object.keys(fieldMapping).forEach((field) => {
           item[field] = customer[field] || '';
         });
-        
+
         return item;
       });
-      
+
       // 使用json2csv库来生成CSV
       try {
         const Parser = require('json2csv').Parser;
-        const fields = Object.keys(fieldMapping).map(field => ({
+        const fields = Object.keys(fieldMapping).map((field) => ({
           label: fieldMapping[field],
-          value: field
+          value: field,
         }));
-        
+
         const parser = new Parser({ fields });
         // 添加UTF-8 BOM标记确保Excel正确识别中文
-        return "\uFEFF" + parser.parse(exportData);
+        return '\uFEFF' + parser.parse(exportData);
       } catch (err) {
         console.error('导出CSV转换失败:', err);
         throw new BadRequestException(`导出CSV失败: ${err.message}`);
@@ -838,10 +945,13 @@ export class CustomerService {
   }
 
   // 导入Excel客户数据
-  async importCustomers(file: Express.Multer.File, userId: number): Promise<{ 
-    success: boolean; 
-    message: string; 
-    count?: number; 
+  async importCustomers(
+    file: Express.Multer.File,
+    userId: number,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    count?: number;
     failedRecords?: Array<{
       row: number;
       companyName: string;
@@ -851,18 +961,20 @@ export class CustomerService {
   }> {
     try {
       this.logger.log(`开始执行导入操作，用户ID: ${userId}`);
-      
+
       // 使用批量操作权限检查方法，避免触发ID查询
-      const hasPermission = await this.customerPermissionService.checkBatchOperationPermission(
-        userId, 
-        'customer_action_import'
-      ) || await this.customerPermissionService.checkBatchOperationPermission(
-        userId, 
-        'customer_action_create'
-      );
-      
+      const hasPermission =
+        (await this.customerPermissionService.checkBatchOperationPermission(
+          userId,
+          'customer_action_import',
+        )) ||
+        (await this.customerPermissionService.checkBatchOperationPermission(
+          userId,
+          'customer_action_create',
+        ));
+
       this.logger.log(`权限检查结果: ${hasPermission}`);
-      
+
       if (!hasPermission) {
         throw new ForbiddenException('没有导入客户数据的权限');
       }
@@ -887,51 +999,74 @@ export class CustomerService {
         // 使用完整路径
         const pythonPath = '/usr/bin/python3';
         const pipPath = '/usr/bin/pip3';
-        
+
         // 尝试安装必要的Python依赖
         this.logger.log('检查Python环境...');
         try {
           // 检查Python版本
-          const { stdout: pythonVersion } = await execPromise(`${pythonPath} --version`);
+          const { stdout: pythonVersion } = await execPromise(
+            `${pythonPath} --version`,
+          );
           this.logger.log(`找到Python版本: ${pythonVersion.trim()}`);
-          
+
           // 列出已安装的包
           this.logger.log('列出已安装的Python包...');
-          const { stdout: installedPackages } = await execPromise(`${pipPath} list`);
+          const { stdout: installedPackages } = await execPromise(
+            `${pipPath} list`,
+          );
           this.logger.debug(`已安装的包: ${installedPackages}`);
-          
+
           // 检查是否需要安装缺少的包
-          const requiredPackages = ['pandas', 'sqlalchemy', 'pymysql', 'openpyxl'];
+          const requiredPackages = [
+            'pandas',
+            'sqlalchemy',
+            'pymysql',
+            'openpyxl',
+          ];
           const missingPackages = [];
-          
+
           for (const pkg of requiredPackages) {
             if (!installedPackages.includes(pkg)) {
               missingPackages.push(pkg);
             }
           }
-          
+
           if (missingPackages.length > 0) {
             // 尝试安装依赖包
-            this.logger.log(`尝试安装缺少的Python依赖: ${missingPackages.join(', ')}...`);
-            await execPromise(`${pipPath} install ${missingPackages.join(' ')} --no-cache-dir`);
+            this.logger.log(
+              `尝试安装缺少的Python依赖: ${missingPackages.join(', ')}...`,
+            );
+            await execPromise(
+              `${pipPath} install ${missingPackages.join(' ')} --no-cache-dir`,
+            );
             this.logger.log('Python依赖安装成功');
           } else {
             this.logger.log('所有必要的Python依赖已安装');
           }
         } catch (error) {
-          this.logger.warn(`安装Python依赖失败: ${error.message}，将继续尝试执行脚本`);
+          this.logger.warn(
+            `安装Python依赖失败: ${error.message}，将继续尝试执行脚本`,
+          );
         }
       } catch (error) {
-        this.logger.warn(`Python环境检查失败: ${error.message}，将继续尝试执行脚本`);
+        this.logger.warn(
+          `Python环境检查失败: ${error.message}，将继续尝试执行脚本`,
+        );
       }
 
       // 调用Python脚本处理数据导入
-      const scriptPath = path.join(process.cwd(), 'src/modules/customer/utils/import_data.py');
-      
+      const scriptPath = path.join(
+        process.cwd(),
+        'src/modules/customer/utils/import_data.py',
+      );
+
       // 执行Python脚本，传递文件路径参数和文件类型参数
       this.logger.log(`开始执行Python导入脚本，文件类型: ${fileExt}`);
-      const { stdout, stderr } = await this.executeImportScript(scriptPath, filePath);
-      
+      const { stdout, stderr } = await this.executeImportScript(
+        scriptPath,
+        filePath,
+      );
+
       this.logger.log(`Python脚本执行完成`);
       this.logger.debug(`Python脚本输出: ${stdout}`);
       if (stderr) {
@@ -961,19 +1096,31 @@ export class CustomerService {
 
       // 如果找到了解析结果，使用它
       if (importResult) {
-        const { success, imported_count, failed_count, failed_records, error_message } = importResult;
-        
+        const {
+          success,
+          imported_count,
+          failed_count,
+          failed_records,
+          error_message,
+        } = importResult;
+
         // 记录导入结果
-        this.logger.log(`导入结果: 成功=${success}, 导入=${imported_count}, 失败=${failed_count}`);
-        
+        this.logger.log(
+          `导入结果: 成功=${success}, 导入=${imported_count}, 失败=${failed_count}`,
+        );
+
         // 检查是否所有失败记录都是因为重复
-        const allDuplicates = failed_records && failed_records.length > 0 && 
-          failed_records.every(record => record.reason === '统一社会信用代码重复');
-        
+        const allDuplicates =
+          failed_records &&
+          failed_records.length > 0 &&
+          failed_records.every(
+            (record) => record.reason === '统一社会信用代码重复',
+          );
+
         // 构造返回消息
         let message = '';
         let resultSuccess = success;
-        
+
         if (success) {
           message = `成功导入${imported_count}条客户记录`;
           if (failed_count > 0) {
@@ -989,13 +1136,16 @@ export class CustomerService {
             message += `，${failed_count}条记录有错误`;
           }
         }
-        
+
         // 返回结果
         return {
           success: resultSuccess,
           message,
           count: imported_count > 0 ? imported_count : undefined,
-          failedRecords: failed_records && failed_records.length > 0 ? failed_records : undefined
+          failedRecords:
+            failed_records && failed_records.length > 0
+              ? failed_records
+              : undefined,
         };
       }
 
@@ -1006,11 +1156,11 @@ export class CustomerService {
         if (errorInfoMatch && errorInfoMatch[1]) {
           const errorInfo = JSON.parse(errorInfoMatch[1]);
           this.logger.log(`解析到错误信息: ${JSON.stringify(errorInfo)}`);
-          
+
           return {
             success: false,
             message: errorInfo.error_message || '导入失败',
-            failedRecords: errorInfo.failed_records
+            failedRecords: errorInfo.failed_records,
           };
         }
       } catch (error) {
@@ -1027,7 +1177,7 @@ export class CustomerService {
       if (duplicateMatch) {
         const duplicateCount = parseInt(duplicateMatch[1], 10);
         this.logger.log(`检测到${duplicateCount}条重复记录`);
-        
+
         return {
           success: true, // 重复数据视为业务上的"成功"
           message: `所有记录(${duplicateCount}条)均为重复数据，无需导入`,
@@ -1035,18 +1185,21 @@ export class CustomerService {
       }
 
       this.logger.log(`导入完成，共导入${count}条记录`);
-      
+
       // 简单返回结果
       return {
         success: count > 0,
-        message: count > 0 ? `成功导入${count}条客户记录` : '导入失败，未能导入任何记录',
-        count: count > 0 ? count : undefined
+        message:
+          count > 0
+            ? `成功导入${count}条客户记录`
+            : '导入失败，未能导入任何记录',
+        count: count > 0 ? count : undefined,
       };
     } catch (error) {
       this.logger.error(`导入客户数据失败: ${error.message}`, error.stack);
       return {
         success: false,
-        message: `导入客户数据失败: ${error.message}`
+        message: `导入客户数据失败: ${error.message}`,
       };
     }
   }
@@ -1055,30 +1208,35 @@ export class CustomerService {
    * 执行Python导入脚本的工具方法
    * 此方法不进行任何权限检查，只负责执行脚本并返回结果
    */
-  async executeImportScript(scriptPath: string, filePath: string): Promise<{ stdout: string; stderr: string }> {
+  async executeImportScript(
+    scriptPath: string,
+    filePath: string,
+  ): Promise<{ stdout: string; stderr: string }> {
     this.logger.log('开始执行Python导入脚本');
     try {
       // 使用相对命令，让系统在PATH中查找Python
       this.logger.log('尝试执行Python脚本');
-      
+
       // 从配置服务获取数据库连接信息
       const dbConfig = {
         DB_HOST: this.configService.get('DB_HOST') || 'host.docker.internal',
         DB_PORT: this.configService.get('DB_PORT') || '3306',
         DB_DATABASE: this.configService.get('DB_DATABASE'),
         DB_USERNAME: this.configService.get('DB_USERNAME'),
-        DB_PASSWORD: this.configService.get('DB_PASSWORD')
+        DB_PASSWORD: this.configService.get('DB_PASSWORD'),
       };
-      
-      this.logger.log(`数据库连接配置: Host=${dbConfig.DB_HOST}, Port=${dbConfig.DB_PORT}, Name=${dbConfig.DB_DATABASE}, User=${dbConfig.DB_USERNAME}`);
-      
+
+      this.logger.log(
+        `数据库连接配置: Host=${dbConfig.DB_HOST}, Port=${dbConfig.DB_PORT}, Name=${dbConfig.DB_DATABASE}, User=${dbConfig.DB_USERNAME}`,
+      );
+
       // 构建环境变量对象，供Python脚本使用
-      const env = { 
-        ...process.env, 
+      const env = {
+        ...process.env,
         ...dbConfig,
-        PYTHONUNBUFFERED: '1' // 确保Python输出不被缓冲
+        PYTHONUNBUFFERED: '1', // 确保Python输出不被缓冲
       };
-      
+
       // 验证脚本是否存在
       if (!fs.existsSync(scriptPath)) {
         throw new Error(`Python脚本文件不存在: ${scriptPath}`);
@@ -1100,58 +1258,66 @@ export class CustomerService {
       this.logger.log(`环境变量DB_PORT: ${env.DB_PORT}`);
       this.logger.log(`环境变量DB_DATABASE: ${env.DB_DATABASE}`);
       this.logger.log(`环境变量DB_USERNAME: ${env.DB_USERNAME}`);
-      this.logger.log(`环境变量DB_PASSWORD长度: ${env.DB_PASSWORD ? env.DB_PASSWORD.length : 0}`);
+      this.logger.log(
+        `环境变量DB_PASSWORD长度: ${env.DB_PASSWORD ? env.DB_PASSWORD.length : 0}`,
+      );
 
       // 使用spawn代替exec，可以更好地处理输出
       const { spawn } = require('child_process');
-      
+
       return new Promise((resolve, reject) => {
         // 使用spawn执行Python脚本
-        const pythonProcess = spawn('python3', [scriptPath, '--file', filePath], { 
-          env,
-          shell: true // 在shell中执行，可能有助于解决一些路径问题
-        });
-        
+        const pythonProcess = spawn(
+          'python3',
+          [scriptPath, '--file', filePath],
+          {
+            env,
+            shell: true, // 在shell中执行，可能有助于解决一些路径问题
+          },
+        );
+
         let stdout = '';
         let stderr = '';
-        
+
         // 收集标准输出
         pythonProcess.stdout.on('data', (data) => {
           const output = data.toString();
           stdout += output;
           this.logger.debug(`Python输出: ${output}`);
         });
-        
+
         // 收集错误输出
         pythonProcess.stderr.on('data', (data) => {
           const error = data.toString();
           stderr += error;
           this.logger.error(`Python错误: ${error}`);
         });
-        
+
         // 处理完成事件
         pythonProcess.on('close', (code) => {
           this.logger.log(`Python进程退出，退出码: ${code}`);
-          
+
           if (code === 0) {
             resolve({ stdout, stderr });
           } else {
             // 在stdout中寻找错误信息JSON
             let errorDetails = null;
             let errorInfoMatch = null;
-            
+
             // 查找ERROR_INFO_JSON格式的错误信息
             const errorInfoRegex = /ERROR_INFO_JSON: (\{.*\})/s;
             errorInfoMatch = stdout.match(errorInfoRegex);
             if (errorInfoMatch && errorInfoMatch[1]) {
               try {
                 errorDetails = JSON.parse(errorInfoMatch[1]);
-                this.logger.error(`Python错误详情: ${JSON.stringify(errorDetails)}`);
+                this.logger.error(
+                  `Python错误详情: ${JSON.stringify(errorDetails)}`,
+                );
               } catch (e) {
                 this.logger.error(`解析ERROR_INFO_JSON失败: ${e.message}`);
               }
             }
-            
+
             // 查找ERROR_DETAILS_JSON格式的错误信息
             if (!errorDetails) {
               const detailsRegex = /ERROR_DETAILS_JSON: (\{.*\})/s;
@@ -1159,13 +1325,15 @@ export class CustomerService {
               if (detailsMatch && detailsMatch[1]) {
                 try {
                   errorDetails = JSON.parse(detailsMatch[1]);
-                  this.logger.error(`Python错误详情: ${JSON.stringify(errorDetails)}`);
+                  this.logger.error(
+                    `Python错误详情: ${JSON.stringify(errorDetails)}`,
+                  );
                 } catch (e) {
                   this.logger.error(`解析ERROR_DETAILS_JSON失败: ${e.message}`);
                 }
               }
             }
-            
+
             // 查找DATABASE_ERROR_JSON格式的错误信息
             if (!errorDetails) {
               const dbErrorRegex = /DATABASE_ERROR_JSON: (\{.*\})/s;
@@ -1173,9 +1341,13 @@ export class CustomerService {
               if (dbErrorMatch && dbErrorMatch[1]) {
                 try {
                   errorDetails = JSON.parse(dbErrorMatch[1]);
-                  this.logger.error(`数据库错误详情: ${JSON.stringify(errorDetails)}`);
+                  this.logger.error(
+                    `数据库错误详情: ${JSON.stringify(errorDetails)}`,
+                  );
                 } catch (e) {
-                  this.logger.error(`解析DATABASE_ERROR_JSON失败: ${e.message}`);
+                  this.logger.error(
+                    `解析DATABASE_ERROR_JSON失败: ${e.message}`,
+                  );
                 }
               }
             }
@@ -1183,26 +1355,35 @@ export class CustomerService {
             if (stderr) {
               this.logger.error(`Python脚本错误输出: ${stderr}`);
             }
-            
+
             if (stdout) {
               // 记录完整输出供调试，但只输出前2000个字符避免日志过大
-              const truncatedStdout = stdout.length > 2000 ? stdout.substring(0, 2000) + '...(截断)' : stdout;
+              const truncatedStdout =
+                stdout.length > 2000
+                  ? stdout.substring(0, 2000) + '...(截断)'
+                  : stdout;
               this.logger.log(`Python脚本标准输出: ${truncatedStdout}`);
             }
-            
+
             // 构建详细错误信息
             let errorMessage = `Python脚本执行失败，退出码: ${code}`;
-            
+
             // 如果解析到了错误详情，添加到错误信息中
             if (errorDetails && errorDetails.error_message) {
               errorMessage += `\n错误类型: ${errorDetails.error_type || '未知'}`;
               errorMessage += `\n错误描述: ${errorDetails.error_message}`;
-              
+
               // 如果有失败记录，添加概述
-              if (errorDetails.failed_records && errorDetails.failed_records.length > 0) {
+              if (
+                errorDetails.failed_records &&
+                errorDetails.failed_records.length > 0
+              ) {
                 errorMessage += `\n失败记录数: ${errorDetails.failed_records.length}`;
                 // 添加前3条失败记录的详情
-                const recordsToShow = Math.min(3, errorDetails.failed_records.length);
+                const recordsToShow = Math.min(
+                  3,
+                  errorDetails.failed_records.length,
+                );
                 errorMessage += `\n失败记录示例:`;
                 for (let i = 0; i < recordsToShow; i++) {
                   const record = errorDetails.failed_records[i];
@@ -1213,11 +1394,11 @@ export class CustomerService {
               // 如果没有解析到结构化错误信息但有stderr，使用stderr
               errorMessage += `\n${stderr}`;
             }
-            
+
             reject(new Error(errorMessage));
           }
         });
-        
+
         // 处理错误事件
         pythonProcess.on('error', (err) => {
           this.logger.error(`启动Python进程失败: ${err.message}`);
@@ -1234,30 +1415,35 @@ export class CustomerService {
    * 执行Python更新脚本的工具方法
    * 此方法不进行任何权限检查，只负责执行脚本并返回结果
    */
-  async executeUpdateScript(scriptPath: string, filePath: string): Promise<{ stdout: string; stderr: string }> {
+  async executeUpdateScript(
+    scriptPath: string,
+    filePath: string,
+  ): Promise<{ stdout: string; stderr: string }> {
     this.logger.log('开始执行Python批量更新脚本');
     try {
       // 使用相对命令，让系统在PATH中查找Python
       this.logger.log('尝试执行Python脚本');
-      
+
       // 从配置服务获取数据库连接信息
       const dbConfig = {
         DB_HOST: this.configService.get('DB_HOST') || 'host.docker.internal',
         DB_PORT: this.configService.get('DB_PORT') || '3306',
         DB_DATABASE: this.configService.get('DB_DATABASE'),
         DB_USERNAME: this.configService.get('DB_USERNAME'),
-        DB_PASSWORD: this.configService.get('DB_PASSWORD')
+        DB_PASSWORD: this.configService.get('DB_PASSWORD'),
       };
-      
-      this.logger.log(`数据库连接配置: Host=${dbConfig.DB_HOST}, Port=${dbConfig.DB_PORT}, Name=${dbConfig.DB_DATABASE}, User=${dbConfig.DB_USERNAME}`);
-      
+
+      this.logger.log(
+        `数据库连接配置: Host=${dbConfig.DB_HOST}, Port=${dbConfig.DB_PORT}, Name=${dbConfig.DB_DATABASE}, User=${dbConfig.DB_USERNAME}`,
+      );
+
       // 构建环境变量对象，供Python脚本使用
-      const env = { 
-        ...process.env, 
+      const env = {
+        ...process.env,
         ...dbConfig,
-        PYTHONUNBUFFERED: '1' // 确保Python输出不被缓冲
+        PYTHONUNBUFFERED: '1', // 确保Python输出不被缓冲
       };
-      
+
       // 验证脚本是否存在
       if (!fs.existsSync(scriptPath)) {
         throw new Error(`Python脚本文件不存在: ${scriptPath}`);
@@ -1275,58 +1461,66 @@ export class CustomerService {
       this.logger.log(`环境变量DB_PORT: ${env.DB_PORT}`);
       this.logger.log(`环境变量DB_DATABASE: ${env.DB_DATABASE}`);
       this.logger.log(`环境变量DB_USERNAME: ${env.DB_USERNAME}`);
-      this.logger.log(`环境变量DB_PASSWORD长度: ${env.DB_PASSWORD ? env.DB_PASSWORD.length : 0}`);
+      this.logger.log(
+        `环境变量DB_PASSWORD长度: ${env.DB_PASSWORD ? env.DB_PASSWORD.length : 0}`,
+      );
 
       // 使用spawn代替exec，可以更好地处理输出
       const { spawn } = require('child_process');
-      
+
       return new Promise((resolve, reject) => {
         // 使用spawn执行Python脚本
-        const pythonProcess = spawn('python3', [scriptPath, '--file', filePath], { 
-          env,
-          shell: true // 在shell中执行，可能有助于解决一些路径问题
-        });
-        
+        const pythonProcess = spawn(
+          'python3',
+          [scriptPath, '--file', filePath],
+          {
+            env,
+            shell: true, // 在shell中执行，可能有助于解决一些路径问题
+          },
+        );
+
         let stdout = '';
         let stderr = '';
-        
+
         // 收集标准输出
         pythonProcess.stdout.on('data', (data) => {
           const output = data.toString();
           stdout += output;
           this.logger.debug(`Python输出: ${output}`);
         });
-        
+
         // 收集错误输出
         pythonProcess.stderr.on('data', (data) => {
           const error = data.toString();
           stderr += error;
           this.logger.error(`Python错误: ${error}`);
         });
-        
+
         // 处理完成事件
         pythonProcess.on('close', (code) => {
           this.logger.log(`Python进程退出，退出码: ${code}`);
-          
+
           if (code === 0) {
             resolve({ stdout, stderr });
           } else {
             // 在stdout中寻找错误信息JSON
             let errorDetails = null;
             let errorInfoMatch = null;
-            
+
             // 查找ERROR_INFO_JSON格式的错误信息
             const errorInfoRegex = /ERROR_INFO_JSON: (\{.*\})/s;
             errorInfoMatch = stdout.match(errorInfoRegex);
             if (errorInfoMatch && errorInfoMatch[1]) {
               try {
                 errorDetails = JSON.parse(errorInfoMatch[1]);
-                this.logger.error(`Python错误详情: ${JSON.stringify(errorDetails)}`);
+                this.logger.error(
+                  `Python错误详情: ${JSON.stringify(errorDetails)}`,
+                );
               } catch (e) {
                 this.logger.error(`解析ERROR_INFO_JSON失败: ${e.message}`);
               }
             }
-            
+
             // 查找ERROR_DETAILS_JSON格式的错误信息
             if (!errorDetails) {
               const detailsRegex = /ERROR_DETAILS_JSON: (\{.*\})/s;
@@ -1334,13 +1528,15 @@ export class CustomerService {
               if (detailsMatch && detailsMatch[1]) {
                 try {
                   errorDetails = JSON.parse(detailsMatch[1]);
-                  this.logger.error(`Python错误详情: ${JSON.stringify(errorDetails)}`);
+                  this.logger.error(
+                    `Python错误详情: ${JSON.stringify(errorDetails)}`,
+                  );
                 } catch (e) {
                   this.logger.error(`解析ERROR_DETAILS_JSON失败: ${e.message}`);
                 }
               }
             }
-            
+
             // 查找DATABASE_ERROR_JSON格式的错误信息
             if (!errorDetails) {
               const dbErrorRegex = /DATABASE_ERROR_JSON: (\{.*\})/s;
@@ -1348,9 +1544,13 @@ export class CustomerService {
               if (dbErrorMatch && dbErrorMatch[1]) {
                 try {
                   errorDetails = JSON.parse(dbErrorMatch[1]);
-                  this.logger.error(`数据库错误详情: ${JSON.stringify(errorDetails)}`);
+                  this.logger.error(
+                    `数据库错误详情: ${JSON.stringify(errorDetails)}`,
+                  );
                 } catch (e) {
-                  this.logger.error(`解析DATABASE_ERROR_JSON失败: ${e.message}`);
+                  this.logger.error(
+                    `解析DATABASE_ERROR_JSON失败: ${e.message}`,
+                  );
                 }
               }
             }
@@ -1358,26 +1558,35 @@ export class CustomerService {
             if (stderr) {
               this.logger.error(`Python脚本错误输出: ${stderr}`);
             }
-            
+
             if (stdout) {
               // 记录完整输出供调试，但只输出前2000个字符避免日志过大
-              const truncatedStdout = stdout.length > 2000 ? stdout.substring(0, 2000) + '...(截断)' : stdout;
+              const truncatedStdout =
+                stdout.length > 2000
+                  ? stdout.substring(0, 2000) + '...(截断)'
+                  : stdout;
               this.logger.log(`Python脚本标准输出: ${truncatedStdout}`);
             }
-            
+
             // 构建详细错误信息
             let errorMessage = `Python脚本执行失败，退出码: ${code}`;
-            
+
             // 如果解析到了错误详情，添加到错误信息中
             if (errorDetails && errorDetails.error_message) {
               errorMessage += `\n错误类型: ${errorDetails.error_type || '未知'}`;
               errorMessage += `\n错误描述: ${errorDetails.error_message}`;
-              
+
               // 如果有失败记录，添加概述
-              if (errorDetails.failed_records && errorDetails.failed_records.length > 0) {
+              if (
+                errorDetails.failed_records &&
+                errorDetails.failed_records.length > 0
+              ) {
                 errorMessage += `\n失败记录数: ${errorDetails.failed_records.length}`;
                 // 添加前3条失败记录的详情
-                const recordsToShow = Math.min(3, errorDetails.failed_records.length);
+                const recordsToShow = Math.min(
+                  3,
+                  errorDetails.failed_records.length,
+                );
                 errorMessage += `\n失败记录示例:`;
                 for (let i = 0; i < recordsToShow; i++) {
                   const record = errorDetails.failed_records[i];
@@ -1388,11 +1597,11 @@ export class CustomerService {
               // 如果没有解析到结构化错误信息但有stderr，使用stderr
               errorMessage += `\n${stderr}`;
             }
-            
+
             reject(new Error(errorMessage));
           }
         });
-        
+
         // 处理错误事件
         pythonProcess.on('error', (err) => {
           this.logger.error(`启动Python进程失败: ${err.message}`);
@@ -1406,10 +1615,13 @@ export class CustomerService {
   }
 
   // 批量更新客户数据
-  async updateCustomers(file: Express.Multer.File, userId: number): Promise<{ 
-    success: boolean; 
-    message: string; 
-    count?: number; 
+  async updateCustomers(
+    file: Express.Multer.File,
+    userId: number,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    count?: number;
     failedRecords?: Array<{
       row: number;
       companyName: string;
@@ -1419,15 +1631,16 @@ export class CustomerService {
   }> {
     try {
       this.logger.log(`开始执行批量更新操作，用户ID: ${userId}`);
-      
+
       // 使用批量操作权限检查方法，避免触发ID查询
-      const hasPermission = await this.customerPermissionService.checkBatchOperationPermission(
-        userId, 
-        'customer_action_update'
-      );
-      
+      const hasPermission =
+        await this.customerPermissionService.checkBatchOperationPermission(
+          userId,
+          'customer_action_update',
+        );
+
       this.logger.log(`权限检查结果: ${hasPermission}`);
-      
+
       if (!hasPermission) {
         throw new ForbiddenException('没有批量更新客户数据的权限');
       }
@@ -1448,12 +1661,18 @@ export class CustomerService {
       fs.writeFileSync(filePath, file.buffer);
 
       // 调用Python脚本处理数据更新
-      const scriptPath = path.join(process.cwd(), 'src/modules/customer/utils/update_data.py');
-      
+      const scriptPath = path.join(
+        process.cwd(),
+        'src/modules/customer/utils/update_data.py',
+      );
+
       // 执行Python脚本，传递文件路径参数
       this.logger.log(`开始执行Python更新脚本，文件类型: ${fileExt}`);
-      const { stdout, stderr } = await this.executeUpdateScript(scriptPath, filePath);
-      
+      const { stdout, stderr } = await this.executeUpdateScript(
+        scriptPath,
+        filePath,
+      );
+
       this.logger.log(`Python脚本执行完成`);
       this.logger.debug(`Python脚本输出: ${stdout}`);
       if (stderr) {
@@ -1483,19 +1702,31 @@ export class CustomerService {
 
       // 如果找到了解析结果，使用它
       if (updateResult) {
-        const { success, updated_count, failed_count, failed_records, error_message } = updateResult;
-        
+        const {
+          success,
+          updated_count,
+          failed_count,
+          failed_records,
+          error_message,
+        } = updateResult;
+
         // 记录更新结果
-        this.logger.log(`更新结果: 成功=${success}, 更新=${updated_count}, 失败=${failed_count}`);
-        
+        this.logger.log(
+          `更新结果: 成功=${success}, 更新=${updated_count}, 失败=${failed_count}`,
+        );
+
         // 检查是否所有失败记录都是因为重复
-        const allDuplicates = failed_records && failed_records.length > 0 && 
-          failed_records.every(record => record.reason === '统一社会信用代码重复');
-        
+        const allDuplicates =
+          failed_records &&
+          failed_records.length > 0 &&
+          failed_records.every(
+            (record) => record.reason === '统一社会信用代码重复',
+          );
+
         // 构造返回消息
         let message = '';
         let resultSuccess = success;
-        
+
         if (success) {
           message = `成功更新${updated_count}条客户记录`;
           if (failed_count > 0) {
@@ -1511,13 +1742,16 @@ export class CustomerService {
             message += `，${failed_count}条记录有错误`;
           }
         }
-        
+
         // 返回结果
         return {
           success: resultSuccess,
           message,
           count: updated_count > 0 ? updated_count : undefined,
-          failedRecords: failed_records && failed_records.length > 0 ? failed_records : undefined
+          failedRecords:
+            failed_records && failed_records.length > 0
+              ? failed_records
+              : undefined,
         };
       }
 
@@ -1528,11 +1762,11 @@ export class CustomerService {
         if (errorInfoMatch && errorInfoMatch[1]) {
           const errorInfo = JSON.parse(errorInfoMatch[1]);
           this.logger.log(`解析到错误信息: ${JSON.stringify(errorInfo)}`);
-          
+
           return {
             success: false,
             message: errorInfo.error_message || '更新失败',
-            failedRecords: errorInfo.failed_records
+            failedRecords: errorInfo.failed_records,
           };
         }
       } catch (error) {
@@ -1549,7 +1783,7 @@ export class CustomerService {
       if (duplicateMatch) {
         const duplicateCount = parseInt(duplicateMatch[1], 10);
         this.logger.log(`检测到${duplicateCount}条重复记录`);
-        
+
         return {
           success: true, // 重复数据视为业务上的"成功"
           message: `所有记录(${duplicateCount}条)均为重复数据，无需更新`,
@@ -1557,18 +1791,21 @@ export class CustomerService {
       }
 
       this.logger.log(`更新完成，共更新${count}条记录`);
-      
+
       // 简单返回结果
       return {
         success: count > 0,
-        message: count > 0 ? `成功更新${count}条客户记录` : '更新失败，未能更新任何记录',
-        count: count > 0 ? count : undefined
+        message:
+          count > 0
+            ? `成功更新${count}条客户记录`
+            : '更新失败，未能更新任何记录',
+        count: count > 0 ? count : undefined,
       };
     } catch (error) {
       this.logger.error(`批量更新客户数据失败: ${error.message}`, error.stack);
       return {
         success: false,
-        message: `批量更新客户数据失败: ${error.message}`
+        message: `批量更新客户数据失败: ${error.message}`,
       };
     }
   }
@@ -1582,20 +1819,23 @@ export class CustomerService {
     const { companyName, unifiedSocialCreditCode } = searchDto;
 
     // 验证是否提供了至少一个查询参数
-    if ((!companyName || companyName.trim() === '') && 
-        (!unifiedSocialCreditCode || unifiedSocialCreditCode.trim() === '')) {
+    if (
+      (!companyName || companyName.trim() === '') &&
+      (!unifiedSocialCreditCode || unifiedSocialCreditCode.trim() === '')
+    ) {
       throw new BadRequestException('请输入企业名称或统一社会信用代码');
     }
 
     // 创建查询构建器，只选择需要的字段
-    const queryBuilder = this.customerRepository.createQueryBuilder('customer')
+    const queryBuilder = this.customerRepository
+      .createQueryBuilder('customer')
       .select([
         'customer.companyName',
         'customer.unifiedSocialCreditCode',
         'customer.sealStorageNumber',
         'customer.onlineBankingStorageNumber',
         'customer.paperArchiveNumber',
-        'customer.archiveStorageRemarks'
+        'customer.archiveStorageRemarks',
       ]);
 
     // 构建查询条件：企业名称或统一社会信用代码
@@ -1608,7 +1848,9 @@ export class CustomerService {
     }
 
     if (unifiedSocialCreditCode && unifiedSocialCreditCode.trim() !== '') {
-      whereConditions.push('customer.unifiedSocialCreditCode LIKE :unifiedSocialCreditCode');
+      whereConditions.push(
+        'customer.unifiedSocialCreditCode LIKE :unifiedSocialCreditCode',
+      );
       parameters.unifiedSocialCreditCode = `%${unifiedSocialCreditCode.trim()}%`;
     }
 
@@ -1621,15 +1863,15 @@ export class CustomerService {
     try {
       // 执行查询
       const customers = await queryBuilder.getMany();
-      
+
       // 转换为响应格式
-      return customers.map(customer => ({
+      return customers.map((customer) => ({
         companyName: customer.companyName || '',
         unifiedSocialCreditCode: customer.unifiedSocialCreditCode || '',
         sealStorageNumber: customer.sealStorageNumber || '',
         onlineBankingArchiveNumber: customer.onlineBankingStorageNumber || '',
         paperArchiveNumber: customer.paperArchiveNumber || '',
-        archiveStorageRemarks: customer.archiveStorageRemarks || ''
+        archiveStorageRemarks: customer.archiveStorageRemarks || '',
       }));
     } catch (error) {
       this.logger.error(`查询客户档案信息失败: ${error.message}`, error.stack);

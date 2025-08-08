@@ -1,4 +1,10 @@
-import { IsDate, IsOptional, IsNumber, IsString, IsBoolean } from 'class-validator';
+import {
+  IsDate,
+  IsOptional,
+  IsNumber,
+  IsString,
+  IsBoolean,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -38,7 +44,7 @@ export class CreateFriendCirclePaymentDto {
   @Type(() => Number)
   totalCount?: number;
 
-  @ApiProperty({ description: '扣款', required: false, example: 100.00 })
+  @ApiProperty({ description: '扣款', required: false, example: 100.0 })
   @IsNumber()
   @IsOptional()
   @Type(() => Number)
@@ -54,4 +60,4 @@ export class CreateFriendCirclePaymentDto {
   @IsOptional()
   @Type(() => Date)
   yearMonth?: Date;
-} 
+}

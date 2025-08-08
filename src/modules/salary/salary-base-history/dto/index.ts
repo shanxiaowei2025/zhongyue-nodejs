@@ -1,1 +1,1 @@
-export * from './query-salary-base-history.dto'; 
+export * from './query-salary-base-history.dto';

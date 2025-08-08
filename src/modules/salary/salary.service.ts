@@ -6,11 +6,13 @@ import { CreateSalaryDto } from './dto/create-salary.dto';
 import { UpdateSalaryDto } from './dto/update-salary.dto';
 import { QuerySalaryDto } from './dto/query-salary.dto';
 import { ConfirmSalaryDto } from './dto/confirm-salary.dto';
+import { ExportSalaryDto } from './dto/export-salary.dto';
 import { safeDateParam, safePaginationParams } from 'src/common/utils';
 import { SalaryPermissionService } from './services/salary-permission.service';
 import { User } from '../users/entities/user.entity';
 import { Employee } from '../employee/entities/employee.entity';
 import { AttendanceDeduction } from './attendance-deduction/entities/attendance-deduction.entity';
+import { Parser } from 'json2csv';
 
 @Injectable()
 export class SalaryService {
@@ -861,5 +863,182 @@ export class SalaryService {
     }
     
     return true;
+  }
+
+  /**
+   * 导出薪资数据为CSV
+   * @param query 导出查询条件
+   * @param userId 用户ID
+   * @returns CSV数据字符串
+   */
+  async exportToCsv(query: ExportSalaryDto, userId: number): Promise<string> {
+    // 检查权限 - 只有薪资管理员和超级管理员可以导出
+    const hasPermission = await this.salaryPermissionService.hasSalaryEditPermission(userId);
+    if (!hasPermission) {
+      throw new ForbiddenException('没有导出薪资记录的权限');
+    }
+
+    // 构建查询条件
+    const queryBuilder = this.salaryRepository.createQueryBuilder('salary');
+
+    // 添加查询条件
+    if (query.department) {
+      queryBuilder.andWhere('salary.department LIKE :department', { 
+        department: `%${query.department}%` 
+      });
+    }
+
+    if (query.name) {
+      queryBuilder.andWhere('salary.name LIKE :name', { 
+        name: `%${query.name}%` 
+      });
+    }
+
+    if (query.idCard) {
+      queryBuilder.andWhere('salary.idCard LIKE :idCard', { 
+        idCard: `%${query.idCard}%` 
+      });
+    }
+
+    if (query.type) {
+      queryBuilder.andWhere('salary.type LIKE :type', { 
+        type: `%${query.type}%` 
+      });
+    }
+
+    // 处理时间筛选
+    if (query.yearMonth) {
+      // 支持 YYYY-MM 和 YYYY-MM-DD 两种格式
+      if (query.yearMonth.match(/^\d{4}-\d{2}$/)) {
+        // YYYY-MM 格式，查询整个月的数据
+        const yearMonthPrefix = query.yearMonth;
+        queryBuilder.andWhere('salary.yearMonth LIKE :yearMonth', { 
+          yearMonth: `${yearMonthPrefix}%` 
+        });
+      } else {
+        // YYYY-MM-DD 格式，精确匹配
+        queryBuilder.andWhere('salary.yearMonth = :yearMonth', { 
+          yearMonth: query.yearMonth 
+        });
+      }
+    } else if (query.startDate && query.endDate) {
+      queryBuilder.andWhere('salary.yearMonth BETWEEN :startDate AND :endDate', { 
+        startDate: query.startDate, 
+        endDate: query.endDate 
+      });
+    }
+
+    // 处理布尔字段
+    if (query.isPaid !== undefined) {
+      queryBuilder.andWhere('salary.isPaid = :isPaid', { isPaid: query.isPaid });
+    }
+
+    if (query.isConfirmed !== undefined) {
+      queryBuilder.andWhere('salary.isConfirmed = :isConfirmed', { isConfirmed: query.isConfirmed });
+    }
+
+    // 查询数据
+    let salaries = await queryBuilder
+      .orderBy('salary.yearMonth', 'DESC')
+      .addOrderBy('salary.id', 'DESC')
+      .getMany();
+
+    // 如果有公司筛选条件，需要先添加发薪公司信息再筛选
+    if (query.company) {
+      const salariesWithCompany = await this.addPayrollCompanyToSalaries(salaries);
+      salaries = salariesWithCompany.filter(salary => 
+        salary.payrollCompany && salary.payrollCompany.includes(query.company)
+      );
+    }
+
+    // 为薪资数据添加发薪公司信息
+    const salariesWithCompany = await this.addPayrollCompanyToSalaries(salaries);
+
+    // 为薪资数据添加考勤备注
+    const salariesWithAttendance = await this.addAttendanceRemarksToSalaries(salariesWithCompany);
+
+    // 定义CSV字段映射
+    const fieldMapping = {
+      id: 'ID',
+      department: '部门',
+      name: '姓名',
+      idCard: '身份证号',
+      type: '类型',
+      baseSalary: '工资基数',
+      temporaryIncrease: '底薪临时增加金额',
+      temporaryIncreaseItem: '临时增加项目',
+      attendanceDeduction: '考勤扣款',
+      basicSalaryPayable: '应发基本工资',
+      fullAttendance: '全勤',
+      totalSubsidy: '补贴合计',
+      seniority: '工龄',
+      agencyFeeCommission: '代理费提成',
+      performanceCommission: '绩效提成',
+      performanceDeductions: '绩效扣除',
+      businessCommission: '业务提成',
+      otherDeductions: '其他扣款',
+      personalMedical: '个人医疗',
+      personalPension: '个人养老',
+      personalUnemployment: '个人失业',
+      personalInsuranceTotal: '社保个人合计',
+      companyInsuranceTotal: '公司承担合计',
+      depositDeduction: '保证金扣除',
+      personalIncomeTax: '个税',
+      other: '其他',
+      totalPayable: '应发合计',
+      bankCardNumber: '银行卡号',
+      payrollCompany: '发薪公司',
+      bankCardOrWechat: '银行卡/微信',
+      cashPaid: '已发现金',
+      corporatePayment: '对公',
+      taxDeclaration: '个税申报',
+      isPaid: '是否已发放',
+      isConfirmed: '是否已确认',
+      confirmedAt: '确认时间',
+      attendanceRemark: '考勤备注',
+      yearMonth: '年月',
+      createdAt: '创建时间',
+      updatedAt: '更新时间',
+    };
+
+    // 处理导出数据
+    const exportData = salariesWithAttendance.map(salary => {
+      const row: any = {};
+      
+      // 处理基本字段
+      Object.keys(fieldMapping).forEach(key => {
+        if (key === 'performanceDeductions') {
+          // 绩效扣除数组转为字符串
+          row[fieldMapping[key]] = Array.isArray(salary[key]) 
+            ? salary[key].join(', ') 
+            : '';
+        } else if (key === 'isPaid' || key === 'isConfirmed') {
+          // 布尔值转为中文
+          row[fieldMapping[key]] = salary[key] ? '是' : '否';
+        } else if (key === 'confirmedAt' || key === 'createdAt' || key === 'updatedAt') {
+          // 日期格式化
+          row[fieldMapping[key]] = salary[key] 
+            ? new Date(salary[key]).toLocaleString('zh-CN') 
+            : '';
+        } else if (key === 'yearMonth') {
+          // 年月格式化
+          row[fieldMapping[key]] = salary[key] 
+            ? new Date(salary[key]).toISOString().split('T')[0] 
+            : '';
+        } else {
+          row[fieldMapping[key]] = salary[key] || '';
+        }
+      });
+
+      return row;
+    });
+
+    // 生成CSV
+    const parser = new Parser({
+      fields: Object.values(fieldMapping),
+      withBOM: true, // 添加BOM以支持中文
+    });
+
+    return parser.parse(exportData);
   }
 }

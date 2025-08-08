@@ -6,12 +6,9 @@ import { FriendCirclePaymentController } from './friend-circle-payment.controlle
 import { FriendCirclePayment } from './entities/friend-circle-payment.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([FriendCirclePayment]),
-    AuthModule
-  ],
+  imports: [TypeOrmModule.forFeature([FriendCirclePayment]), AuthModule],
   controllers: [FriendCirclePaymentController],
   providers: [FriendCirclePaymentService],
   exports: [FriendCirclePaymentService],
 })
-export class FriendCirclePaymentModule {} 
+export class FriendCirclePaymentModule {}

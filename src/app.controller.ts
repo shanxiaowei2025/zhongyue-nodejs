@@ -15,20 +15,20 @@ export class AppController {
   getHello(): string {
     return this.appService.getHello();
   }
-  
+
   @Get('health')
   @Public()
   @ApiOperation({ summary: '健康检查', description: '检查系统是否正常运行' })
-  @ApiResponse({ 
-    status: 200, 
-    description: '系统运行正常', 
+  @ApiResponse({
+    status: 200,
+    description: '系统运行正常',
     schema: {
       example: {
         status: 'ok',
         timestamp: '2023-04-07T10:00:00.000Z',
-        version: '1.0.0'
-      }
-    }
+        version: '1.0.0',
+      },
+    },
   })
   healthCheck() {
     return {

@@ -21,4 +21,4 @@ export class QuerySalaryBaseHistoryDto {
   @IsDateString()
   @IsOptional()
   endDate?: string;
-} 
+}

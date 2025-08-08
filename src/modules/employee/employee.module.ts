@@ -11,10 +11,10 @@ import { UsersModule } from '../users/users.module';
   imports: [
     TypeOrmModule.forFeature([Employee, PerformanceCommission]),
     SalaryBaseHistoryModule,
-    UsersModule
+    UsersModule,
   ],
   controllers: [EmployeeController],
   providers: [EmployeeService],
   exports: [EmployeeService],
 })
-export class EmployeeModule {} 
+export class EmployeeModule {}

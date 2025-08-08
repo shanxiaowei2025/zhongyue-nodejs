@@ -6,12 +6,9 @@ import { SubsidySummaryController } from './subsidy-summary.controller';
 import { SubsidySummary } from './entities/subsidy-summary.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([SubsidySummary]),
-    AuthModule
-  ],
+  imports: [TypeOrmModule.forFeature([SubsidySummary]), AuthModule],
   controllers: [SubsidySummaryController],
   providers: [SubsidySummaryService],
   exports: [SubsidySummaryService],
 })
-export class SubsidySummaryModule {} 
+export class SubsidySummaryModule {}

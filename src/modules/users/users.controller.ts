@@ -1,9 +1,26 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseIntPipe, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  ParseIntPipe,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { QueryUserDto } from './dto/query-user.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -49,9 +66,9 @@ export class UsersController {
   @ApiOperation({ summary: '更新用户信息' })
   @Roles('super_admin', 'admin')
   update(
-    @Param('id', ParseIntPipe) id: number, 
+    @Param('id', ParseIntPipe) id: number,
     @Body() updateUserDto: UpdateUserDto,
-    @Request() req
+    @Request() req,
   ) {
     return this.usersService.update(id, updateUserDto, req.user);
   }
@@ -62,4 +79,4 @@ export class UsersController {
   remove(@Param('id', ParseIntPipe) id: number, @Request() req) {
     return this.usersService.remove(id, req.user);
   }
-} 
+}

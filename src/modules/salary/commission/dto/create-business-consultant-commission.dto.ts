@@ -13,4 +13,4 @@ export class CreateBusinessConsultantCommissionDto {
   @IsNumber({}, { message: '提成比率必须是数字' })
   @Type(() => Number)
   commissionRate: number;
-} 
+}

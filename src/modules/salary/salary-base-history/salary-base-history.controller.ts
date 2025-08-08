@@ -10,7 +10,9 @@ import { Roles } from '../../auth/decorators/roles.decorator';
 @Controller('salary-base-history')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class SalaryBaseHistoryController {
-  constructor(private readonly salaryBaseHistoryService: SalaryBaseHistoryService) {}
+  constructor(
+    private readonly salaryBaseHistoryService: SalaryBaseHistoryService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: '查询工资基数历程记录' })
@@ -18,4 +20,4 @@ export class SalaryBaseHistoryController {
   async findAll(@Query() query: QuerySalaryBaseHistoryDto) {
     return this.salaryBaseHistoryService.findAll(query);
   }
-} 
+}

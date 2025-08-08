@@ -18,27 +18,31 @@ export class CreateSubsidySummaryDto {
   @IsOptional()
   position?: string;
 
-  @ApiProperty({ description: '部门负责人补贴', required: false, example: 500.00 })
+  @ApiProperty({
+    description: '部门负责人补贴',
+    required: false,
+    example: 500.0,
+  })
   @IsNumber()
   @IsOptional()
   departmentHeadSubsidy?: number;
 
-  @ApiProperty({ description: '岗位津贴', required: false, example: 300.00 })
+  @ApiProperty({ description: '岗位津贴', required: false, example: 300.0 })
   @IsNumber()
   @IsOptional()
   positionAllowance?: number;
 
-  @ApiProperty({ description: '油补', required: false, example: 200.00 })
+  @ApiProperty({ description: '油补', required: false, example: 200.0 })
   @IsNumber()
   @IsOptional()
   oilSubsidy?: number;
 
-  @ApiProperty({ description: '餐补8元/天', required: false, example: 176.00 })
+  @ApiProperty({ description: '餐补8元/天', required: false, example: 176.0 })
   @IsNumber()
   @IsOptional()
   mealSubsidy?: number;
 
-  @ApiProperty({ description: '补贴合计', required: false, example: 1176.00 })
+  @ApiProperty({ description: '补贴合计', required: false, example: 1176.0 })
   @IsNumber()
   @IsOptional()
   totalSubsidy?: number;
@@ -48,4 +52,4 @@ export class CreateSubsidySummaryDto {
   @IsOptional()
   @Type(() => Date)
   yearMonth?: Date;
-} 
+}

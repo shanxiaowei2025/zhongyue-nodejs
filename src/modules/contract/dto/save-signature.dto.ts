@@ -18,4 +18,4 @@ export class SaveSignatureDto {
   @IsString()
   @IsNotEmpty({ message: '签名图片链接不能为空' })
   signatureUrl: string;
-} 
+}

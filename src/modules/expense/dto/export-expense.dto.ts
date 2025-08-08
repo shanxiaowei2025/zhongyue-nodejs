@@ -51,28 +51,36 @@ export class ExportExpenseDto {
   @IsOptional()
   @IsString()
   businessType?: string;
-  
+
   @ApiProperty({ description: '收费方式', required: false })
   @IsOptional()
   @IsString()
   chargeMethod?: string;
-  
+
   @ApiProperty({ description: '收据编号', required: false })
   @IsOptional()
   @IsString()
   receiptNo?: string;
-  
+
   @ApiProperty({ description: '审核人', required: false })
   @IsOptional()
   @IsString()
   auditor?: string;
-  
-  @ApiProperty({ description: '创建开始日期（筛选创建时间）', required: false, example: '2023-01-01' })
+
+  @ApiProperty({
+    description: '创建开始日期（筛选创建时间）',
+    required: false,
+    example: '2023-01-01',
+  })
   @IsOptional()
   @IsDateString()
   startDate?: string;
 
-  @ApiProperty({ description: '创建结束日期（筛选创建时间）', required: false, example: '2023-12-31' })
+  @ApiProperty({
+    description: '创建结束日期（筛选创建时间）',
+    required: false,
+    example: '2023-12-31',
+  })
   @IsOptional()
   @IsDateString()
   endDate?: string;

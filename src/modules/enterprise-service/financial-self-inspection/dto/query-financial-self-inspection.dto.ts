@@ -32,11 +32,12 @@ export class QueryFinancialSelfInspectionDto {
   @IsOptional()
   @IsString()
   reviewer?: string;
-  
-  @ApiProperty({ 
-    description: '状态(0：已提交未整改 1：已整改 2：抽查人确认 3：抽查人退回 4：复查人确认 5：复查人退回)', 
+
+  @ApiProperty({
+    description:
+      '状态(0：已提交未整改 1：已整改 2：抽查人确认 3：抽查人退回 4：复查人确认 5：复查人退回)',
     required: false,
-    enum: [0, 1, 2, 3, 4, 5]
+    enum: [0, 1, 2, 3, 4, 5],
   })
   @IsOptional()
   @Type(() => Number)
@@ -62,4 +63,4 @@ export class QueryFinancialSelfInspectionDto {
   @IsOptional()
   @Type(() => Number)
   pageSize?: number = 10;
-} 
+}

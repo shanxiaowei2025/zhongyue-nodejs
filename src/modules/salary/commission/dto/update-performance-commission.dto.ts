@@ -26,4 +26,4 @@ export class UpdatePerformanceCommissionDto {
   @IsOptional()
   @IsNumber()
   performance?: number;
-} 
+}

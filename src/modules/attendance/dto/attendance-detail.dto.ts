@@ -8,4 +8,4 @@ export class AttendanceDetailDto {
   @IsPositive()
   @Type(() => Number)
   id: number;
-} 
+}

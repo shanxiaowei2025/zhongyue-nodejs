@@ -29,4 +29,4 @@ export class ServiceHistoryResponseDto {
 
   @ApiProperty({ description: '更新的字段', type: UpdatedFieldsDto })
   updatedFields: UpdatedFieldsDto;
-} 
+}

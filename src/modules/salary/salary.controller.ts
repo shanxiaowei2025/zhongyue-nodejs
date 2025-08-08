@@ -1,9 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, Req, HttpStatus, HttpException, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, Req, Res, HttpStatus, HttpException, ParseIntPipe } from '@nestjs/common';
+import { Response } from 'express';
 import { SalaryService } from './salary.service';
 import { CreateSalaryDto } from './dto/create-salary.dto';
 import { UpdateSalaryDto } from './dto/update-salary.dto';
 import { QuerySalaryDto } from './dto/query-salary.dto';
 import { ConfirmSalaryDto } from './dto/confirm-salary.dto';
+import { ExportSalaryDto } from './dto/export-salary.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -473,6 +475,118 @@ export class SalaryController {
     } catch (error) {
       throw new HttpException(
         error.message || '手动生成薪资失败',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('export/csv')
+  @Roles('salary_admin', 'super_admin')
+  @ApiOperation({
+    summary: '导出薪资数据为CSV',
+    description: '导出符合筛选条件的薪资数据为CSV文件。支持按部门、姓名、身份证号、类型、发薪公司、年月范围、发放状态、确认状态等条件筛选。',
+  })
+  @ApiQuery({
+    name: 'department',
+    required: false,
+    type: String,
+    description: '部门（模糊查询）',
+    example: '研发部'
+  })
+  @ApiQuery({
+    name: 'name',
+    required: false,
+    type: String,
+    description: '姓名（模糊查询）',
+    example: '张'
+  })
+  @ApiQuery({
+    name: 'idCard',
+    required: false,
+    type: String,
+    description: '身份证号（模糊查询）',
+    example: '11010119'
+  })
+  @ApiQuery({
+    name: 'type',
+    required: false,
+    type: String,
+    description: '类型（模糊查询）',
+    example: '正式'
+  })
+  @ApiQuery({
+    name: 'company',
+    required: false,
+    type: String,
+    description: '发薪公司（模糊查询）',
+    example: '中岳'
+  })
+  @ApiQuery({
+    name: 'yearMonth',
+    required: false,
+    type: String,
+    description: '年月（支持 YYYY-MM 或 YYYY-MM-DD 格式）',
+    example: '2025-06'
+  })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    type: String,
+    description: '开始日期（筛选年月范围）',
+    example: '2023-01-01'
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    type: String,
+    description: '结束日期（筛选年月范围）',
+    example: '2023-12-31'
+  })
+  @ApiQuery({
+    name: 'isPaid',
+    required: false,
+    type: Boolean,
+    description: '是否已发放',
+    example: true
+  })
+  @ApiQuery({
+    name: 'isConfirmed',
+    required: false,
+    type: Boolean,
+    description: '是否已确认',
+    example: true
+  })
+  @ApiResponse({ status: HttpStatus.OK, description: '导出成功' })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: '权限不足' })
+  async exportToCsv(
+    @Query() query: ExportSalaryDto,
+    @Req() req: RequestWithUser,
+    @Res() res: Response,
+  ) {
+    try {
+      const csvData = await this.salaryService.exportToCsv(query, req.user.id);
+
+      // 生成带日期的文件名
+      const now = new Date();
+      const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD格式
+      const filename = `salary_export_${dateStr}.csv`;
+
+      // 设置响应头
+      res.setHeader('Content-Type', 'application/octet-stream');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename=${encodeURIComponent(filename)}`,
+      );
+      res.setHeader('Content-Transfer-Encoding', 'binary');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+
+      // 发送CSV数据并结束响应
+      res.end(csvData);
+    } catch (error) {
+      throw new HttpException(
+        error.message || '导出薪资数据失败',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

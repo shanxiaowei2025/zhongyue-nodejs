@@ -10,4 +10,4 @@ import { ServiceHistory } from './entities/service-history.entity';
   providers: [ServiceHistoryService],
   exports: [ServiceHistoryService],
 })
-export class ServiceHistoryModule {} 
+export class ServiceHistoryModule {}

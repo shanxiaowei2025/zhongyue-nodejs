@@ -7,15 +7,9 @@ import { Attendance } from './entities/attendance.entity';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Attendance]),
-    ConfigModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Attendance]), ConfigModule],
   controllers: [AttendanceController],
-  providers: [
-    AttendanceService,
-    AttendanceScheduleService,
-  ],
+  providers: [AttendanceService, AttendanceScheduleService],
   exports: [AttendanceService],
 })
-export class AttendanceModule {} 
+export class AttendanceModule {}

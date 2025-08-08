@@ -36,4 +36,4 @@ export class QuerySubsidySummaryDto extends PaginationDto {
   @IsDate()
   @Type(() => Date)
   endDate?: Date;
-} 
+}

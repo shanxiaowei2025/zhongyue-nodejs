@@ -1,5 +1,16 @@
 // 用户实体类，定义用户表的结构
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, BeforeInsert, ManyToOne, JoinColumn, ManyToMany, JoinTable } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  BeforeInsert,
+  ManyToOne,
+  JoinColumn,
+  ManyToMany,
+  JoinTable,
+} from 'typeorm';
 import { Exclude } from 'class-transformer';
 import * as bcrypt from 'bcryptjs';
 import { ApiProperty, ApiHideProperty } from '@nestjs/swagger';
@@ -26,7 +37,11 @@ export class User {
 
   @ApiProperty({ description: '密码最后更新时间' })
   // 密码最后更新时间，默认为创建时间
-  @Column({ type: 'datetime', comment: '密码最后更新时间', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({
+    type: 'datetime',
+    comment: '密码最后更新时间',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   passwordUpdatedAt: Date;
 
   @ApiProperty({ description: '是否启用', example: true })
@@ -34,17 +49,29 @@ export class User {
   @Column({ default: true, comment: '是否启用' })
   isActive: boolean;
 
-  @ApiProperty({ description: '手机号码', example: '13800138000', required: false })
+  @ApiProperty({
+    description: '手机号码',
+    example: '13800138000',
+    required: false,
+  })
   // 手机号码，可以为空
   @Column({ nullable: true, length: 100, comment: '手机号码' })
   phone: string;
-  
-  @ApiProperty({ description: '头像', example: '/uploads/avatar/default.png', required: false })
+
+  @ApiProperty({
+    description: '头像',
+    example: '/uploads/avatar/default.png',
+    required: false,
+  })
   // 头像URL，可以为空
   @Column({ nullable: true, length: 255, comment: '头像URL' })
   avatar: string;
-  
-  @ApiProperty({ description: '身份证号', example: '110101199001011234', required: false })
+
+  @ApiProperty({
+    description: '身份证号',
+    example: '110101199001011234',
+    required: false,
+  })
   // 身份证号，可以为空，设为唯一
   @Column({ nullable: true, length: 18, comment: '身份证号', unique: true })
   idCardNumber: string;
@@ -60,16 +87,16 @@ export class User {
   @Column({ type: 'datetime', nullable: true, comment: '薪资密码最后更新时间' })
   salaryPasswordUpdatedAt: Date;
 
-  @ApiProperty({ 
-    description: '角色列表', 
+  @ApiProperty({
+    description: '角色列表',
     example: ['admin', 'user'],
     type: 'array',
-    items: { type: 'string' }
+    items: { type: 'string' },
   })
-  @Column({ 
-    type: 'json', 
+  @Column({
+    type: 'json',
     nullable: true,
-    comment: '用户角色列表，JSON格式'
+    comment: '用户角色列表，JSON格式',
   })
   roles: string[];
 
@@ -80,7 +107,7 @@ export class User {
   @ManyToOne(() => Department, { nullable: true })
   @JoinColumn({ name: 'dept_id' })
   department: Department;
-  
+
   @ApiProperty({ description: '创建时间' })
   // 创建时间，自动生成
   @CreateDateColumn({ comment: '创建时间' })
