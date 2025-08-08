@@ -109,9 +109,10 @@ export class CreateSalaryDto {
   @IsOptional()
   bankCardNumber: string;
 
-  @IsString()
-  @IsOptional()
-  company: string;
+  // 注意：company字段已从数据库中删除，改用员工表中的payrollCompany字段
+  // @IsString()
+  // @IsOptional()
+  // company: string;
 
   @IsNumber()
   @IsOptional()

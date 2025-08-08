@@ -278,7 +278,7 @@ export class SalaryService {
     console.log('薪资查询参数:', JSON.stringify(query));
     
     // 确保分页参数是有效的数字
-    let { page = 1, pageSize = 10, department, name, idCard, type, company, isPaid, yearMonth, startDate, endDate } = query;
+    let { page = 1, pageSize = 10, department, name, idCard, type, isPaid, yearMonth, startDate, endDate } = query;
     
     // 使用安全的分页参数处理函数
     const { page: safePage, pageSize: safePageSize } = safePaginationParams(page, pageSize);
@@ -349,9 +349,10 @@ export class SalaryService {
       queryBuilder.andWhere('salary.type LIKE :type', { type: `%${type}%` });
     }
     
-    if (company) {
-      queryBuilder.andWhere('salary.company LIKE :company', { company: `%${company}%` });
-    }
+    // 注意：company字段已从数据库中删除，如果需要公司查询功能，请使用payrollCompany动态字段
+    // if (company) {
+    //   queryBuilder.andWhere('salary.company LIKE :company', { company: `%${company}%` });
+    // }
     
     // 添加是否已发放的查询条件
     if (isPaid !== undefined) {

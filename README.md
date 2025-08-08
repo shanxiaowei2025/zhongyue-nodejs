@@ -126,6 +126,8 @@ src/
   - 保证金导入：`POST /api/deposit/upload`
 - **年月查询统一优化**：所有薪资模块支持 `yearMonth=2025-06` 格式的年月查询参数
 - **薪资更新接口修复**：修复更新薪资记录时动态字段（`payrollCompany`、`depositTotal`）导致的数据库字段冲突问题
+- **薪资查询修复**：修复删除数据库中 `company` 字段后，代码中仍使用该字段查询导致的查询失败问题。已将相关代码注释并改用员工表中的 `payrollCompany` 字段
+- **薪资自动更新修复**：修复 `salary-auto-update.service.ts` 中对已删除 `company` 字段的引用，消除TypeScript编译错误
 
 ## 权限控制
 

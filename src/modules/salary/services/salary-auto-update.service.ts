@@ -898,7 +898,7 @@ export class SalaryAutoUpdateService {
           personalIncomeTax: existingSalary?.personalIncomeTax || 0,
           other: existingSalary?.other || 0,
           bankCardNumber: employee.bankCardNumber || '',
-          company: existingSalary?.company || '',
+          // company: existingSalary?.company || '', // 注意：company字段已从数据库中删除，改用员工表中的payrollCompany字段
           bankCardOrWechat: existingSalary?.bankCardOrWechat || 0,
           cashPaid: existingSalary?.cashPaid || 0,
           yearMonth: new Date(firstDayOfLastMonth),

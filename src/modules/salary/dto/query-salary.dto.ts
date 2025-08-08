@@ -23,10 +23,11 @@ export class QuerySalaryDto extends PaginationDto {
   @IsString()
   type?: string;
 
-  @ApiPropertyOptional({ description: '公司' })
-  @IsOptional()
-  @IsString()
-  company?: string;
+  // 注意：company字段已从数据库中删除，如需公司查询功能，可考虑使用员工表中的payrollCompany字段
+  // @ApiPropertyOptional({ description: '公司' })
+  // @IsOptional()
+  // @IsString()
+  // company?: string;
 
   @ApiPropertyOptional({ 
     description: '是否已发放', 

@@ -87,8 +87,9 @@ export class Salary {
   @Column({ comment: '银行卡号', type: 'varchar', length: 50 })
   bankCardNumber: string;
 
-  @Column({ comment: '对应公司', type: 'varchar', length: 100 })
-  company: string;
+  // 注意：company字段已从数据库中删除，改用员工表中的payrollCompany字段
+  // @Column({ comment: '对应公司', type: 'varchar', length: 100 })
+  // company: string;
 
   @Column({ comment: '银行卡/微信', type: 'decimal', precision: 10, scale: 2, default: 0 })
   bankCardOrWechat: number;
