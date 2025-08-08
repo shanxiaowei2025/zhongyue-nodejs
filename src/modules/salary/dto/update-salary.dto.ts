@@ -1,114 +1,245 @@
-import { IsBoolean, IsDate, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsDate, IsNumber, IsOptional, IsString, IsArray } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export class UpdateSalaryDto {
+  @ApiProperty({ 
+    description: '底薪临时增加金额', 
+    type: 'number',
+    required: false,
+    example: 1200
+  })
   @IsNumber()
   @IsOptional()
-  temporaryIncrease: number;
+  temporaryIncrease?: number;
   
+  @ApiProperty({ 
+    description: '临时增加项目', 
+    type: 'string',
+    required: false,
+    example: '加班费'
+  })
   @IsString()
   @IsOptional()
-  temporaryIncreaseItem: string;
+  temporaryIncreaseItem?: string;
 
+  @ApiProperty({ 
+    description: '考勤扣款', 
+    type: 'number',
+    required: false,
+    example: 0
+  })
   @IsNumber()
   @IsOptional()
-  attendanceDeduction: number;
+  attendanceDeduction?: number;
 
+  // ❌ 移除：应发基本工资 - 这是自动计算字段
+  // basicSalaryPayable?: number;
+
+  @ApiProperty({ 
+    description: '全勤', 
+    type: 'number',
+    required: false,
+    example: 300
+  })
   @IsNumber()
   @IsOptional()
-  basicSalaryPayable: number;
+  fullAttendance?: number;
 
+  @ApiProperty({ 
+    description: '补贴合计', 
+    type: 'number',
+    required: false,
+    example: 500
+  })
   @IsNumber()
   @IsOptional()
-  fullAttendance: number;
+  totalSubsidy?: number;
 
+  @ApiProperty({ 
+    description: '工龄', 
+    type: 'number',
+    required: false,
+    example: 200
+  })
   @IsNumber()
   @IsOptional()
-  totalSubsidy: number;
+  seniority?: number;
 
+  @ApiProperty({ 
+    description: '代理费提成', 
+    type: 'number',
+    required: false,
+    example: 800
+  })
   @IsNumber()
   @IsOptional()
-  seniority: number;
+  agencyFeeCommission?: number;
 
+  @ApiProperty({ 
+    description: '绩效提成', 
+    type: 'number',
+    required: false,
+    example: 2500
+  })
   @IsNumber()
   @IsOptional()
-  agencyFeeCommission: number;
+  performanceCommission?: number;
 
+  @ApiProperty({ 
+    description: '绩效扣除', 
+    type: 'array',
+    items: { type: 'number' },
+    required: false,
+    example: [100, 50]
+  })
+  @IsArray()
+  @IsOptional()
+  performanceDeductions?: number[];
+
+  @ApiProperty({ 
+    description: '业务提成', 
+    type: 'number',
+    required: false,
+    example: 1000
+  })
   @IsNumber()
   @IsOptional()
-  performanceCommission: number;
+  businessCommission?: number;
 
-  @IsOptional()
-  performanceDeductions: number[];
-
+  @ApiProperty({ 
+    description: '其他扣款', 
+    type: 'number',
+    required: false,
+    example: 100
+  })
   @IsNumber()
   @IsOptional()
-  businessCommission: number;
+  otherDeductions?: number;
 
+  @ApiProperty({ 
+    description: '个人医疗', 
+    type: 'number',
+    required: false,
+    example: 120
+  })
   @IsNumber()
   @IsOptional()
-  otherDeductions: number;
+  personalMedical?: number;
 
+  @ApiProperty({ 
+    description: '个人养老', 
+    type: 'number',
+    required: false,
+    example: 450
+  })
   @IsNumber()
   @IsOptional()
-  personalMedical: number;
+  personalPension?: number;
 
+  @ApiProperty({ 
+    description: '个人失业', 
+    type: 'number',
+    required: false,
+    example: 30
+  })
   @IsNumber()
   @IsOptional()
-  personalPension: number;
+  personalUnemployment?: number;
 
+  @ApiProperty({ 
+    description: '社保个人合计', 
+    type: 'number',
+    required: false,
+    example: 600
+  })
   @IsNumber()
   @IsOptional()
-  personalUnemployment: number;
+  personalInsuranceTotal?: number;
 
+  @ApiProperty({ 
+    description: '公司承担合计', 
+    type: 'number',
+    required: false,
+    example: 800
+  })
   @IsNumber()
   @IsOptional()
-  personalInsuranceTotal: number;
+  companyInsuranceTotal?: number;
 
+  @ApiProperty({ 
+    description: '保证金扣除', 
+    type: 'number',
+    required: false,
+    example: 0
+  })
   @IsNumber()
   @IsOptional()
-  companyInsuranceTotal: number;
+  depositDeduction?: number;
 
+  @ApiProperty({ 
+    description: '个税', 
+    type: 'number',
+    required: false,
+    example: 150
+  })
   @IsNumber()
   @IsOptional()
-  depositDeduction: number;
+  personalIncomeTax?: number;
 
+  @ApiProperty({ 
+    description: '其他', 
+    type: 'number',
+    required: false,
+    example: 0
+  })
   @IsNumber()
   @IsOptional()
-  personalIncomeTax: number;
+  other?: number;
 
-  @IsNumber()
-  @IsOptional()
-  other: number;
+  // ❌ 移除：应发合计 - 这是自动计算字段
+  // totalPayable?: number;
 
-  @IsNumber()
-  @IsOptional()
-  totalPayable: number;
-
+  @ApiProperty({ 
+    description: '银行卡号', 
+    type: 'string',
+    required: false,
+    example: '6217000010012345678'
+  })
   @IsString()
   @IsOptional()
-  bankCardNumber: string;
+  bankCardNumber?: string;
 
   // 注意：company字段已从数据库中删除，改用员工表中的payrollCompany字段
   // @IsString()
   // @IsOptional()
   // company: string;
 
+  @ApiProperty({ 
+    description: '银行卡/微信', 
+    type: 'number',
+    required: false,
+    example: 12000
+  })
   @IsNumber()
   @IsOptional()
-  bankCardOrWechat: number;
+  bankCardOrWechat?: number;
 
+  @ApiProperty({ 
+    description: '已发现金', 
+    type: 'number',
+    required: false,
+    example: 1000
+  })
   @IsNumber()
   @IsOptional()
-  cashPaid: number;
+  cashPaid?: number;
 
-  @IsNumber()
-  @IsOptional()
-  corporatePayment: number;
+  // ❌ 移除：对公 - 这是自动计算字段
+  // corporatePayment?: number;
 
-  @IsNumber()
-  @IsOptional()
-  taxDeclaration: number;
+  // ❌ 移除：个税申报 - 这是自动计算字段  
+  // taxDeclaration?: number;
 
   @ApiProperty({ 
     description: '是否已发放', 
@@ -119,7 +250,7 @@ export class UpdateSalaryDto {
   })
   @IsBoolean()
   @IsOptional()
-  isPaid: boolean;
+  isPaid?: boolean;
 
   @ApiProperty({ 
     description: '是否已确认', 
@@ -130,14 +261,16 @@ export class UpdateSalaryDto {
   })
   @IsBoolean()
   @IsOptional()
-  isConfirmed: boolean;
+  isConfirmed?: boolean;
 
   @ApiProperty({
     description: '确认时间',
     required: false,
-    type: Date
+    type: Date,
+    example: '2024-01-15T10:30:00.000Z'
   })
   @IsDate()
   @IsOptional()
-  confirmedAt: Date;
+  @Type(() => Date)
+  confirmedAt?: Date;
 }

@@ -124,23 +124,7 @@ class SalaryCreateExample {
   yearMonth: string;
 }
 
-// 创建更新示例类
-class SalaryUpdateExample {
-  @ApiProperty({ example: 1200, description: '底薪临时增加金额' })
-  temporaryIncrease: number;
-
-  @ApiProperty({ example: 0, description: '考勤扣款' })
-  attendanceDeduction: number;
-
-  @ApiProperty({ example: 9700, description: '应发基本工资' })
-  basicSalaryPayable: number;
-
-  @ApiProperty({ example: 2500, description: '绩效提成' })
-  performanceCommission: number;
-
-  @ApiProperty({ example: 13000, description: '应发合计' })
-  totalPayable: number;
-}
+// 删除旧的示例类，直接使用完整的DTO
 
 @ApiTags('薪资管理')
 @Controller('salary')
@@ -374,7 +358,7 @@ export class SalaryController {
   @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '更新薪资记录', description: '根据ID更新薪资记录' })
   @ApiParam({ name: 'id', description: '薪资记录ID' })
-  @ApiBody({ type: SalaryUpdateExample })
+  @ApiBody({ type: UpdateSalaryDto })
   @ApiResponse({ status: HttpStatus.OK, description: '更新成功' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: '薪资记录不存在' })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权' })
