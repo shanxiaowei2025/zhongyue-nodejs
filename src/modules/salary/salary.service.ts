@@ -626,8 +626,8 @@ export class SalaryService {
     }
     
     // 将现有值与更新值合并，确保calculateDerivedFields有完整的数据
-    // 注意：从existingSalary中移除非实体字段（depositTotal和payrollCompany）
-    const { depositTotal, payrollCompany, ...salaryWithoutComputedFields } = existingSalary;
+    // 注意：从existingSalary中移除非实体字段（depositTotal、payrollCompany和attendanceRemark）
+    const { depositTotal, payrollCompany, attendanceRemark, ...salaryWithoutComputedFields } = existingSalary;
     
     const mergedData = {
       ...salaryWithoutComputedFields,

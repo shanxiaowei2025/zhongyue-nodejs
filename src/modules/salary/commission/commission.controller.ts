@@ -35,7 +35,7 @@ export class CommissionController {
   }
 
   @Get('sales')
-  @Roles('salary_admin', 'super_admin')
+  @Public()
   @ApiOperation({ summary: '查询业务提成表销售记录列表' })
   findAllBusinessSalesCommission(@Query() query: QueryBusinessSalesCommissionDto) {
     return this.commissionService.findAllBusinessSalesCommission(query);
@@ -79,7 +79,7 @@ export class CommissionController {
   }
 
   @Get('consultant')
-  @Roles('salary_admin', 'super_admin')
+  @Public()
   @ApiOperation({ summary: '查询业务提成表顾问记录列表' })
   findAllBusinessConsultantCommission(@Query() query: QueryBusinessCommissionDto) {
     return this.commissionService.findAllBusinessConsultantCommission(query);
@@ -123,7 +123,7 @@ export class CommissionController {
   }
 
   @Get('other')
-  @Roles('salary_admin', 'super_admin')
+  @Public()
   @ApiOperation({ summary: '查询业务提成表其他记录列表' })
   findAllBusinessOtherCommission(@Query() query: QueryBusinessCommissionDto) {
     return this.commissionService.findAllBusinessOtherCommission(query);
@@ -250,7 +250,7 @@ export class CommissionController {
   }
 
   @Get('performance')
-  @Roles('salary_admin', 'super_admin')
+  @Public()
   @ApiOperation({ summary: '查询绩效提成记录列表' })
   findAllPerformanceCommission(@Query() query: QueryPerformanceCommissionDto) {
     return this.commissionService.findAllPerformanceCommission(query);

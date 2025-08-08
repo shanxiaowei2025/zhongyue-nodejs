@@ -549,3 +549,13 @@ POST /api/salary/auto-generate?month=2025-08-01
 3. 文档会自动同步到Viki系统
 
 详细文档请查看 [docs/README.md](docs/README.md)
+
+## 更新历史
+
+### 2024-12-30
+- 放开佣金模块四个查询接口的权限限制：
+  - `GET /api/commission/sales` - 查询业务提成表销售记录列表
+  - `GET /api/commission/consultant` - 查询业务提成表顾问记录列表  
+  - `GET /api/commission/other` - 查询业务提成表其他记录列表
+  - `GET /api/commission/performance` - 查询绩效提成记录列表
+  - 这四个接口现在可以公开访问，无需角色权限验证，方便前端系统查询佣金数据
