@@ -125,6 +125,7 @@ src/
   - 考勤扣款导入：`POST /api/attendance-deduction/import`
   - 保证金导入：`POST /api/deposit/upload`
 - **年月查询统一优化**：所有薪资模块支持 `yearMonth=2025-06` 格式的年月查询参数
+- **薪资更新接口修复**：修复更新薪资记录时动态字段（`payrollCompany`、`depositTotal`）导致的数据库字段冲突问题
 
 ## 权限控制
 
