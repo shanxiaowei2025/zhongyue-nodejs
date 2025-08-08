@@ -344,6 +344,28 @@ export class EmployeeService {
       }
     }
     
+    // 检查是否更新了离职状态为在职
+    if (updateEmployeeDto.isResigned === false && employee.isResigned === true) {
+      this.logger.log(`检测到员工 "${employee.name}" 状态变更为在职，将同步启用其用户账号`);
+      try {
+        // 查找关联的用户账号（通过员工身份证号匹配用户身份证号）
+        if (employee.idCardNumber) {
+          const user = await this.usersService.findByIdCardNumber(employee.idCardNumber);
+          if (user) {
+            // 启用用户账号
+            await this.usersService.updateUserStatus(user.id, true);
+            this.logger.log(`已启用员工 "${employee.name}" (身份证号: ${employee.idCardNumber}) 对应的用户账号`);
+          } else {
+            this.logger.warn(`未找到员工 "${employee.name}" (身份证号: ${employee.idCardNumber}) 对应的用户账号`);
+          }
+        } else {
+          this.logger.warn(`员工 "${employee.name}" 没有身份证号，无法匹配用户账号`);
+        }
+      } catch (error) {
+        this.logger.error(`启用员工 "${employee.name}" 对应的用户账号失败: ${error.message}`);
+      }
+    }
+    
     // 直接检查并打印是否是特定人员，便于调试
     const isExcluded = this.isExcludedEmployee(employee.name);
     this.logger.log(`特定人员检查 - 员工: "${employee.name}", 结果: ${isExcluded}`);

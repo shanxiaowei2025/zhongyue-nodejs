@@ -10,6 +10,7 @@ import { safeDateParam, safePaginationParams } from 'src/common/utils';
 import { SalaryPermissionService } from './services/salary-permission.service';
 import { User } from '../users/entities/user.entity';
 import { Employee } from '../employee/entities/employee.entity';
+import { AttendanceDeduction } from './attendance-deduction/entities/attendance-deduction.entity';
 
 @Injectable()
 export class SalaryService {
@@ -20,6 +21,8 @@ export class SalaryService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Employee)
     private readonly employeeRepository: Repository<Employee>,
+    @InjectRepository(AttendanceDeduction)
+    private readonly attendanceDeductionRepository: Repository<AttendanceDeduction>,
     private readonly salaryPermissionService: SalaryPermissionService,
     private readonly dataSource: DataSource,
   ) {}
@@ -274,6 +277,88 @@ export class SalaryService {
     }
   }
 
+  /**
+   * 获取员工考勤备注
+   * @param name 员工姓名
+   * @param yearMonth 年月，格式为yyyy-mm-dd，只匹配年月部分
+   * @returns 考勤备注
+   */
+  async getAttendanceRemark(name: string, yearMonth: string): Promise<string> {
+    if (!name || !yearMonth) {
+      return '';
+    }
+    
+    try {
+      // 提取年月部分（yyyy-mm）
+      const yearMonthPrefix = yearMonth.substring(0, 7);
+      
+      const attendanceRecord = await this.attendanceDeductionRepository.findOne({
+        where: {
+          name: name,
+        },
+        order: {
+          yearMonth: 'DESC'
+        }
+      });
+      
+      // 如果找到记录且年月匹配
+      if (attendanceRecord && attendanceRecord.yearMonth) {
+        const recordYearMonth = attendanceRecord.yearMonth instanceof Date
+          ? attendanceRecord.yearMonth.toISOString().substring(0, 7)
+          : String(attendanceRecord.yearMonth).substring(0, 7);
+        if (recordYearMonth === yearMonthPrefix) {
+          return attendanceRecord.remark || '';
+        }
+      }
+      
+      return '';
+    } catch (error) {
+      console.error(`获取员工${name}考勤备注失败:`, error);
+      return '';
+    }
+  }
+
+  /**
+   * 批量获取员工考勤备注
+   * @param salaries 薪资记录数组
+   * @returns 薪资记录数组，每个记录添加了attendanceRemark字段
+   */
+  async addAttendanceRemarksToSalaries(salaries: any[]): Promise<any[]> {
+    if (!salaries || salaries.length === 0) {
+      return salaries;
+    }
+    
+    try {
+      // 获取所有的姓名和年月组合
+      const nameYearMonthPairs = salaries.map(salary => ({
+        name: salary.name,
+        yearMonth: salary.yearMonth instanceof Date 
+          ? salary.yearMonth.toISOString().split('T')[0] 
+          : salary.yearMonth
+      }));
+      
+      // 批量查询考勤备注
+      const remarkPromises = nameYearMonthPairs.map(pair => 
+        this.getAttendanceRemark(pair.name, pair.yearMonth)
+      );
+      
+      const remarks = await Promise.all(remarkPromises);
+      
+      // 将备注添加到每个薪资记录中
+      return salaries.map((salary, index) => ({
+        ...salary,
+        attendanceRemark: remarks[index]
+      }));
+    } catch (error) {
+      console.error('批量获取考勤备注失败:', error);
+      // 出错时返回原始数据，attendanceRemark为空字符串
+      return salaries.map(salary => ({
+        ...salary,
+        attendanceRemark: ''
+      }));
+    }
+  }
+
   async findAll(query: QuerySalaryDto, userId: number) {
     console.log('薪资查询参数:', JSON.stringify(query));
     
@@ -409,8 +494,11 @@ export class SalaryService {
         // 添加发工资公司信息
         const dataWithPayrollCompany = await this.addPayrollCompanyToSalaries(data);
         
+        // 添加考勤备注信息
+        const dataWithAttendanceRemarks = await this.addAttendanceRemarksToSalaries(dataWithPayrollCompany);
+        
         // 将保证金总和添加到每个薪资记录中
-        data = dataWithPayrollCompany.map(item => ({
+        data = dataWithAttendanceRemarks.map(item => ({
           ...item,
           depositTotal: depositTotals.get(item.name) || 0
         }));
@@ -427,7 +515,7 @@ export class SalaryService {
     };
   }
 
-  async findOne(id: number, userId: number): Promise<Salary & { depositTotal?: number; payrollCompany?: string }> {
+  async findOne(id: number, userId: number): Promise<Salary & { depositTotal?: number; payrollCompany?: string; attendanceRemark?: string }> {
     // 确保id是有效的数字
     const safeId = Number(id);
     if (isNaN(safeId)) {
@@ -469,10 +557,17 @@ export class SalaryService {
     // 添加发工资公司信息
     const salaryWithPayrollCompany = await this.addPayrollCompanyToSalary(salary);
     
-    // 返回附加了保证金总和和发工资公司信息的薪资记录
+    // 获取考勤备注信息
+    const yearMonthStr = salary.yearMonth instanceof Date 
+      ? salary.yearMonth.toISOString().split('T')[0] 
+      : salary.yearMonth;
+    const attendanceRemark = await this.getAttendanceRemark(salary.name, yearMonthStr);
+    
+    // 返回附加了保证金总和、发工资公司信息和考勤备注的薪资记录
     return {
       ...salaryWithPayrollCompany,
-      depositTotal
+      depositTotal,
+      attendanceRemark
     };
   }
 
@@ -674,8 +769,11 @@ export class SalaryService {
         // 添加发工资公司信息
         const dataWithPayrollCompany = await this.addPayrollCompanyToSalaries(data);
         
+        // 添加考勤备注信息
+        const dataWithAttendanceRemarks = await this.addAttendanceRemarksToSalaries(dataWithPayrollCompany);
+        
         // 将保证金总和添加到每个薪资记录中
-        data = dataWithPayrollCompany.map(item => ({
+        data = dataWithAttendanceRemarks.map(item => ({
           ...item,
           depositTotal
         }));
@@ -693,7 +791,7 @@ export class SalaryService {
   }
 
   // 员工查看自己的薪资详情
-  async findMySalaryById(id: number, userId: number): Promise<Salary & { depositTotal?: number; payrollCompany?: string }> {
+  async findMySalaryById(id: number, userId: number): Promise<Salary & { depositTotal?: number; payrollCompany?: string; attendanceRemark?: string }> {
     // 确保id是有效的数字
     const safeId = Number(id);
     if (isNaN(safeId)) {
@@ -728,10 +826,17 @@ export class SalaryService {
     // 添加发工资公司信息
     const salaryWithPayrollCompany = await this.addPayrollCompanyToSalary(salary);
     
-    // 返回附加了保证金总和和发工资公司信息的薪资记录
+    // 获取考勤备注信息
+    const yearMonthStr = salary.yearMonth instanceof Date 
+      ? salary.yearMonth.toISOString().split('T')[0] 
+      : salary.yearMonth;
+    const attendanceRemark = await this.getAttendanceRemark(salary.name, yearMonthStr);
+    
+    // 返回附加了保证金总和、发工资公司信息和考勤备注的薪资记录
     return {
       ...salaryWithPayrollCompany,
-      depositTotal
+      depositTotal,
+      attendanceRemark
     };
   }
   

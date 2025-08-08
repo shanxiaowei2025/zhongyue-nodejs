@@ -23,6 +23,7 @@ import { Role } from '../roles/entities/role.entity';
 import { Permission } from '../permissions/entities/permission.entity';
 import { Department } from '../department/entities/department.entity';
 import { Employee } from '../employee/entities/employee.entity';
+import { AttendanceDeduction } from './attendance-deduction/entities/attendance-deduction.entity';
 
 // 提成表实体
 import { 
@@ -50,6 +51,7 @@ import {
       Salary, 
       SalaryBaseHistory,
       Deposit,
+      AttendanceDeduction,
       BusinessSalesCommission,
       BusinessConsultantCommission,
       BusinessOtherCommission,
