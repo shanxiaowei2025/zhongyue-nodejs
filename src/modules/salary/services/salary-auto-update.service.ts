@@ -12,13 +12,13 @@ export class SalaryAutoUpdateService {
   constructor(
     @InjectRepository(Salary)
     private salaryRepository: Repository<Salary>,
-    private dataSource: DataSource
+    private dataSource: DataSource,
   ) {}
 
   // 导入SalaryService以使用其calculateDerivedFields方法
   private calculateDerivedFields<T extends Partial<Salary>>(salaryData: T): T {
     const result = { ...salaryData };
-    
+
     // 基本字段值处理，确保是数字
     const baseSalary = Number(result.baseSalary || 0);
     const temporaryIncrease = Number(result.temporaryIncrease || 0);
@@ -35,48 +35,59 @@ export class SalaryAutoUpdateService {
     const other = Number(result.other || 0);
     const bankCardOrWechat = Number(result.bankCardOrWechat || 0);
     const cashPaid = Number(result.cashPaid || 0);
-    
+
     // 计算绩效扣除总额
     let performanceDeductionTotal = 0;
-    if (result.performanceDeductions && Array.isArray(result.performanceDeductions)) {
-      performanceDeductionTotal = result.performanceDeductions.reduce((sum, deduction) => sum + Number(deduction || 0), 0);
-      
+    if (
+      result.performanceDeductions &&
+      Array.isArray(result.performanceDeductions)
+    ) {
+      performanceDeductionTotal = result.performanceDeductions.reduce(
+        (sum, deduction) => sum + Number(deduction || 0),
+        0,
+      );
+
       // 如果绩效扣除总额大于1，则重置为1
       if (performanceDeductionTotal > 1) {
         performanceDeductionTotal = 1;
       }
     }
-    
+
     // 计算绩效佣金 = 原始绩效佣金 * (1 - 绩效扣除总额)
-    const originalPerformanceCommission = Number(result.performanceCommission || 0);
-    result.performanceCommission = originalPerformanceCommission * (1 - performanceDeductionTotal);
-    
+    const originalPerformanceCommission = Number(
+      result.performanceCommission || 0,
+    );
+    result.performanceCommission =
+      originalPerformanceCommission * (1 - performanceDeductionTotal);
+
     // 计算应发基本工资
-    const basicSalaryPayable = baseSalary + temporaryIncrease - attendanceDeduction;
+    const basicSalaryPayable =
+      baseSalary + temporaryIncrease - attendanceDeduction;
     result.basicSalaryPayable = basicSalaryPayable;
-    
+
     // 计算应发合计
-    const totalPayable = basicSalaryPayable + 
-      fullAttendance + 
-      totalSubsidy + 
-      seniority + 
-      agencyFeeCommission + 
-      result.performanceCommission + 
-      businessCommission - 
-      otherDeductions - 
-      personalInsuranceTotal - 
-      depositDeduction - 
-      personalIncomeTax - 
+    const totalPayable =
+      basicSalaryPayable +
+      fullAttendance +
+      totalSubsidy +
+      seniority +
+      agencyFeeCommission +
+      result.performanceCommission +
+      businessCommission -
+      otherDeductions -
+      personalInsuranceTotal -
+      depositDeduction -
+      personalIncomeTax -
       other;
     result.totalPayable = totalPayable;
-    
+
     // 计算对公金额
     const corporatePayment = totalPayable - bankCardOrWechat - cashPaid;
     result.corporatePayment = corporatePayment;
-    
+
     // 计算个税申报
     result.taxDeclaration = corporatePayment + personalInsuranceTotal;
-    
+
     return result;
   }
 
@@ -89,7 +100,9 @@ export class SalaryAutoUpdateService {
     try {
       this.logger.log('开始自动更新薪资表...');
       const result = await this.generateMonthlySalaries();
-      this.logger.log(`薪资表自动更新完成，共更新${result.updated}条记录，新增${result.created}条记录，已包含业务提成计算`);
+      this.logger.log(
+        `薪资表自动更新完成，共更新${result.updated}条记录，新增${result.created}条记录，已包含业务提成计算`,
+      );
     } catch (error) {
       this.logger.error(`薪资表自动更新失败: ${error.message}`, error.stack);
     }
@@ -107,7 +120,11 @@ export class SalaryAutoUpdateService {
    * @param lastDayOfLastMonth 上月最后一天
    * @returns 代理费提成金额
    */
-  async calculateAgencyFeeCommission(employeeName: string, firstDayOfLastMonth: string, lastDayOfLastMonth: string): Promise<number> {
+  async calculateAgencyFeeCommission(
+    employeeName: string,
+    firstDayOfLastMonth: string,
+    lastDayOfLastMonth: string,
+  ): Promise<number> {
     try {
       // 1. 筛选sys_expense表中auditDate为上个月且businessType为续费的记录
       const expenseQuery = `
@@ -124,35 +141,44 @@ export class SalaryAutoUpdateService {
           auditDate BETWEEN ? AND ? AND
           status = 1
       `;
-      
+
       const expenseResults = await this.dataSource.query(expenseQuery, [
         employeeName,
         firstDayOfLastMonth,
-        lastDayOfLastMonth
+        lastDayOfLastMonth,
       ]);
-      
+
       // 如果没有找到数据，则返回0
       if (!expenseResults.length) {
-        this.logger.debug(`员工 ${employeeName} 在上个月没有符合条件的代理费记录`);
+        this.logger.debug(
+          `员工 ${employeeName} 在上个月没有符合条件的代理费记录`,
+        );
         return 0;
       }
-      
+
       // 2. 计算代理费用总和（提成比例1%）
       const totalAgencyFee = Number(expenseResults[0].totalAgencyFee || 0);
-      const totalSocialInsuranceAgencyFee = Number(expenseResults[0].totalSocialInsuranceAgencyFee || 0);
+      const totalSocialInsuranceAgencyFee = Number(
+        expenseResults[0].totalSocialInsuranceAgencyFee || 0,
+      );
       const agencyTotalFee = totalAgencyFee + totalSocialInsuranceAgencyFee;
-      
+
       // 计算软件费用总和（提成比例10%）
-      const totalAccountingSoftwareFee = Number(expenseResults[0].totalAccountingSoftwareFee || 0);
-      const totalInvoiceSoftwareFee = Number(expenseResults[0].totalInvoiceSoftwareFee || 0);
+      const totalAccountingSoftwareFee = Number(
+        expenseResults[0].totalAccountingSoftwareFee || 0,
+      );
+      const totalInvoiceSoftwareFee = Number(
+        expenseResults[0].totalInvoiceSoftwareFee || 0,
+      );
       const totalAddressFee = Number(expenseResults[0].totalAddressFee || 0);
-      const softwareTotalFee = totalAccountingSoftwareFee + totalInvoiceSoftwareFee + totalAddressFee;
-      
+      const softwareTotalFee =
+        totalAccountingSoftwareFee + totalInvoiceSoftwareFee + totalAddressFee;
+
       if (agencyTotalFee <= 0 && softwareTotalFee <= 0) {
         this.logger.debug(`员工 ${employeeName} 的代理费和软件费总和为0`);
         return 0;
       }
-      
+
       this.logger.debug(`
         员工 ${employeeName} 的费用明细：
         代理费: ${totalAgencyFee}，
@@ -161,20 +187,24 @@ export class SalaryAutoUpdateService {
         开票软件费: ${totalInvoiceSoftwareFee}，
         地址费: ${totalAddressFee}
       `);
-      
+
       // 3. 计算代理费提成 = 代理费总和 × 1% + 软件费总和 × 10%
-      const agencyFeeCommission = agencyTotalFee * 0.01 + softwareTotalFee * 0.1;
-      
+      const agencyFeeCommission =
+        agencyTotalFee * 0.01 + softwareTotalFee * 0.1;
+
       this.logger.debug(`
         员工 ${employeeName} 的代理费提成计算: 
         代理费部分: ${agencyTotalFee} × 1% = ${agencyTotalFee * 0.01}
         软件费部分: ${softwareTotalFee} × 10% = ${softwareTotalFee * 0.1}
         总计: ${agencyFeeCommission}
       `);
-      
+
       return agencyFeeCommission;
     } catch (error) {
-      this.logger.error(`计算员工 ${employeeName} 代理费提成时出错: ${error.message}`, error.stack);
+      this.logger.error(
+        `计算员工 ${employeeName} 代理费提成时出错: ${error.message}`,
+        error.stack,
+      );
       return 0;
     }
   }
@@ -192,25 +222,27 @@ export class SalaryAutoUpdateService {
   async calculateBusinessCommission(
     employeeName: string,
     firstDayOfLastMonth: string,
-    lastDayOfLastMonth: string
-  ): Promise<{businessCommission: number, newBaseSalary?: number}> {
+    lastDayOfLastMonth: string,
+  ): Promise<{ businessCommission: number; newBaseSalary?: number }> {
     try {
       this.logger.log(`开始计算员工 ${employeeName} 的业务提成`);
-      
+
       // 1. 获取员工信息
       const employeeQuery = `
         SELECT * FROM sys_employees WHERE name = ? LIMIT 1
       `;
-      const employeeResults = await this.dataSource.query(employeeQuery, [employeeName]);
-      
+      const employeeResults = await this.dataSource.query(employeeQuery, [
+        employeeName,
+      ]);
+
       if (!employeeResults.length) {
         this.logger.debug(`未找到员工 ${employeeName} 的信息`);
         return { businessCommission: 0 };
       }
-      
+
       const employee = employeeResults[0];
       const commissionRatePosition = employee.commissionRatePosition || '';
-      
+
       // 2. 筛选费用记录：新增和空的业务类型，上月已审核的
       const expenseQuery = `
         SELECT * FROM sys_expense 
@@ -220,53 +252,55 @@ export class SalaryAutoUpdateService {
           status = 1 AND
           auditDate BETWEEN ? AND ?
       `;
-      
+
       const expenseResults = await this.dataSource.query(expenseQuery, [
         employeeName,
         firstDayOfLastMonth,
-        lastDayOfLastMonth
+        lastDayOfLastMonth,
       ]);
-      
+
       if (!expenseResults.length) {
-        this.logger.debug(`员工 ${employeeName} 在上个月没有符合条件的业务记录`);
+        this.logger.debug(
+          `员工 ${employeeName} 在上个月没有符合条件的业务记录`,
+        );
         return { businessCommission: 0 };
       }
-      
+
       // 3. 统计所有记录的基础业务费用总和
       let totalBasicFee = 0;
       let totalOutsourceFee = 0;
       let totalExpenseBusinessCommission = 0;
-      
+
       // 先计算所有记录的基础业务费用总和
       for (const expense of expenseResults) {
         // 基础业务费用总和
-        const basicFee = 
-          Number(expense.licenseFee || 0) + 
-          Number(expense.agencyFee || 0) + 
-          Number(expense.socialInsuranceAgencyFee || 0) + 
-          Number(expense.housingFundAgencyFee || 0) + 
-          Number(expense.statisticalReportFee || 0) + 
-          Number(expense.changeFee || 0) + 
-          Number(expense.administrativeLicenseFee || 0) + 
+        const basicFee =
+          Number(expense.licenseFee || 0) +
+          Number(expense.agencyFee || 0) +
+          Number(expense.socialInsuranceAgencyFee || 0) +
+          Number(expense.housingFundAgencyFee || 0) +
+          Number(expense.statisticalReportFee || 0) +
+          Number(expense.changeFee || 0) +
+          Number(expense.administrativeLicenseFee || 0) +
           Number(expense.otherBusinessFee || 0);
-        
+
         // 外包业务费用总和
-        const outsourceFee = 
-          Number(expense.brandFee || 0) + 
-          Number(expense.generalSealFee || 0) + 
-          Number(expense.accountingSoftwareFee || 0) + 
-          Number(expense.addressFee || 0) + 
-          Number(expense.invoiceSoftwareFee || 0) + 
+        const outsourceFee =
+          Number(expense.brandFee || 0) +
+          Number(expense.generalSealFee || 0) +
+          Number(expense.accountingSoftwareFee || 0) +
+          Number(expense.addressFee || 0) +
+          Number(expense.invoiceSoftwareFee || 0) +
           Number(expense.otherBusinessOutsourcingFee || 0);
-        
+
         // 累计总费用（用于后续计算提成比率）
         totalBasicFee += basicFee;
         totalOutsourceFee += outsourceFee;
       }
-      
+
       // 4. 根据不同的提成比率职位获取提成比率
       let commissionRate = 0;
-      
+
       if (commissionRatePosition) {
         let commissionTable = '';
         if (commissionRatePosition === '顾问') {
@@ -276,7 +310,7 @@ export class SalaryAutoUpdateService {
         } else {
           commissionTable = 'sys_business_other_commission';
         }
-        
+
         // 查询提成比率 - 基于所有记录的基础业务费用总和
         const commissionRateQuery = `
           SELECT * FROM ${commissionTable} 
@@ -286,112 +320,130 @@ export class SalaryAutoUpdateService {
           ORDER BY id ASC 
           LIMIT 1
         `;
-        
+
         const commissionRateResults = await this.dataSource.query(
-          commissionRateQuery, 
-          commissionRatePosition === '销售' ? 
-            [totalBasicFee, employee.workYears || 0, employee.workYears || 0] : 
-            [totalBasicFee]
+          commissionRateQuery,
+          commissionRatePosition === '销售'
+            ? [totalBasicFee, employee.workYears || 0, employee.workYears || 0]
+            : [totalBasicFee],
         );
-        
+
         if (commissionRateResults.length) {
           commissionRate = Number(commissionRateResults[0].commissionRate || 0);
-          this.logger.debug(`员工 ${employeeName} 的基础业务费用总和为 ${totalBasicFee}，适用的提成比率为 ${commissionRate}`);
-          
+          this.logger.debug(
+            `员工 ${employeeName} 的基础业务费用总和为 ${totalBasicFee}，适用的提成比率为 ${commissionRate}`,
+          );
+
           // 使用获取到的提成比率计算每条记录的提成
           for (const expense of expenseResults) {
             // 基础业务费用
-            const basicFee = 
-              Number(expense.licenseFee || 0) + 
-              Number(expense.agencyFee || 0) + 
-              Number(expense.socialInsuranceAgencyFee || 0) + 
-              Number(expense.housingFundAgencyFee || 0) + 
-              Number(expense.statisticalReportFee || 0) + 
-              Number(expense.changeFee || 0) + 
-              Number(expense.administrativeLicenseFee || 0) + 
+            const basicFee =
+              Number(expense.licenseFee || 0) +
+              Number(expense.agencyFee || 0) +
+              Number(expense.socialInsuranceAgencyFee || 0) +
+              Number(expense.housingFundAgencyFee || 0) +
+              Number(expense.statisticalReportFee || 0) +
+              Number(expense.changeFee || 0) +
+              Number(expense.administrativeLicenseFee || 0) +
               Number(expense.otherBusinessFee || 0);
-            
+
             // 外包业务费用
-            const outsourceFee = 
-              Number(expense.brandFee || 0) + 
-              Number(expense.generalSealFee || 0) + 
-              Number(expense.accountingSoftwareFee || 0) + 
-              Number(expense.addressFee || 0) + 
-              Number(expense.invoiceSoftwareFee || 0) + 
+            const outsourceFee =
+              Number(expense.brandFee || 0) +
+              Number(expense.generalSealFee || 0) +
+              Number(expense.accountingSoftwareFee || 0) +
+              Number(expense.addressFee || 0) +
+              Number(expense.invoiceSoftwareFee || 0) +
               Number(expense.otherBusinessOutsourcingFee || 0);
-            
+
             // 计算基础业务提成 - 使用统一的提成比率
             const basicBusinessCommission = basicFee * commissionRate;
-            
+
             // 计算外包业务提成 (固定10%)
             const outsourceBusinessCommission = outsourceFee * 0.1;
-            
+
             // 计算总业务提成
-            const totalBusinessCommission = basicBusinessCommission + outsourceBusinessCommission;
-            
+            const totalBusinessCommission =
+              basicBusinessCommission + outsourceBusinessCommission;
+
             // 更新费用表中的业务提成字段
-            await this.dataSource.query(`
+            await this.dataSource.query(
+              `
               UPDATE sys_expense SET business_commission = ? WHERE id = ?
-            `, [totalBusinessCommission, expense.id]);
-            
+            `,
+              [totalBusinessCommission, expense.id],
+            );
+
             // 累计每个员工每条记录的业务提成
             totalExpenseBusinessCommission += totalBusinessCommission;
-            
-            this.logger.debug(`费用记录 ID:${expense.id} 计算业务提成: ${totalBusinessCommission}，基础业务: ${basicBusinessCommission}，外包业务: ${outsourceBusinessCommission}`);
+
+            this.logger.debug(
+              `费用记录 ID:${expense.id} 计算业务提成: ${totalBusinessCommission}，基础业务: ${basicBusinessCommission}，外包业务: ${outsourceBusinessCommission}`,
+            );
           }
         } else {
           this.logger.debug(`未找到适用于总额 ${totalBasicFee} 的提成比率`);
-          
+
           // 只计算外包业务提成
           for (const expense of expenseResults) {
-            const outsourceFee = 
-              Number(expense.brandFee || 0) + 
-              Number(expense.generalSealFee || 0) + 
-              Number(expense.accountingSoftwareFee || 0) + 
-              Number(expense.addressFee || 0) + 
-              Number(expense.invoiceSoftwareFee || 0) + 
+            const outsourceFee =
+              Number(expense.brandFee || 0) +
+              Number(expense.generalSealFee || 0) +
+              Number(expense.accountingSoftwareFee || 0) +
+              Number(expense.addressFee || 0) +
+              Number(expense.invoiceSoftwareFee || 0) +
               Number(expense.otherBusinessOutsourcingFee || 0);
-            
+
             // 外包业务按10%计算
             const outsourceBusinessCommission = outsourceFee * 0.1;
-            
+
             // 更新费用表中的业务提成字段
-            await this.dataSource.query(`
+            await this.dataSource.query(
+              `
               UPDATE sys_expense SET business_commission = ? WHERE id = ?
-            `, [outsourceBusinessCommission, expense.id]);
-            
+            `,
+              [outsourceBusinessCommission, expense.id],
+            );
+
             // 累计每个员工每条记录的业务提成
             totalExpenseBusinessCommission += outsourceBusinessCommission;
-            
-            this.logger.debug(`费用记录 ID:${expense.id} 计算业务提成(仅外包): ${outsourceBusinessCommission}`);
+
+            this.logger.debug(
+              `费用记录 ID:${expense.id} 计算业务提成(仅外包): ${outsourceBusinessCommission}`,
+            );
           }
         }
       } else {
         // 如果没有提成比率职位，则只计算外包业务提成
         for (const expense of expenseResults) {
-          const outsourceFee = 
-            Number(expense.brandFee || 0) + 
-            Number(expense.generalSealFee || 0) + 
-            Number(expense.accountingSoftwareFee || 0) + 
-            Number(expense.addressFee || 0) + 
-            Number(expense.invoiceSoftwareFee || 0) + 
+          const outsourceFee =
+            Number(expense.brandFee || 0) +
+            Number(expense.generalSealFee || 0) +
+            Number(expense.accountingSoftwareFee || 0) +
+            Number(expense.addressFee || 0) +
+            Number(expense.invoiceSoftwareFee || 0) +
             Number(expense.otherBusinessOutsourcingFee || 0);
-          
+
           // 外包业务按10%计算
           const outsourceBusinessCommission = outsourceFee * 0.1;
-          
+
           // 更新费用表中的业务提成字段
-          await this.dataSource.query(`
+          await this.dataSource.query(
+            `
             UPDATE sys_expense SET business_commission = ? WHERE id = ?
-          `, [outsourceBusinessCommission, expense.id]);
-          
+          `,
+            [outsourceBusinessCommission, expense.id],
+          );
+
           // 累计每个员工每条记录的业务提成
           totalExpenseBusinessCommission += outsourceBusinessCommission;
-          
-          this.logger.debug(`费用记录 ID:${expense.id} 计算业务提成(仅外包): ${outsourceBusinessCommission}`);
+
+          this.logger.debug(
+            `费用记录 ID:${expense.id} 计算业务提成(仅外包): ${outsourceBusinessCommission}`,
+          );
         }
       }
-      
+
       // 5. 如果是销售人员，还需更新baseSalary
       let newBaseSalary = null;
       if (commissionRatePosition === '销售') {
@@ -404,24 +456,30 @@ export class SalaryAutoUpdateService {
           ORDER BY id ASC 
           LIMIT 1
         `;
-        
-        const baseSalaryResults = await this.dataSource.query(
-          baseSalaryQuery, 
-          [totalBasicFee, employee.workYears || 0, employee.workYears || 0]
-        );
-        
+
+        const baseSalaryResults = await this.dataSource.query(baseSalaryQuery, [
+          totalBasicFee,
+          employee.workYears || 0,
+          employee.workYears || 0,
+        ]);
+
         if (baseSalaryResults.length) {
           newBaseSalary = Number(baseSalaryResults[0].baseSalary || 0);
-          this.logger.debug(`员工 ${employeeName} 更新底薪为: ${newBaseSalary}`);
+          this.logger.debug(
+            `员工 ${employeeName} 更新底薪为: ${newBaseSalary}`,
+          );
         }
       }
-      
-      return { 
+
+      return {
         businessCommission: totalExpenseBusinessCommission,
-        newBaseSalary
+        newBaseSalary,
       };
     } catch (error) {
-      this.logger.error(`计算员工 ${employeeName} 业务提成时出错: ${error.message}`, error.stack);
+      this.logger.error(
+        `计算员工 ${employeeName} 业务提成时出错: ${error.message}`,
+        error.stack,
+      );
       return { businessCommission: 0 };
     }
   }
@@ -431,72 +489,93 @@ export class SalaryAutoUpdateService {
    * 根据上个月账务自查数据，调整薪资表中记账会计的performanceDeductions字段
    * @param lastMonth 上个月对象
    */
-  async checkAndUpdateAccountantPerformance(lastMonth: moment.Moment): Promise<void> {
+  async checkAndUpdateAccountantPerformance(
+    lastMonth: moment.Moment,
+  ): Promise<void> {
     try {
-      this.logger.warn('██████████ 开始检查记账会计账务自查记录并更新绩效扣除... ██████████');
-      
+      this.logger.warn(
+        '██████████ 开始检查记账会计账务自查记录并更新绩效扣除... ██████████',
+      );
+
       // 获取上个月的第一天和最后一天
-      const firstDayOfLastMonth = lastMonth.startOf('month').format('YYYY-MM-DD');
+      const firstDayOfLastMonth = lastMonth
+        .startOf('month')
+        .format('YYYY-MM-DD');
       const lastDayOfLastMonth = lastMonth.endOf('month').format('YYYY-MM-DD');
-      
-      this.logger.warn(`统计${firstDayOfLastMonth}至${lastDayOfLastMonth}期间的账务自查记录`);
-      
+
+      this.logger.warn(
+        `统计${firstDayOfLastMonth}至${lastDayOfLastMonth}期间的账务自查记录`,
+      );
+
       // 1. 获取所有记账会计
       const accountantSQL = `SELECT * FROM sys_employees WHERE position = '记账会计'`;
       this.logger.warn(`执行SQL: ${accountantSQL}`);
-      
+
       const accountants = await this.dataSource.query(accountantSQL);
-      
-      this.logger.warn(`查询结果: ${JSON.stringify(accountants).substring(0, 200)}${accountants && accountants.length > 0 ? '...' : ''}`);
-      
+
+      this.logger.warn(
+        `查询结果: ${JSON.stringify(accountants).substring(0, 200)}${accountants && accountants.length > 0 ? '...' : ''}`,
+      );
+
       if (!accountants || accountants.length === 0) {
         this.logger.warn('⚠️⚠️⚠️ 未找到任何记账会计，跳过绩效扣除调整 ⚠️⚠️⚠️');
         return;
       }
-      
+
       this.logger.warn(`找到${accountants.length}名记账会计`);
-      
+
       // 2. 筛选账务自查表，上个月，status字段为2或4的记录
       const inspectionSQL = `
         SELECT * FROM sys_financial_self_inspection 
         WHERE inspectionDate BETWEEN ? AND ? 
         AND status IN (2, 4)
       `;
-      this.logger.warn(`执行SQL: ${inspectionSQL.replace(/\n\s+/g, ' ')} [参数: ${firstDayOfLastMonth}, ${lastDayOfLastMonth}]`);
-      
+      this.logger.warn(
+        `执行SQL: ${inspectionSQL.replace(/\n\s+/g, ' ')} [参数: ${firstDayOfLastMonth}, ${lastDayOfLastMonth}]`,
+      );
+
       const inspectionRecords = await this.dataSource.query(inspectionSQL, [
-        firstDayOfLastMonth, 
-        lastDayOfLastMonth
+        firstDayOfLastMonth,
+        lastDayOfLastMonth,
       ]);
-      
-      this.logger.warn(`查询结果: ${JSON.stringify(inspectionRecords).substring(0, 200)}${inspectionRecords && inspectionRecords.length > 0 ? '...' : ''}`);
-      
+
+      this.logger.warn(
+        `查询结果: ${JSON.stringify(inspectionRecords).substring(0, 200)}${inspectionRecords && inspectionRecords.length > 0 ? '...' : ''}`,
+      );
+
       if (!inspectionRecords || inspectionRecords.length === 0) {
-        this.logger.warn('⚠️⚠️⚠️ 上月没有已确认的账务自查记录，但将继续统计并显示结果 ⚠️⚠️⚠️');
+        this.logger.warn(
+          '⚠️⚠️⚠️ 上月没有已确认的账务自查记录，但将继续统计并显示结果 ⚠️⚠️⚠️',
+        );
       } else {
-        this.logger.warn(`找到${inspectionRecords.length}条已确认的账务自查记录`);
+        this.logger.warn(
+          `找到${inspectionRecords.length}条已确认的账务自查记录`,
+        );
       }
-      
+
       // 3. 统计每个记账会计的自查和抽查数量
       const accountantStats = {};
-      
+
       for (const accountant of accountants) {
         accountantStats[accountant.name] = {
           selfInspectionCount: 0,
           inspectionByOthersCount: 0,
           reviewCount: 0,
-          mainRank: 0
+          mainRank: 0,
         };
-        
+
         // 解析记账会计的职级
         if (accountant.rank) {
           const rankMatch = accountant.rank.match(/^P(\d+)-\d+$/);
           if (rankMatch) {
-            accountantStats[accountant.name].mainRank = parseInt(rankMatch[1], 10);
+            accountantStats[accountant.name].mainRank = parseInt(
+              rankMatch[1],
+              10,
+            );
           }
         }
       }
-      
+
       // 只有当有记录时才进行计数
       if (inspectionRecords && inspectionRecords.length > 0) {
         // 4. 计算自查和抽查数量
@@ -504,7 +583,8 @@ export class SalaryAutoUpdateService {
           if (record.bookkeepingAccountant === record.inspector) {
             // 自查记录
             if (accountantStats[record.bookkeepingAccountant]) {
-              accountantStats[record.bookkeepingAccountant].selfInspectionCount++;
+              accountantStats[record.bookkeepingAccountant]
+                .selfInspectionCount++;
               // 移除详细日志
             }
           } else if (accountantStats[record.inspector]) {
@@ -512,7 +592,7 @@ export class SalaryAutoUpdateService {
             accountantStats[record.inspector].inspectionByOthersCount++;
             // 移除详细日志
           }
-          
+
           // 统计复查数量（特别是曹海玲的复查数量）
           if (record.reviewer && accountantStats[record.reviewer]) {
             accountantStats[record.reviewer].reviewCount++;
@@ -520,104 +600,134 @@ export class SalaryAutoUpdateService {
           }
         }
       }
-      
+
       this.logger.warn('记账会计统计结果:');
       // 添加表格样式的日志输出，更清晰地展示统计数据
-      this.logger.warn('------------------------------------------------------');
-      this.logger.warn('| 姓名       | 职级   | 自查数量 | 抽查数量 | 复查数量 |');
-      this.logger.warn('------------------------------------------------------');
-      Object.keys(accountantStats).forEach(name => {
+      this.logger.warn(
+        '------------------------------------------------------',
+      );
+      this.logger.warn(
+        '| 姓名       | 职级   | 自查数量 | 抽查数量 | 复查数量 |',
+      );
+      this.logger.warn(
+        '------------------------------------------------------',
+      );
+      Object.keys(accountantStats).forEach((name) => {
         const stats = accountantStats[name];
         const paddedName = name.padEnd(10, ' ');
         const paddedRank = `P${stats.mainRank}`.padEnd(6, ' ');
         const paddedSelf = `${stats.selfInspectionCount}`.padStart(8, ' ');
-        const paddedInspect = `${stats.inspectionByOthersCount}`.padStart(8, ' ');
+        const paddedInspect = `${stats.inspectionByOthersCount}`.padStart(
+          8,
+          ' ',
+        );
         const paddedReview = `${stats.reviewCount}`.padStart(8, ' ');
-        
-        this.logger.warn(`| ${paddedName} | ${paddedRank} | ${paddedSelf} | ${paddedInspect} | ${paddedReview} |`);
-        
+
+        this.logger.warn(
+          `| ${paddedName} | ${paddedRank} | ${paddedSelf} | ${paddedInspect} | ${paddedReview} |`,
+        );
+
         // 检查是否符合规则
         let ruleApplied = false;
-        
+
         if (name === '曹海玲') {
           if (stats.reviewCount < 12) {
-            this.logger.warn(`❌ ${name} 复查数量 ${stats.reviewCount} < 12，需扣除绩效`);
+            this.logger.warn(
+              `❌ ${name} 复查数量 ${stats.reviewCount} < 12，需扣除绩效`,
+            );
             ruleApplied = true;
           }
         } else if (stats.mainRank === 2) {
           if (stats.selfInspectionCount < 30) {
-            this.logger.warn(`❌ ${name} (P2级别) 自查数量 ${stats.selfInspectionCount} < 30，需扣除绩效`);
+            this.logger.warn(
+              `❌ ${name} (P2级别) 自查数量 ${stats.selfInspectionCount} < 30，需扣除绩效`,
+            );
             ruleApplied = true;
           }
         } else if (stats.mainRank === 3) {
           if (stats.selfInspectionCount < 20) {
-            this.logger.warn(`❌ ${name} (P3级别) 自查数量 ${stats.selfInspectionCount} < 20，需扣除绩效`);
+            this.logger.warn(
+              `❌ ${name} (P3级别) 自查数量 ${stats.selfInspectionCount} < 20，需扣除绩效`,
+            );
             ruleApplied = true;
           }
           if (stats.inspectionByOthersCount < 20) {
-            this.logger.warn(`❌ ${name} (P3级别) 抽查数量 ${stats.inspectionByOthersCount} < 20，需扣除绩效`);
+            this.logger.warn(
+              `❌ ${name} (P3级别) 抽查数量 ${stats.inspectionByOthersCount} < 20，需扣除绩效`,
+            );
             ruleApplied = true;
           }
         } else if (stats.mainRank === 4) {
           if (stats.selfInspectionCount < 10) {
-            this.logger.warn(`❌ ${name} (P4级别) 自查数量 ${stats.selfInspectionCount} < 10，需扣除绩效`);
+            this.logger.warn(
+              `❌ ${name} (P4级别) 自查数量 ${stats.selfInspectionCount} < 10，需扣除绩效`,
+            );
             ruleApplied = true;
           }
           if (stats.inspectionByOthersCount < 20) {
-            this.logger.warn(`❌ ${name} (P4级别) 抽查数量 ${stats.inspectionByOthersCount} < 20，需扣除绩效`);
+            this.logger.warn(
+              `❌ ${name} (P4级别) 抽查数量 ${stats.inspectionByOthersCount} < 20，需扣除绩效`,
+            );
             ruleApplied = true;
           }
         }
-        
+
         if (!ruleApplied) {
           this.logger.warn(`✅ ${name} 达到绩效要求，无需扣除`);
         }
       });
-      
+
       // 5. 根据职级和数量调整绩效扣除
       for (const accountant of accountants) {
         const name = accountant.name;
         const stats = accountantStats[name];
-        
+
         if (!stats) continue;
-        
+
         // 获取记账会计当月薪资记录
         const salaryRecord = await this.salaryRepository.findOne({
           where: {
             name: name,
-            yearMonth: new Date(firstDayOfLastMonth)
-          }
+            yearMonth: new Date(firstDayOfLastMonth),
+          },
         });
-        
+
         if (!salaryRecord) {
           this.logger.warn(`未找到记账会计${name}的薪资记录，跳过绩效扣除调整`);
           continue;
         }
-        
+
         // 获取或初始化performanceDeductions数组
-        const performanceDeductions = Array.isArray(salaryRecord.performanceDeductions) ? 
-          [...salaryRecord.performanceDeductions] : Array(15).fill(0);
-        
+        const performanceDeductions = Array.isArray(
+          salaryRecord.performanceDeductions,
+        )
+          ? [...salaryRecord.performanceDeductions]
+          : Array(15).fill(0);
+
         // 确保performanceDeductions数组至少有14个元素
         while (performanceDeductions.length < 14) {
           performanceDeductions.push(0);
         }
-        
+
         let shouldUpdate = false;
-        
+
         // 曹海玲的特殊规则
         if (name === '曹海玲') {
           if (stats.reviewCount < 12) {
             performanceDeductions[13] = 0.2;
             shouldUpdate = true;
-            this.logger.warn(`❌ 曹海玲复查数量(${stats.reviewCount})少于12次，设置绩效扣除为0.2`);
+            this.logger.warn(
+              `❌ 曹海玲复查数量(${stats.reviewCount})少于12次，设置绩效扣除为0.2`,
+            );
           } else if (performanceDeductions[13] === 0.2) {
             // 如果已经是0.2但现在符合条件，恢复为0
             performanceDeductions[13] = 0;
             shouldUpdate = true;
-            this.logger.warn(`✅ 曹海玲复查数量(${stats.reviewCount})达标，清除绩效扣除`);
+            this.logger.warn(
+              `✅ 曹海玲复查数量(${stats.reviewCount})达标，清除绩效扣除`,
+            );
           }
-        } 
+        }
         // 其他记账会计根据职级规则
         else {
           // P2级别规则
@@ -625,91 +735,130 @@ export class SalaryAutoUpdateService {
             if (stats.selfInspectionCount < 30) {
               performanceDeductions[13] = 0.2;
               shouldUpdate = true;
-              this.logger.warn(`❌ ${name} (P2)自查数量(${stats.selfInspectionCount})少于30次，设置绩效扣除为0.2`);
+              this.logger.warn(
+                `❌ ${name} (P2)自查数量(${stats.selfInspectionCount})少于30次，设置绩效扣除为0.2`,
+              );
             } else if (performanceDeductions[13] === 0.2) {
               performanceDeductions[13] = 0;
               shouldUpdate = true;
-              this.logger.warn(`✅ ${name} (P2)自查数量(${stats.selfInspectionCount})达标，清除绩效扣除`);
+              this.logger.warn(
+                `✅ ${name} (P2)自查数量(${stats.selfInspectionCount})达标，清除绩效扣除`,
+              );
             }
           }
           // P3级别规则
           else if (stats.mainRank === 3) {
-            if (stats.selfInspectionCount < 20 || stats.inspectionByOthersCount < 20) {
+            if (
+              stats.selfInspectionCount < 20 ||
+              stats.inspectionByOthersCount < 20
+            ) {
               performanceDeductions[13] = 0.2;
               shouldUpdate = true;
-              this.logger.warn(`❌ ${name} (P3)自查数量(${stats.selfInspectionCount})少于20次或抽查数量(${stats.inspectionByOthersCount})少于20次，设置绩效扣除为0.2`);
+              this.logger.warn(
+                `❌ ${name} (P3)自查数量(${stats.selfInspectionCount})少于20次或抽查数量(${stats.inspectionByOthersCount})少于20次，设置绩效扣除为0.2`,
+              );
             } else if (performanceDeductions[13] === 0.2) {
               performanceDeductions[13] = 0;
               shouldUpdate = true;
-              this.logger.warn(`✅ ${name} (P3)自查和抽查数量达标，清除绩效扣除`);
+              this.logger.warn(
+                `✅ ${name} (P3)自查和抽查数量达标，清除绩效扣除`,
+              );
             }
           }
           // P4级别规则（排除曹海玲）
           else if (stats.mainRank === 4) {
-            if (stats.selfInspectionCount < 10 || stats.inspectionByOthersCount < 20) {
+            if (
+              stats.selfInspectionCount < 10 ||
+              stats.inspectionByOthersCount < 20
+            ) {
               performanceDeductions[13] = 0.2;
               shouldUpdate = true;
-              this.logger.warn(`❌ ${name} (P4)自查数量(${stats.selfInspectionCount})少于10次或抽查数量(${stats.inspectionByOthersCount})少于20次，设置绩效扣除为0.2`);
+              this.logger.warn(
+                `❌ ${name} (P4)自查数量(${stats.selfInspectionCount})少于10次或抽查数量(${stats.inspectionByOthersCount})少于20次，设置绩效扣除为0.2`,
+              );
             } else if (performanceDeductions[13] === 0.2) {
               performanceDeductions[13] = 0;
               shouldUpdate = true;
-              this.logger.warn(`✅ ${name} (P4)自查和抽查数量达标，清除绩效扣除`);
+              this.logger.warn(
+                `✅ ${name} (P4)自查和抽查数量达标，清除绩效扣除`,
+              );
             }
           }
         }
-        
+
         // 如果需要更新绩效扣除，则更新数据库
         if (shouldUpdate) {
           // 记录更新前的状态
-          this.logger.warn(`${name} 更新前: performanceDeductions = [${salaryRecord.performanceDeductions ? salaryRecord.performanceDeductions.join(', ') : ''}], performanceCommission = ${salaryRecord.performanceCommission}`);
-          
+          this.logger.warn(
+            `${name} 更新前: performanceDeductions = [${salaryRecord.performanceDeductions ? salaryRecord.performanceDeductions.join(', ') : ''}], performanceCommission = ${salaryRecord.performanceCommission}`,
+          );
+
           // 计算更新后的绩效佣金
-          const newCommission = this.recalculatePerformanceCommission(salaryRecord.performanceCommission, performanceDeductions);
-          
+          const newCommission = this.recalculatePerformanceCommission(
+            salaryRecord.performanceCommission,
+            performanceDeductions,
+          );
+
           // 更新薪资记录的performanceDeductions
           await this.salaryRepository.update(salaryRecord.id, {
             performanceDeductions,
             // 重新计算绩效佣金
-            performanceCommission: newCommission
+            performanceCommission: newCommission,
           });
-          
+
           // 记录更新后的状态
-          this.logger.warn(`${name} 更新后: performanceDeductions = [${performanceDeductions.join(', ')}], performanceCommission = ${newCommission}`);
-          this.logger.warn(`索引位置13的值: ${performanceDeductions[13]} (${performanceDeductions[13] > 0 ? '已扣除' : '无扣除'})`);
+          this.logger.warn(
+            `${name} 更新后: performanceDeductions = [${performanceDeductions.join(', ')}], performanceCommission = ${newCommission}`,
+          );
+          this.logger.warn(
+            `索引位置13的值: ${performanceDeductions[13]} (${performanceDeductions[13] > 0 ? '已扣除' : '无扣除'})`,
+          );
         } else {
           this.logger.warn(`${name} 无需更新绩效扣除`);
         }
       }
-      
+
       this.logger.warn('记账会计绩效扣除检查更新完成');
     } catch (error) {
-      this.logger.error(`检查记账会计绩效扣除时出错: ${error.message}`, error.stack);
+      this.logger.error(
+        `检查记账会计绩效扣除时出错: ${error.message}`,
+        error.stack,
+      );
     }
   }
-  
+
   /**
    * 重新计算绩效佣金
    * @param originalCommission 原始绩效佣金
    * @param performanceDeductions 绩效扣除数组
    * @returns 重新计算的绩效佣金
    */
-  private recalculatePerformanceCommission(originalCommission: number, performanceDeductions: number[]): number {
+  private recalculatePerformanceCommission(
+    originalCommission: number,
+    performanceDeductions: number[],
+  ): number {
     try {
       // 计算绩效扣除总额
       let performanceDeductionTotal = 0;
       if (Array.isArray(performanceDeductions)) {
-        performanceDeductionTotal = performanceDeductions.reduce((sum, deduction) => sum + Number(deduction || 0), 0);
-        
+        performanceDeductionTotal = performanceDeductions.reduce(
+          (sum, deduction) => sum + Number(deduction || 0),
+          0,
+        );
+
         // 如果绩效扣除总额大于1，则重置为1
         if (performanceDeductionTotal > 1) {
           performanceDeductionTotal = 1;
         }
       }
-      
+
       // 计算绩效佣金 = 原始绩效佣金 * (1 - 绩效扣除总额)
       return Number(originalCommission || 0) * (1 - performanceDeductionTotal);
     } catch (error) {
-      this.logger.error(`重新计算绩效佣金时出错: ${error.message}`, error.stack);
+      this.logger.error(
+        `重新计算绩效佣金时出错: ${error.message}`,
+        error.stack,
+      );
       return originalCommission;
     }
   }
@@ -723,7 +872,7 @@ export class SalaryAutoUpdateService {
     // 如果没有指定月份，默认为上个月
     const now = targetMonth ? moment(targetMonth) : moment();
     const lastMonth = now.clone().subtract(1, 'month');
-    
+
     // 检查时间限制：不能生成2025年6月及其之前的薪资数据
     const restrictedDate = moment('2025-06-30'); // 2025年6月30日
     if (lastMonth.isSameOrBefore(restrictedDate)) {
@@ -731,12 +880,14 @@ export class SalaryAutoUpdateService {
       this.logger.error(errorMessage);
       throw new Error(errorMessage);
     }
-    
+
     // 获取上个月的第一天和最后一天
     const firstDayOfLastMonth = lastMonth.startOf('month').format('YYYY-MM-DD');
     const lastDayOfLastMonth = lastMonth.endOf('month').format('YYYY-MM-DD');
-    
-    this.logger.log(`生成${firstDayOfLastMonth}至${lastDayOfLastMonth}期间的薪资数据`);
+
+    this.logger.log(
+      `生成${firstDayOfLastMonth}至${lastDayOfLastMonth}期间的薪资数据`,
+    );
 
     // 先检查和更新记账会计绩效扣除
     await this.checkAndUpdateAccountantPerformance(lastMonth);
@@ -746,22 +897,27 @@ export class SalaryAutoUpdateService {
     const employees = await this.dataSource.query(`
       SELECT * FROM sys_employees
     `);
-    
+
     // 获取所有保证金数据，以便后续匹配
-    this.logger.log(`获取${firstDayOfLastMonth}至${lastDayOfLastMonth}期间的保证金数据`);
-    const depositRecords = await this.dataSource.query(`
+    this.logger.log(
+      `获取${firstDayOfLastMonth}至${lastDayOfLastMonth}期间的保证金数据`,
+    );
+    const depositRecords = await this.dataSource.query(
+      `
       SELECT * FROM sys_deposit
       WHERE deductionDate BETWEEN ? AND ?
-    `, [firstDayOfLastMonth, lastDayOfLastMonth]);
+    `,
+      [firstDayOfLastMonth, lastDayOfLastMonth],
+    );
 
     // 创建员工姓名到保证金金额的映射表
     const depositMap = new Map<string, number>();
-    depositRecords.forEach(record => {
+    depositRecords.forEach((record) => {
       depositMap.set(record.name, Number(record.amount) || 0);
       this.logger.debug(`员工 ${record.name} 保证金: ${record.amount}`);
     });
     this.logger.log(`找到${depositRecords.length}条保证金记录`);
-    
+
     let created = 0;
     let updated = 0;
 
@@ -771,64 +927,83 @@ export class SalaryAutoUpdateService {
         const existingSalary = await this.salaryRepository.findOne({
           where: {
             name: employee.name,
-            yearMonth: new Date(firstDayOfLastMonth)
-          }
+            yearMonth: new Date(firstDayOfLastMonth),
+          },
         });
 
         // 获取员工部门信息
-        const departments = await this.dataSource.query(`
+        const departments = await this.dataSource.query(
+          `
           SELECT * FROM sys_department WHERE id = ?
-        `, [employee.departmentId]);
+        `,
+          [employee.departmentId],
+        );
         const department = departments.length > 0 ? departments[0] : null;
-        
+
         // 获取考勤扣款信息
-        const attendanceDeductions = await this.dataSource.query(`
+        const attendanceDeductions = await this.dataSource.query(
+          `
           SELECT * FROM sys_attendance_deduction 
           WHERE name = ? 
           AND yearMonth BETWEEN ? AND ?
           LIMIT 1
-        `, [employee.name, firstDayOfLastMonth, lastDayOfLastMonth]);
-        const attendanceDeduction = attendanceDeductions.length > 0 ? attendanceDeductions[0] : null;
+        `,
+          [employee.name, firstDayOfLastMonth, lastDayOfLastMonth],
+        );
+        const attendanceDeduction =
+          attendanceDeductions.length > 0 ? attendanceDeductions[0] : null;
 
         // 获取补贴汇总信息
-        const subsidySummaries = await this.dataSource.query(`
+        const subsidySummaries = await this.dataSource.query(
+          `
           SELECT * FROM sys_subsidy_summary 
           WHERE name = ? 
           AND yearMonth BETWEEN ? AND ?
           LIMIT 1
-        `, [employee.name, firstDayOfLastMonth, lastDayOfLastMonth]);
-        const subsidySummary = subsidySummaries.length > 0 ? subsidySummaries[0] : null;
+        `,
+          [employee.name, firstDayOfLastMonth, lastDayOfLastMonth],
+        );
+        const subsidySummary =
+          subsidySummaries.length > 0 ? subsidySummaries[0] : null;
 
         // 获取朋友圈奖励信息
-        const friendCirclePayments = await this.dataSource.query(`
+        const friendCirclePayments = await this.dataSource.query(
+          `
           SELECT * FROM sys_friend_circle_payment 
           WHERE name = ? 
           AND yearMonth BETWEEN ? AND ?
           LIMIT 1
-        `, [employee.name, firstDayOfLastMonth, lastDayOfLastMonth]);
-        const friendCirclePayment = friendCirclePayments.length > 0 ? friendCirclePayments[0] : null;
+        `,
+          [employee.name, firstDayOfLastMonth, lastDayOfLastMonth],
+        );
+        const friendCirclePayment =
+          friendCirclePayments.length > 0 ? friendCirclePayments[0] : null;
 
         // 获取社保信息
-        const socialInsurances = await this.dataSource.query(`
+        const socialInsurances = await this.dataSource.query(
+          `
           SELECT * FROM sys_social_insurance 
           WHERE name = ? 
           AND yearMonth BETWEEN ? AND ?
           LIMIT 1
-        `, [employee.name, firstDayOfLastMonth, lastDayOfLastMonth]);
-        const socialInsurance = socialInsurances.length > 0 ? socialInsurances[0] : null;
+        `,
+          [employee.name, firstDayOfLastMonth, lastDayOfLastMonth],
+        );
+        const socialInsurance =
+          socialInsurances.length > 0 ? socialInsurances[0] : null;
 
         // 计算代理费提成
         const agencyFeeCommission = await this.calculateAgencyFeeCommission(
-          employee.name, 
-          firstDayOfLastMonth, 
-          lastDayOfLastMonth
+          employee.name,
+          firstDayOfLastMonth,
+          lastDayOfLastMonth,
         );
-        
+
         // 计算业务提成
         const businessCommissionResult = await this.calculateBusinessCommission(
-          employee.name, 
-          firstDayOfLastMonth, 
-          lastDayOfLastMonth
+          employee.name,
+          firstDayOfLastMonth,
+          lastDayOfLastMonth,
         );
 
         // 查询员工的绩效信息
@@ -839,33 +1014,45 @@ export class SalaryAutoUpdateService {
           if (rankMatch) {
             const pLevel = rankMatch[1]; // 例如 P3
             const gradeLevel = rankMatch[2]; // 例如 2
-            
+
             try {
               // 查询匹配的绩效提成记录
-              const performanceCommissionResults = await this.dataSource.query(`
+              const performanceCommissionResults = await this.dataSource.query(
+                `
                 SELECT * FROM sys_performance_commission 
                 WHERE pLevel = ? AND gradeLevel = ? 
                 LIMIT 1
-              `, [pLevel, gradeLevel]);
-              
+              `,
+                [pLevel, gradeLevel],
+              );
+
               if (performanceCommissionResults.length > 0) {
-                performanceCommission = Number(performanceCommissionResults[0].performance || 0);
-                this.logger.debug(`员工 ${employee.name} 匹配到绩效: ${performanceCommission}`);
+                performanceCommission = Number(
+                  performanceCommissionResults[0].performance || 0,
+                );
+                this.logger.debug(
+                  `员工 ${employee.name} 匹配到绩效: ${performanceCommission}`,
+                );
               }
             } catch (error) {
-              this.logger.error(`查询员工 ${employee.name} 的绩效提成记录出错: ${error.message}`, error.stack);
+              this.logger.error(
+                `查询员工 ${employee.name} 的绩效提成记录出错: ${error.message}`,
+                error.stack,
+              );
             }
           }
         }
 
         // 获取保证金扣除金额
-        const depositDeduction = depositMap.has(employee.name) 
-          ? depositMap.get(employee.name) 
-          : (existingSalary?.depositDeduction || 0);
-        
+        const depositDeduction = depositMap.has(employee.name)
+          ? depositMap.get(employee.name)
+          : existingSalary?.depositDeduction || 0;
+
         // 如果找到了保证金记录，记录日志
         if (depositMap.has(employee.name)) {
-          this.logger.debug(`员工 ${employee.name} 匹配到保证金扣除金额: ${depositDeduction}`);
+          this.logger.debug(
+            `员工 ${employee.name} 匹配到保证金扣除金额: ${depositDeduction}`,
+          );
         }
 
         // 准备薪资数据
@@ -875,9 +1062,11 @@ export class SalaryAutoUpdateService {
           idCard: employee.idCardNumber || '',
           type: employee.employeeType || '未设置',
           // 如果是销售且计算出新的基本工资，则使用新值，否则使用员工表中的值
-          baseSalary: businessCommissionResult.newBaseSalary !== null && 
-                      businessCommissionResult.newBaseSalary !== undefined ? 
-                      businessCommissionResult.newBaseSalary : employee.baseSalary || 0,
+          baseSalary:
+            businessCommissionResult.newBaseSalary !== null &&
+            businessCommissionResult.newBaseSalary !== undefined
+              ? businessCommissionResult.newBaseSalary
+              : employee.baseSalary || 0,
           temporaryIncrease: existingSalary?.temporaryIncrease || 0,
           temporaryIncreaseItem: existingSalary?.temporaryIncreaseItem || '',
           attendanceDeduction: attendanceDeduction?.attendanceDeduction || 0,
@@ -903,13 +1092,16 @@ export class SalaryAutoUpdateService {
           cashPaid: existingSalary?.cashPaid || 0,
           yearMonth: new Date(firstDayOfLastMonth),
         };
-        
+
         // 使用calculateDerivedFields方法计算所有衍生字段，包括绩效佣金
         const processedSalaryData = this.calculateDerivedFields(salaryData);
 
         if (existingSalary) {
           // 更新现有记录
-          await this.salaryRepository.update(existingSalary.id, processedSalaryData);
+          await this.salaryRepository.update(
+            existingSalary.id,
+            processedSalaryData,
+          );
           updated++;
           this.logger.debug(`更新员工 ${employee.name} 的薪资记录`);
         } else {
@@ -918,17 +1110,27 @@ export class SalaryAutoUpdateService {
           created++;
           this.logger.debug(`创建员工 ${employee.name} 的薪资记录`);
         }
-        
+
         // 如果是销售且有新的基本工资，更新员工表中的基本工资
-        if (businessCommissionResult.newBaseSalary !== null && 
-            businessCommissionResult.newBaseSalary !== undefined) {
-          await this.dataSource.query(`
+        if (
+          businessCommissionResult.newBaseSalary !== null &&
+          businessCommissionResult.newBaseSalary !== undefined
+        ) {
+          await this.dataSource.query(
+            `
             UPDATE sys_employees SET baseSalary = ? WHERE name = ?
-          `, [businessCommissionResult.newBaseSalary, employee.name]);
-          this.logger.log(`更新员工 ${employee.name} 的基本工资为 ${businessCommissionResult.newBaseSalary}`);
+          `,
+            [businessCommissionResult.newBaseSalary, employee.name],
+          );
+          this.logger.log(
+            `更新员工 ${employee.name} 的基本工资为 ${businessCommissionResult.newBaseSalary}`,
+          );
         }
       } catch (error) {
-        this.logger.error(`处理员工 ${employee.name} 薪资时出错: ${error.message}`, error.stack);
+        this.logger.error(
+          `处理员工 ${employee.name} 薪资时出错: ${error.message}`,
+          error.stack,
+        );
       }
     }
 
@@ -943,27 +1145,30 @@ export class SalaryAutoUpdateService {
   async manualGenerateSalaries(month?: string) {
     try {
       const result = await this.generateMonthlySalaries(month);
-      return { 
-        success: true, 
+      return {
+        success: true,
         message: `薪资数据生成成功，共更新${result.updated}条记录，新增${result.created}条记录`,
-        details: result
+        details: result,
       };
     } catch (error) {
       this.logger.error(`手动生成薪资数据失败: ${error.message}`, error.stack);
-      
+
       // 检查是否是时间限制错误
-      if (error.message && error.message.includes('不能生成2025年6月及其之前的薪资数据')) {
+      if (
+        error.message &&
+        error.message.includes('不能生成2025年6月及其之前的薪资数据')
+      ) {
         return {
           success: false,
           message: error.message,
-          error: 'TIME_RESTRICTION'
+          error: 'TIME_RESTRICTION',
         };
       }
-      
+
       return {
         success: false,
-        message: `薪资数据生成失败: ${error.message}`
+        message: `薪资数据生成失败: ${error.message}`,
       };
     }
   }
-} 
+}

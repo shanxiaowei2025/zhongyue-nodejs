@@ -1,4 +1,19 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, Req, Res, HttpStatus, HttpException, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  UseGuards,
+  Req,
+  Res,
+  HttpStatus,
+  HttpException,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { Response } from 'express';
 import { SalaryService } from './salary.service';
 import { CreateSalaryDto } from './dto/create-salary.dto';
@@ -10,7 +25,17 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { SalaryPermissionService } from './services/salary-permission.service';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiQuery, ApiProperty, ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiBody,
+  ApiQuery,
+  ApiProperty,
+  ApiBearerAuth,
+  ApiHeader,
+} from '@nestjs/swagger';
 import { safeIdParam } from 'src/common/utils';
 import { SalaryAutoUpdateService } from './services/salary-auto-update.service';
 import { SalaryCombinedGuard } from '../auth/guards/salary-combined.guard';
@@ -146,7 +171,10 @@ export class SalaryController {
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: '请求参数错误' })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权' })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: '权限不足' })
-  async create(@Body() createSalaryDto: CreateSalaryDto, @Req() req: RequestWithUser) {
+  async create(
+    @Body() createSalaryDto: CreateSalaryDto,
+    @Req() req: RequestWithUser,
+  ) {
     try {
       return this.salaryService.create(createSalaryDto, req.user.id);
     } catch (error) {
@@ -159,81 +187,87 @@ export class SalaryController {
 
   @Get('admin')
   @Roles('salary_admin', 'super_admin')
-  @ApiOperation({ summary: '获取薪资列表（管理员）', description: '管理员分页获取所有薪资列表，支持多条件筛选' })
+  @ApiOperation({
+    summary: '获取薪资列表（管理员）',
+    description: '管理员分页获取所有薪资列表，支持多条件筛选',
+  })
   @ApiQuery({
     name: 'department',
     required: false,
     type: String,
     description: '部门（模糊查询）',
-    example: '研发部'
+    example: '研发部',
   })
   @ApiQuery({
     name: 'name',
     required: false,
     type: String,
     description: '姓名（模糊查询）',
-    example: '张'
+    example: '张',
   })
   @ApiQuery({
     name: 'idCard',
     required: false,
     type: String,
     description: '身份证号（模糊查询）',
-    example: '11010119'
+    example: '11010119',
   })
   @ApiQuery({
     name: 'type',
     required: false,
     type: String,
     description: '类型（模糊查询）',
-    example: '正式'
+    example: '正式',
   })
   @ApiQuery({
     name: 'company',
     required: false,
     type: String,
     description: '公司（模糊查询）',
-    example: '中岳'
+    example: '中岳',
   })
   @ApiQuery({
     name: 'yearMonth',
     required: false,
     type: String,
     description: '年月',
-    example: '2023-06-01'
+    example: '2023-06-01',
   })
   @ApiQuery({
     name: 'startDate',
     required: false,
     type: String,
     description: '开始日期',
-    example: '2023-01-01'
+    example: '2023-01-01',
   })
   @ApiQuery({
     name: 'endDate',
     required: false,
     type: String,
     description: '结束日期',
-    example: '2023-12-31'
+    example: '2023-12-31',
   })
   @ApiQuery({
     name: 'page',
     required: false,
     type: Number,
     description: '页码',
-    example: 1
+    example: 1,
   })
   @ApiQuery({
     name: 'pageSize',
     required: false,
     type: Number,
     description: '每页数量',
-    example: 10
+    example: 10,
   })
   @ApiResponse({ status: HttpStatus.OK, description: '查询成功' })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权' })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: '权限不足' })
-  async findAllForAdmin(@Query() query: QuerySalaryDto, @Req() req: RequestWithUser) {
+  async findAllForAdmin(
+    @Query() query: QuerySalaryDto,
+    @Req() req: RequestWithUser,
+  ) {
     try {
       return this.salaryService.findAll(query, req.user.id);
     } catch (error) {
@@ -245,55 +279,59 @@ export class SalaryController {
   }
 
   @Get('my')
-  @UseGuards(SalaryCombinedGuard)  // 添加薪资二级密码验证
+  @UseGuards(SalaryCombinedGuard) // 添加薪资二级密码验证
   @ApiBearerAuth()
-  @ApiOperation({ 
-    summary: '获取我的薪资列表（员工）', 
-    description: '员工获取自己的薪资列表，支持时间筛选。需要先通过 POST /api/auth/salary/verify 验证薪资密码获取访问令牌，然后在请求头中添加 X-Salary-Token。' 
+  @ApiOperation({
+    summary: '获取我的薪资列表（员工）',
+    description:
+      '员工获取自己的薪资列表，支持时间筛选。需要先通过 POST /api/auth/salary/verify 验证薪资密码获取访问令牌，然后在请求头中添加 X-Salary-Token。',
   })
   @ApiHeader({
     name: 'X-Salary-Token',
     description: '薪资访问令牌（通过 POST /api/auth/salary/verify 获取）',
     required: true,
-    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
   })
   @ApiQuery({
     name: 'yearMonth',
     required: false,
     type: String,
     description: '年月',
-    example: '2023-06-01'
+    example: '2023-06-01',
   })
   @ApiQuery({
     name: 'startDate',
     required: false,
     type: String,
     description: '开始日期',
-    example: '2023-01-01'
+    example: '2023-01-01',
   })
   @ApiQuery({
     name: 'endDate',
     required: false,
     type: String,
     description: '结束日期',
-    example: '2023-12-31'
+    example: '2023-12-31',
   })
   @ApiQuery({
     name: 'page',
     required: false,
     type: Number,
     description: '页码',
-    example: 1
+    example: 1,
   })
   @ApiQuery({
     name: 'pageSize',
     required: false,
     type: Number,
     description: '每页数量',
-    example: 10
+    example: 10,
   })
   @ApiResponse({ status: HttpStatus.OK, description: '查询成功' })
-  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权或需要薪资访问权限' })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: '未授权或需要薪资访问权限',
+  })
   async findMyAll(@Query() query: QuerySalaryDto, @Req() req: RequestWithUser) {
     try {
       // 员工只能查看自己的薪资记录，强制设置用户ID筛选
@@ -309,7 +347,10 @@ export class SalaryController {
 
   @Get('admin/:id')
   @Roles('salary_admin', 'super_admin')
-  @ApiOperation({ summary: '获取薪资详情（管理员）', description: '管理员根据ID获取任意薪资详情' })
+  @ApiOperation({
+    summary: '获取薪资详情（管理员）',
+    description: '管理员根据ID获取任意薪资详情',
+  })
   @ApiParam({ name: 'id', description: '薪资记录ID' })
   @ApiResponse({ status: HttpStatus.OK, description: '获取成功' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: '薪资记录不存在' })
@@ -317,7 +358,7 @@ export class SalaryController {
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: '权限不足' })
   async findOneForAdmin(@Param('id') id: string, @Req() req: RequestWithUser) {
     try {
-    const safeId = safeIdParam(id);
+      const safeId = safeIdParam(id);
       return this.salaryService.findOne(safeId, req.user.id);
     } catch (error) {
       throw new HttpException(
@@ -328,25 +369,32 @@ export class SalaryController {
   }
 
   @Get('my/:id')
-  @UseGuards(SalaryCombinedGuard)  // 添加薪资二级密码验证
+  @UseGuards(SalaryCombinedGuard) // 添加薪资二级密码验证
   @ApiBearerAuth()
-  @ApiOperation({ 
-    summary: '获取我的薪资详情（员工）', 
-    description: '员工根据ID获取自己的薪资详情。需要先通过 POST /api/auth/salary/verify 验证薪资密码获取访问令牌，然后在请求头中添加 X-Salary-Token。' 
+  @ApiOperation({
+    summary: '获取我的薪资详情（员工）',
+    description:
+      '员工根据ID获取自己的薪资详情。需要先通过 POST /api/auth/salary/verify 验证薪资密码获取访问令牌，然后在请求头中添加 X-Salary-Token。',
   })
   @ApiHeader({
     name: 'X-Salary-Token',
     description: '薪资访问令牌（通过 POST /api/auth/salary/verify 获取）',
     required: true,
-    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
   })
   @ApiParam({ name: 'id', description: '薪资记录ID' })
   @ApiResponse({ status: HttpStatus.OK, description: '获取成功' })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: '薪资记录不存在或无权访问' })
-  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权或需要薪资访问权限' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: '薪资记录不存在或无权访问',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: '未授权或需要薪资访问权限',
+  })
   async findMyOne(@Param('id') id: string, @Req() req: RequestWithUser) {
     try {
-    const safeId = safeIdParam(id);
+      const safeId = safeIdParam(id);
       return this.salaryService.findMySalaryById(safeId, req.user.id);
     } catch (error) {
       throw new HttpException(
@@ -371,7 +419,7 @@ export class SalaryController {
     @Req() req: RequestWithUser,
   ) {
     try {
-    const safeId = safeIdParam(id);
+      const safeId = safeIdParam(id);
       return this.salaryService.update(safeId, updateSalaryDto, req.user.id);
     } catch (error) {
       throw new HttpException(
@@ -391,7 +439,7 @@ export class SalaryController {
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: '权限不足' })
   async remove(@Param('id') id: string, @Req() req: RequestWithUser) {
     try {
-    const safeId = safeIdParam(id);
+      const safeId = safeIdParam(id);
       await this.salaryService.remove(safeId, req.user.id);
       return { message: '删除成功' };
     } catch (error) {
@@ -401,25 +449,29 @@ export class SalaryController {
       );
     }
   }
-  
+
   @Patch(':id/confirm')
-  @UseGuards(SalaryCombinedGuard)  // 添加薪资二级密码验证
+  @UseGuards(SalaryCombinedGuard) // 添加薪资二级密码验证
   @ApiBearerAuth()
-  @ApiOperation({ 
-    summary: '确认薪资记录', 
-    description: '根据ID确认薪资记录。需要先通过 POST /api/auth/salary/verify 验证薪资密码获取访问令牌，然后在请求头中添加 X-Salary-Token。' 
+  @ApiOperation({
+    summary: '确认薪资记录',
+    description:
+      '根据ID确认薪资记录。需要先通过 POST /api/auth/salary/verify 验证薪资密码获取访问令牌，然后在请求头中添加 X-Salary-Token。',
   })
   @ApiHeader({
     name: 'X-Salary-Token',
     description: '薪资访问令牌（通过 POST /api/auth/salary/verify 获取）',
     required: true,
-    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
   })
   @ApiParam({ name: 'id', description: '薪资记录ID' })
   @ApiBody({ type: ConfirmSalaryDto })
   @ApiResponse({ status: HttpStatus.OK, description: '确认成功' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: '薪资记录不存在' })
-  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权或需要薪资访问权限' })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: '未授权或需要薪资访问权限',
+  })
   async confirmSalary(
     @Param('id') id: string,
     @Body() confirmSalaryDto: ConfirmSalaryDto,
@@ -427,7 +479,11 @@ export class SalaryController {
   ) {
     try {
       const safeId = safeIdParam(id);
-      return this.salaryService.confirmSalary(safeId, confirmSalaryDto, req.user.id);
+      return this.salaryService.confirmSalary(
+        safeId,
+        confirmSalaryDto,
+        req.user.id,
+      );
     } catch (error) {
       throw new HttpException(
         error.message || '确认薪资记录失败',
@@ -438,39 +494,49 @@ export class SalaryController {
 
   @Post('auto-generate')
   @Roles('salary_admin', 'super_admin')
-  @ApiOperation({ 
-    summary: '自动生成薪资数据', 
-    description: '自动生成指定月份的薪资数据。注意：不能生成2025年6月及其之前的薪资数据。' 
+  @ApiOperation({
+    summary: '自动生成薪资数据',
+    description:
+      '自动生成指定月份的薪资数据。注意：不能生成2025年6月及其之前的薪资数据。',
   })
-  @ApiQuery({ 
-    name: 'month', 
-    required: false, 
-    type: String, 
-    description: '指定月份（格式：YYYY-MM-DD），不指定则默认为上个月。注意：不能生成2025年6月及其之前的薪资数据。' 
+  @ApiQuery({
+    name: 'month',
+    required: false,
+    type: String,
+    description:
+      '指定月份（格式：YYYY-MM-DD），不指定则默认为上个月。注意：不能生成2025年6月及其之前的薪资数据。',
   })
-  @ApiResponse({ status: HttpStatus.OK, description: '操作结果', schema: { 
-    example: { 
-      success: true, 
-      message: '薪资数据生成成功，共更新5条记录，新增10条记录', 
-      details: { updated: 5, created: 10 } 
-    } 
-  } })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: '时间限制：不能生成2025年6月及其之前的薪资数据' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: '操作结果',
+    schema: {
+      example: {
+        success: true,
+        message: '薪资数据生成成功，共更新5条记录，新增10条记录',
+        details: { updated: 5, created: 10 },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: '时间限制：不能生成2025年6月及其之前的薪资数据',
+  })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权' })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: '权限不足' })
-  async autoGenerateSalaries(@Query('month') month: string, @Req() req: RequestWithUser) {
+  async autoGenerateSalaries(
+    @Query('month') month: string,
+    @Req() req: RequestWithUser,
+  ) {
     try {
       await this.salaryPermissionService.checkPermission(req);
-      const result = await this.salaryAutoUpdateService.manualGenerateSalaries(month);
-      
+      const result =
+        await this.salaryAutoUpdateService.manualGenerateSalaries(month);
+
       // 检查是否是时间限制错误
       if (!result.success && result.error === 'TIME_RESTRICTION') {
-        throw new HttpException(
-          result.message,
-          HttpStatus.BAD_REQUEST,
-        );
+        throw new HttpException(result.message, HttpStatus.BAD_REQUEST);
       }
-      
+
       return result;
     } catch (error) {
       throw new HttpException(
@@ -484,77 +550,78 @@ export class SalaryController {
   @Roles('salary_admin', 'super_admin')
   @ApiOperation({
     summary: '导出薪资数据为CSV',
-    description: '导出符合筛选条件的薪资数据为CSV文件。支持按部门、姓名、身份证号、类型、发薪公司、年月范围、发放状态、确认状态等条件筛选。',
+    description:
+      '导出符合筛选条件的薪资数据为CSV文件。支持按部门、姓名、身份证号、类型、发薪公司、年月范围、发放状态、确认状态等条件筛选。',
   })
   @ApiQuery({
     name: 'department',
     required: false,
     type: String,
     description: '部门（模糊查询）',
-    example: '研发部'
+    example: '研发部',
   })
   @ApiQuery({
     name: 'name',
     required: false,
     type: String,
     description: '姓名（模糊查询）',
-    example: '张'
+    example: '张',
   })
   @ApiQuery({
     name: 'idCard',
     required: false,
     type: String,
     description: '身份证号（模糊查询）',
-    example: '11010119'
+    example: '11010119',
   })
   @ApiQuery({
     name: 'type',
     required: false,
     type: String,
     description: '类型（模糊查询）',
-    example: '正式'
+    example: '正式',
   })
   @ApiQuery({
     name: 'company',
     required: false,
     type: String,
     description: '发薪公司（模糊查询）',
-    example: '中岳'
+    example: '中岳',
   })
   @ApiQuery({
     name: 'yearMonth',
     required: false,
     type: String,
     description: '年月（支持 YYYY-MM 或 YYYY-MM-DD 格式）',
-    example: '2025-06'
+    example: '2025-06',
   })
   @ApiQuery({
     name: 'startDate',
     required: false,
     type: String,
     description: '开始日期（筛选年月范围）',
-    example: '2023-01-01'
+    example: '2023-01-01',
   })
   @ApiQuery({
     name: 'endDate',
     required: false,
     type: String,
     description: '结束日期（筛选年月范围）',
-    example: '2023-12-31'
+    example: '2023-12-31',
   })
   @ApiQuery({
     name: 'isPaid',
     required: false,
     type: Boolean,
     description: '是否已发放',
-    example: true
+    example: true,
   })
   @ApiQuery({
     name: 'isConfirmed',
     required: false,
     type: Boolean,
     description: '是否已确认',
-    example: true
+    example: true,
   })
   @ApiResponse({ status: HttpStatus.OK, description: '导出成功' })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权' })

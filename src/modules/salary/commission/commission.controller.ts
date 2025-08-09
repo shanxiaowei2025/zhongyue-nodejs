@@ -1,5 +1,21 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CommissionService } from './commission.service';
 import { Public } from '../../auth/decorators/public.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -16,7 +32,7 @@ import {
   QueryPerformanceCommissionDto,
   UpdateBusinessSalesCommissionDto,
   UpdateBusinessCommissionDto,
-  UpdatePerformanceCommissionDto
+  UpdatePerformanceCommissionDto,
 } from './dto';
 
 @ApiTags('薪资管理提成表')
@@ -37,7 +53,9 @@ export class CommissionController {
   @Get('sales')
   @Public()
   @ApiOperation({ summary: '查询业务提成表销售记录列表' })
-  findAllBusinessSalesCommission(@Query() query: QueryBusinessSalesCommissionDto) {
+  findAllBusinessSalesCommission(
+    @Query() query: QueryBusinessSalesCommissionDto,
+  ) {
     return this.commissionService.findAllBusinessSalesCommission(query);
   }
 
@@ -74,14 +92,18 @@ export class CommissionController {
   @Roles('salary_admin', 'super_admin')
   @ApiOperation({ summary: '创建业务提成表顾问记录' })
   @ApiResponse({ status: 201, description: '创建成功' })
-  createBusinessConsultantCommission(@Body() dto: CreateBusinessConsultantCommissionDto) {
+  createBusinessConsultantCommission(
+    @Body() dto: CreateBusinessConsultantCommissionDto,
+  ) {
     return this.commissionService.createBusinessConsultantCommission(dto);
   }
 
   @Get('consultant')
   @Public()
   @ApiOperation({ summary: '查询业务提成表顾问记录列表' })
-  findAllBusinessConsultantCommission(@Query() query: QueryBusinessCommissionDto) {
+  findAllBusinessConsultantCommission(
+    @Query() query: QueryBusinessCommissionDto,
+  ) {
     return this.commissionService.findAllBusinessConsultantCommission(query);
   }
 
@@ -160,7 +182,7 @@ export class CommissionController {
   // 业务方法 - 根据金额查询匹配的提成比例
   @Get('rate/amount')
   @Public()
-  @ApiOperation({ 
+  @ApiOperation({
     summary: '根据金额查询匹配的提成比例',
     description: `
 根据提供的金额、类型和其他筛选条件查询匹配的提成比例。
@@ -178,7 +200,7 @@ export class CommissionController {
 
 4. 无匹配结果:
    \`GET /api/commission/rate/amount?amount=100000&type=consultant\`
-`
+`,
   })
   @ApiQuery({
     name: 'amount',
@@ -187,8 +209,8 @@ export class CommissionController {
     type: Number,
     examples: {
       '5000元': { value: 5000 },
-      '20000元': { value: 20000 }
-    }
+      '20000元': { value: 20000 },
+    },
   })
   @ApiQuery({
     name: 'type',
@@ -196,10 +218,10 @@ export class CommissionController {
     description: '提成类型',
     enum: ['sales', 'consultant', 'other'],
     examples: {
-      '业务销售提成': { value: 'sales' },
-      '业务顾问提成': { value: 'consultant' },
-      '其他业务提成': { value: 'other' }
-    }
+      业务销售提成: { value: 'sales' },
+      业务顾问提成: { value: 'consultant' },
+      其他业务提成: { value: 'other' },
+    },
   })
   @ApiQuery({
     name: 'salesType',
@@ -207,10 +229,10 @@ export class CommissionController {
     description: '销售类型，当type=sales时有效',
     type: String,
     examples: {
-      '转正后': { value: '转正后' },
-      '入职满2年': { value: '入职满2年' },
-      '通用': { value: '通用' }
-    }
+      转正后: { value: '转正后' },
+      入职满2年: { value: '入职满2年' },
+      通用: { value: '通用' },
+    },
   })
   @ApiResponse({
     status: 200,
@@ -220,14 +242,14 @@ export class CommissionController {
         matched: true,
         record: {
           id: 3,
-          minCommissionBase: "20000.00",
-          feeRange: "20000-35000",
-          commissionRate: "0.010",
-          createdAt: "2025-06-26T22:12:21.000Z",
-          updatedAt: "2025-06-26T22:12:21.000Z"
-        }
-      }
-    }
+          minCommissionBase: '20000.00',
+          feeRange: '20000-35000',
+          commissionRate: '0.010',
+          createdAt: '2025-06-26T22:12:21.000Z',
+          updatedAt: '2025-06-26T22:12:21.000Z',
+        },
+      },
+    },
   })
   getCommissionRateByAmount(
     @Query('amount') amount: number,
@@ -237,7 +259,11 @@ export class CommissionController {
     const filterOptions = {
       type: salesType,
     };
-    return this.commissionService.getCommissionRateByAmount(amount, type, filterOptions);
+    return this.commissionService.getCommissionRateByAmount(
+      amount,
+      type,
+      filterOptions,
+    );
   }
 
   // 绩效提成表接口
@@ -283,4 +309,4 @@ export class CommissionController {
   removePerformanceCommission(@Param('id') id: string) {
     return this.commissionService.removePerformanceCommission(+id);
   }
-} 
+}

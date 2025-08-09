@@ -26,10 +26,10 @@ import { Employee } from '../employee/entities/employee.entity';
 import { AttendanceDeduction } from './attendance-deduction/entities/attendance-deduction.entity';
 
 // 提成表实体
-import { 
-  BusinessSalesCommission, 
-  BusinessConsultantCommission, 
-  BusinessOtherCommission 
+import {
+  BusinessSalesCommission,
+  BusinessConsultantCommission,
+  BusinessOtherCommission,
 } from './commission/entities';
 
 @Module({
@@ -48,7 +48,7 @@ import {
     DepositModule,
     // 再注册父模块
     TypeOrmModule.forFeature([
-      Salary, 
+      Salary,
       SalaryBaseHistory,
       Deposit,
       AttendanceDeduction,

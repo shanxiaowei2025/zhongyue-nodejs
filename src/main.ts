@@ -2,7 +2,12 @@
 // 这些是我们需要用到的工具，就像在工具箱里拿工具一样
 import { NestFactory } from '@nestjs/core'; // 这是创建应用的工厂，就像开厂需要的机器
 import { AppModule } from './app.module'; // 这是我们的主模块，像是产品的设计图
-import { ValidationPipe, Logger, LogLevel, ConsoleLogger } from '@nestjs/common'; // 这些是验证和日志工具
+import {
+  ValidationPipe,
+  Logger,
+  LogLevel,
+  ConsoleLogger,
+} from '@nestjs/common'; // 这些是验证和日志工具
 import { ConfigService } from '@nestjs/config'; // 这是读取配置的工具
 import { TransformInterceptor } from './common/interceptors/transform.interceptor'; // 这是处理返回数据的工具
 import { HttpExceptionFilter } from './common/filters/http-exception.filter'; // 这是处理错误的工具

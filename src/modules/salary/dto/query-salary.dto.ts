@@ -29,10 +29,10 @@ export class QuerySalaryDto extends PaginationDto {
   // @IsString()
   // company?: string;
 
-  @ApiPropertyOptional({ 
-    description: '是否已发放', 
+  @ApiPropertyOptional({
+    description: '是否已发放',
     type: 'boolean',
-    example: false
+    example: false,
   })
   @IsOptional()
   @IsBoolean()

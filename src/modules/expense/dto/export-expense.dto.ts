@@ -84,4 +84,23 @@ export class ExportExpenseDto {
   @IsOptional()
   @IsDateString()
   endDate?: string;
+
+  @ApiProperty({
+    description: '审核开始日期（筛选审核时间开始日期）',
+    required: false,
+    example: '2023-01-01',
+  })
+  @IsOptional()
+  @IsDateString()
+  auditDateStart?: string;
+
+  @ApiProperty({
+    description:
+      '审核结束日期（筛选审核时间结束日期，当与auditDateStart相同时，会查询整天的数据）',
+    required: false,
+    example: '2023-12-31',
+  })
+  @IsOptional()
+  @IsDateString()
+  auditDateEnd?: string;
 }

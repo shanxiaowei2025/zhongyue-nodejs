@@ -28,10 +28,10 @@ export class ExportSalaryDto {
   @IsString()
   company?: string;
 
-  @ApiProperty({ 
-    description: '年月（支持 YYYY-MM 或 YYYY-MM-DD 格式）', 
-    required: false, 
-    example: '2025-06' 
+  @ApiProperty({
+    description: '年月（支持 YYYY-MM 或 YYYY-MM-DD 格式）',
+    required: false,
+    example: '2025-06',
   })
   @IsOptional()
   @IsString()
@@ -80,4 +80,4 @@ export class ExportSalaryDto {
   })
   @IsBoolean()
   isConfirmed?: boolean;
-} 
+}

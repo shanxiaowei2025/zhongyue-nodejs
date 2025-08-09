@@ -1756,6 +1756,37 @@ export class ExpenseService {
       );
     }
 
+    // 添加对审核日期范围的处理
+    if (query.auditDateStart && query.auditDateEnd) {
+      // 创建审核日期对象
+      const auditStartDate = new Date(query.auditDateStart);
+      // 对于结束日期，设置为当天的23:59:59.999，以包含整天
+      const auditEndDate = new Date(query.auditDateEnd);
+      auditEndDate.setHours(23, 59, 59, 999);
+
+      queryBuilder.andWhere(
+        'expense.auditDate BETWEEN :auditStartDate AND :auditEndDate',
+        {
+          auditStartDate: auditStartDate,
+          auditEndDate: auditEndDate,
+        },
+      );
+
+      console.log(
+        `导出审核日期查询范围: ${auditStartDate.toISOString()} - ${auditEndDate.toISOString()}`,
+      );
+    } else if (query.auditDateStart) {
+      queryBuilder.andWhere('expense.auditDate >= :auditStartDate', {
+        auditStartDate: new Date(query.auditDateStart),
+      });
+    } else if (query.auditDateEnd) {
+      const auditEndDate = new Date(query.auditDateEnd);
+      auditEndDate.setHours(23, 59, 59, 999);
+      queryBuilder.andWhere('expense.auditDate <= :auditEndDate', {
+        auditEndDate: auditEndDate,
+      });
+    }
+
     // 查询数据
     const expenses = await queryBuilder.orderBy('expense.id', 'DESC').getMany();
 

@@ -1,4 +1,11 @@
-import { IsBoolean, IsDate, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsDate,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateSalaryDto {
@@ -25,7 +32,7 @@ export class CreateSalaryDto {
   @IsNumber()
   @IsOptional()
   temporaryIncrease: number;
-  
+
   @IsString()
   @IsOptional()
   temporaryIncreaseItem: string;
@@ -130,23 +137,23 @@ export class CreateSalaryDto {
   @IsOptional()
   taxDeclaration: number;
 
-  @ApiProperty({ 
-    description: '是否已发放', 
+  @ApiProperty({
+    description: '是否已发放',
     type: 'boolean',
     required: false,
     default: false,
-    example: false
+    example: false,
   })
   @IsBoolean()
   @IsOptional()
   isPaid: boolean;
 
-  @ApiProperty({ 
-    description: '是否已确认', 
+  @ApiProperty({
+    description: '是否已确认',
     type: 'boolean',
     required: false,
     default: false,
-    example: false
+    example: false,
   })
   @IsBoolean()
   @IsOptional()
@@ -155,7 +162,7 @@ export class CreateSalaryDto {
   @ApiProperty({
     description: '确认时间',
     required: false,
-    type: Date
+    type: Date,
   })
   @IsDate()
   @IsOptional()
