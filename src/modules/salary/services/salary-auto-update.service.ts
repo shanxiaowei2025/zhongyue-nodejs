@@ -210,6 +210,98 @@ export class SalaryAutoUpdateService {
   }
 
   /**
+   * 更新费用记录的代理费提成
+   * 为每条续费业务的费用记录计算并填充agency_commission字段
+   * @param employeeName 员工姓名
+   * @param firstDayOfLastMonth 上月第一天
+   * @param lastDayOfLastMonth 上月最后一天
+   */
+  async updateExpenseAgencyCommission(
+    employeeName: string,
+    firstDayOfLastMonth: string,
+    lastDayOfLastMonth: string,
+  ): Promise<void> {
+    try {
+      // 1. 查询该员工上个月的续费费用记录
+      const expenseQuery = `
+        SELECT 
+          id,
+          agencyFee,
+          socialInsuranceAgencyFee,
+          accountingSoftwareFee,
+          invoiceSoftwareFee,
+          addressFee
+        FROM sys_expense 
+        WHERE 
+          salesperson = ? AND 
+          businessType = '续费' AND 
+          auditDate BETWEEN ? AND ? AND
+          status = 1
+      `;
+
+      const expenseRecords = await this.dataSource.query(expenseQuery, [
+        employeeName,
+        firstDayOfLastMonth,
+        lastDayOfLastMonth,
+      ]);
+
+      if (!expenseRecords.length) {
+        this.logger.debug(
+          `员工 ${employeeName} 在上个月没有符合条件的续费费用记录`,
+        );
+        return;
+      }
+
+      // 2. 为每条记录计算代理费提成
+      for (const record of expenseRecords) {
+        // 代理费类（提成比例1%）
+        const agencyFee = Number(record.agencyFee || 0);
+        const socialInsuranceAgencyFee = Number(record.socialInsuranceAgencyFee || 0);
+        const agencyTotalFee = agencyFee + socialInsuranceAgencyFee;
+
+        // 软件费类（提成比例10%）
+        const accountingSoftwareFee = Number(record.accountingSoftwareFee || 0);
+        const invoiceSoftwareFee = Number(record.invoiceSoftwareFee || 0);
+        const addressFee = Number(record.addressFee || 0);
+        const softwareTotalFee = accountingSoftwareFee + invoiceSoftwareFee + addressFee;
+
+        // 计算该条记录的代理费提成
+        const agencyCommission = agencyTotalFee * 0.01 + softwareTotalFee * 0.1;
+
+        // 更新数据库
+        if (agencyCommission > 0) {
+          await this.dataSource.query(
+            `UPDATE sys_expense SET agency_commission = ? WHERE id = ?`,
+            [agencyCommission, record.id],
+          );
+
+          this.logger.debug(`
+            更新费用记录ID ${record.id} 的代理费提成: 
+            代理费: ${agencyFee}, 社保代理费: ${socialInsuranceAgencyFee}
+            记账软件费: ${accountingSoftwareFee}, 开票软件费: ${invoiceSoftwareFee}, 地址费: ${addressFee}
+            代理费提成: ${agencyCommission}
+          `);
+        } else {
+          // 如果提成为0，也要更新到数据库，确保数据一致性
+          await this.dataSource.query(
+            `UPDATE sys_expense SET agency_commission = 0 WHERE id = ?`,
+            [record.id],
+          );
+        }
+      }
+
+      this.logger.log(
+        `已完成员工 ${employeeName} 共 ${expenseRecords.length} 条费用记录的代理费提成更新`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `更新员工 ${employeeName} 费用记录的代理费提成时出错: ${error.message}`,
+        error.stack,
+      );
+    }
+  }
+
+  /**
    * 计算业务提成
    * 1. 筛选sys_expense表中businessType是新增和值为空的，并且auditDate是上个月1号到最后一天的记录
    * 2. 根据员工的sys_employees表中的commissionRatePosition区分每个人的提成比率
@@ -366,12 +458,16 @@ export class SalaryAutoUpdateService {
             const totalBusinessCommission =
               basicBusinessCommission + outsourceBusinessCommission;
 
-            // 更新费用表中的业务提成字段
+            // 更新费用表中的业务提成字段（保留原有字段，同时更新新字段）
             await this.dataSource.query(
               `
-              UPDATE sys_expense SET business_commission = ? WHERE id = ?
+              UPDATE sys_expense SET 
+                business_commission = ?, 
+                business_commission_own = ?, 
+                business_commission_outsource = ?
+              WHERE id = ?
             `,
-              [totalBusinessCommission, expense.id],
+              [totalBusinessCommission, basicBusinessCommission, outsourceBusinessCommission, expense.id],
             );
 
             // 累计每个员工每条记录的业务提成
@@ -397,12 +493,16 @@ export class SalaryAutoUpdateService {
             // 外包业务按10%计算
             const outsourceBusinessCommission = outsourceFee * 0.1;
 
-            // 更新费用表中的业务提成字段
+            // 更新费用表中的业务提成字段（基础业务提成为0，只有外包业务提成）
             await this.dataSource.query(
               `
-              UPDATE sys_expense SET business_commission = ? WHERE id = ?
+              UPDATE sys_expense SET 
+                business_commission = ?, 
+                business_commission_own = 0, 
+                business_commission_outsource = ?
+              WHERE id = ?
             `,
-              [outsourceBusinessCommission, expense.id],
+              [outsourceBusinessCommission, outsourceBusinessCommission, expense.id],
             );
 
             // 累计每个员工每条记录的业务提成
@@ -427,12 +527,16 @@ export class SalaryAutoUpdateService {
           // 外包业务按10%计算
           const outsourceBusinessCommission = outsourceFee * 0.1;
 
-          // 更新费用表中的业务提成字段
+          // 更新费用表中的业务提成字段（没有提成比率职位，基础业务提成为0）
           await this.dataSource.query(
             `
-            UPDATE sys_expense SET business_commission = ? WHERE id = ?
+            UPDATE sys_expense SET 
+              business_commission = ?, 
+              business_commission_own = 0, 
+              business_commission_outsource = ?
+            WHERE id = ?
           `,
-            [outsourceBusinessCommission, expense.id],
+            [outsourceBusinessCommission, outsourceBusinessCommission, expense.id],
           );
 
           // 累计每个员工每条记录的业务提成
@@ -994,6 +1098,13 @@ export class SalaryAutoUpdateService {
 
         // 计算代理费提成
         const agencyFeeCommission = await this.calculateAgencyFeeCommission(
+          employee.name,
+          firstDayOfLastMonth,
+          lastDayOfLastMonth,
+        );
+
+        // 更新费用记录的代理费提成
+        await this.updateExpenseAgencyCommission(
           employee.name,
           firstDayOfLastMonth,
           lastDayOfLastMonth,

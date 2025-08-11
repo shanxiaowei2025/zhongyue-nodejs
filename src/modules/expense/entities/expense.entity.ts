@@ -295,6 +295,36 @@ export class Expense {
   })
   businessCommission: number;
 
+  @Column({
+    name: 'business_commission_own',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    comment: '业务提成(自有)',
+  })
+  businessCommissionOwn: number;
+
+  @Column({
+    name: 'business_commission_outsource',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    comment: '业务提成(外包)',
+  })
+  businessCommissionOutsource: number;
+
+  @Column({
+    name: 'agency_commission',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    comment: '代理费提成',
+  })
+  agencyCommission: number;
+
   @ApiProperty({ description: '创建时间' })
   @CreateDateColumn({
     comment: '创建时间',

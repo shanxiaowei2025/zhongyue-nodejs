@@ -306,6 +306,21 @@ export class CreateExpenseDto {
   @IsNumber()
   businessCommission?: number;
 
+  @ApiProperty({ description: '业务提成(自有)', required: false })
+  @IsOptional()
+  @IsNumber()
+  businessCommissionOwn?: number;
+
+  @ApiProperty({ description: '业务提成(外包)', required: false })
+  @IsOptional()
+  @IsNumber()
+  businessCommissionOutsource?: number;
+
+  @ApiProperty({ description: '代理费提成', required: false })
+  @IsOptional()
+  @IsNumber()
+  agencyCommission?: number;
+
   @ApiProperty({ description: '收费日期', required: false })
   @IsOptional()
   @IsString()
