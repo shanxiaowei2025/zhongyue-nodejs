@@ -23,7 +23,7 @@ export class ExpenseContributionController {
   @Get('find-company-expenses')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'super_admin')
-  @ApiOperation({ summary: '根据企业名称或统一社会信用代码查询费用记录' })
+  @ApiOperation({ summary: '根据企业名称或统一社会信用代码查询费用记录，支持按年份筛选' })
   @ApiResponse({
     status: 200,
     description: '成功返回企业的费用记录和总费用',
@@ -36,6 +36,7 @@ export class ExpenseContributionController {
     for (const key in findExpensesDto) {
       if (
         key !== 'unifiedSocialCreditCode' &&
+        key !== 'year' && // 跳过年份字段，保持字符串类型
         typeof findExpensesDto[key] === 'string' &&
         !isNaN(Number(findExpensesDto[key]))
       ) {
@@ -46,6 +47,7 @@ export class ExpenseContributionController {
     return this.expenseContributionService.findExpensesByCompany(
       findExpensesDto.companyName,
       findExpensesDto.unifiedSocialCreditCode,
+      findExpensesDto.year,
     );
   }
 }

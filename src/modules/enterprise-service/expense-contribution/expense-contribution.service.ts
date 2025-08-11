@@ -17,24 +17,53 @@ export class ExpenseContributionService {
   async findExpensesByCompany(
     companyName?: string,
     unifiedSocialCreditCode?: string,
+    year?: string,
   ): Promise<ExpenseSummaryDto> {
-    // 构建查询条件
-    const whereCondition = [];
+    // 使用QueryBuilder构建查询
+    const queryBuilder = this.expenseRepository
+      .createQueryBuilder('expense')
+      .select([
+        'expense.id',
+        'expense.chargeDate',
+        'expense.receiptNo',
+        'expense.totalFee',
+      ]);
+
+    // 添加企业查询条件
+    let hasWhereCondition = false;
 
     if (companyName) {
-      whereCondition.push({ companyName });
+      queryBuilder.where('expense.companyName = :companyName', { companyName });
+      hasWhereCondition = true;
     }
 
     if (unifiedSocialCreditCode) {
-      whereCondition.push({ unifiedSocialCreditCode });
+      if (hasWhereCondition) {
+        queryBuilder.andWhere('expense.unifiedSocialCreditCode = :unifiedSocialCreditCode', {
+          unifiedSocialCreditCode,
+        });
+      } else {
+        queryBuilder.where('expense.unifiedSocialCreditCode = :unifiedSocialCreditCode', {
+          unifiedSocialCreditCode,
+        });
+        hasWhereCondition = true;
+      }
     }
 
-    // 查询数据库
-    const expenses = await this.expenseRepository.find({
-      where: whereCondition,
-      select: ['id', 'chargeDate', 'receiptNo', 'totalFee'],
-      order: { chargeDate: 'DESC' },
-    });
+    // 添加年份筛选条件
+    if (year) {
+      if (hasWhereCondition) {
+        queryBuilder.andWhere('YEAR(expense.chargeDate) = :year', { year: parseInt(year) });
+      } else {
+        queryBuilder.where('YEAR(expense.chargeDate) = :year', { year: parseInt(year) });
+      }
+    }
+
+    // 排序
+    queryBuilder.orderBy('expense.chargeDate', 'DESC');
+
+    // 执行查询
+    const expenses = await queryBuilder.getMany();
 
     // 计算总费用
     const totalAmount = expenses.reduce((sum, expense) => {

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsOptional, ValidateIf } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, ValidateIf, IsNumberString } from 'class-validator';
 
 export class FindExpensesDto {
   @ApiProperty({
@@ -21,4 +21,13 @@ export class FindExpensesDto {
   @ValidateIf((o) => !o.companyName)
   @IsNotEmpty({ message: '企业名称和统一社会信用代码至少提供一个' })
   unifiedSocialCreditCode?: string;
+
+  @ApiProperty({
+    description: '年份，用于筛选指定年份的费用记录',
+    required: false,
+    example: '2024',
+  })
+  @IsOptional()
+  @IsNumberString({}, { message: '年份必须是数字字符串' })
+  year?: string;
 }

@@ -76,7 +76,10 @@ src/
 ### 企业服务模块 (enterprise-service)
 - 客户列表查询：支持按费用贡献金额倒序排列
 - 客户详情查询
-- 费用贡献分析
+- 费用贡献分析：
+  - 支持按企业名称或统一社会信用代码筛选
+  - 支持按年份筛选费用记录（通过year参数传入年份，如2024）
+  - 返回指定年份的费用明细和总金额统计
 - 服务历程跟踪
 
 ### 4. 部门管理模块 (department)
@@ -551,6 +554,13 @@ POST /api/salary/auto-generate?month=2025-08-01
 详细文档请查看 [docs/README.md](docs/README.md)
 
 ## 更新历史
+
+### 2025-01-12
+- **费用贡献接口优化**：
+  - 为 `/api/enterprise-service/expense-contribution/find-company-expenses` 接口添加年份筛选功能
+  - 新增 `year` 参数，支持按年份筛选企业费用记录
+  - 通过 chargeDate 字段进行年份匹配，返回指定年份的费用明细和总金额
+  - 使用示例：`GET /api/enterprise-service/expense-contribution/find-company-expenses?companyName=某某公司&year=2024`
 
 ### 2024-12-30
 - 放开佣金模块四个查询接口的权限限制：
