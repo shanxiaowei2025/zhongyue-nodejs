@@ -278,6 +278,6 @@ export class Contract {
   @Column({ type: 'text', nullable: true, comment: '备注信息' })
   remarks: string;
 
-  // @Column({ nullable: true, comment: '所属区域' })
-  // location: string;
+  @Column({ nullable: true, comment: '归属地' })
+  location: string;
 }

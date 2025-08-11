@@ -102,6 +102,7 @@ src/
 - 合同状态跟踪
 - 合同签署功能
 - 合同令牌系统：生成临时访问令牌用于未登录用户访问合同
+- **归属地管理**：支持为合同设置归属地，并基于归属地进行权限控制和数据查询
 
 ### 7. 文件存储模块 (storage)
 - 文件上传、下载、删除
@@ -561,6 +562,15 @@ POST /api/salary/auto-generate?month=2025-08-01
   - 新增 `year` 参数，支持按年份筛选企业费用记录
   - 通过 chargeDate 字段进行年份匹配，返回指定年份的费用明细和总金额
   - 使用示例：`GET /api/enterprise-service/expense-contribution/find-company-expenses?companyName=某某公司&year=2024`
+
+### 2025-01-12
+- **合同模块归属地功能**：
+  - 为合同实体添加 `location` 归属地字段
+  - 在创建合同DTO和查询合同DTO中添加归属地字段支持
+  - 更新合同查询逻辑，支持按归属地进行模糊查询
+  - 恢复合同权限服务中的归属地权限控制功能
+  - 支持基于用户部门的归属地权限验证（`contract_data_view_by_location`权限）
+  - 提供数据库迁移SQL脚本，为 `sys_contract` 表添加 `location` 字段
 
 ### 2024-12-30
 - 放开佣金模块四个查询接口的权限限制：

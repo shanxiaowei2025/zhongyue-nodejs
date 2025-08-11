@@ -109,6 +109,7 @@ export class ContractService {
             companyName: createContractDto.partyACompany,
             unifiedSocialCreditCode: createContractDto.partyACreditCode,
             registeredAddress: createContractDto.partyAAddress,
+            location: createContractDto.location, // 添加归属地字段
             actualResponsibles:
               actualResponsibles.length > 0 ? actualResponsibles : null,
             submitter: username,
@@ -116,12 +117,13 @@ export class ContractService {
 
           // 3. 执行创建客户的SQL
           const insertResult = await this.contractRepository.query(
-            `INSERT INTO sys_customer (companyName, unifiedSocialCreditCode, registeredAddress, actualResponsibles, submitter, createTime, updateTime) 
-             VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
+            `INSERT INTO sys_customer (companyName, unifiedSocialCreditCode, registeredAddress, location, actualResponsibles, submitter, createTime, updateTime) 
+             VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
             [
               createCustomerDto.companyName,
               createCustomerDto.unifiedSocialCreditCode,
               createCustomerDto.registeredAddress,
+              createCustomerDto.location,
               actualResponsibles.length > 0
                 ? JSON.stringify(actualResponsibles)
                 : null,
@@ -411,6 +413,9 @@ export class ContractService {
       }
       if (query.partyBSigner) {
         conditions.partyBSigner = Like(`%${query.partyBSigner}%`);
+      }
+      if (query.location) {
+        conditions.location = Like(`%${query.location}%`);
       }
 
       // 甲方签订日期范围查询

@@ -130,4 +130,9 @@ export class QueryContractDto {
   @IsDateString()
   @IsOptional()
   entrustmentEndDate?: string;
+
+  @ApiProperty({ description: '归属地', required: false })
+  @IsString()
+  @IsOptional()
+  location?: string;
 }
