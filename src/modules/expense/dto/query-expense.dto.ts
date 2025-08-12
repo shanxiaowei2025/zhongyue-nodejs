@@ -47,10 +47,13 @@ export class QueryExpenseDto {
   @IsString()
   companyLocation?: string;
 
-  @ApiProperty({ description: '业务类型', required: false })
+  @ApiProperty({ 
+    description: '业务类型，支持多选，可以传递单个值或数组', 
+    required: false,
+    example: ['新增', '续费'] 
+  })
   @IsOptional()
-  @IsString()
-  businessType?: string;
+  businessType?: string | string[];
 
   @ApiProperty({ description: '收费方式', required: false })
   @IsOptional()

@@ -546,9 +546,22 @@ export class ExpenseService {
           "(expense.businessType IS NULL OR expense.businessType = '')",
         );
       } else {
-        queryBuilder.andWhere('expense.businessType LIKE :businessType', {
-          businessType: `%${query.businessType}%`,
-        });
+        // 处理多选业务类型筛选
+        const businessTypes = Array.isArray(query.businessType) 
+          ? query.businessType 
+          : [query.businessType];
+        
+        if (businessTypes.length > 0) {
+          const conditions = businessTypes.map((type, index) => 
+            `expense.businessType LIKE :businessType${index}`
+          );
+          const params = {};
+          businessTypes.forEach((type, index) => {
+            params[`businessType${index}`] = `%${type}%`;
+          });
+          
+          queryBuilder.andWhere(`(${conditions.join(' OR ')})`, params);
+        }
       }
     }
 
@@ -1660,9 +1673,22 @@ export class ExpenseService {
           "(expense.businessType IS NULL OR expense.businessType = '')",
         );
       } else {
-        queryBuilder.andWhere('expense.businessType = :businessType', {
-          businessType: query.businessType,
-        });
+        // 处理多选业务类型筛选
+        const businessTypes = Array.isArray(query.businessType) 
+          ? query.businessType 
+          : [query.businessType];
+        
+        if (businessTypes.length > 0) {
+          const conditions = businessTypes.map((type, index) => 
+            `expense.businessType LIKE :businessTypeExport${index}`
+          );
+          const params = {};
+          businessTypes.forEach((type, index) => {
+            params[`businessTypeExport${index}`] = `%${type}%`;
+          });
+          
+          queryBuilder.andWhere(`(${conditions.join(' OR ')})`, params);
+        }
       }
     }
 
@@ -1799,6 +1825,7 @@ export class ExpenseService {
       licenseFee: '办照费用',
       addressFee: '地址费',
       agencyFee: '代理费',
+      giftAgencyDuration: '赠送详情',
       socialInsuranceAgencyFee: '社保代理费',
       administrativeLicenseFee: '行政许可收费',
       changeFee: '变更收费',
@@ -1814,7 +1841,6 @@ export class ExpenseService {
       statisticalReportFee: '统计局报表费',
       totalFeeExcludeRecordSeal: '总费用（除备案章费用）',
       businessType: '业务类型',
-      giftAgencyDuration: '赠送代理时长',
       createdAt: '创建时间',
     };
 
@@ -1840,6 +1866,14 @@ export class ExpenseService {
           item[field] = item[field].join(',');
         }
       });
+
+      // 处理businessType字段的显示逻辑
+      if (item.businessType === '新增') {
+        item.businessType = '业务办理-新增';
+      } else if (!item.businessType || item.businessType === '') {
+        item.businessType = '业务办理-其他';
+      }
+      // 续费保持不变
 
       return item;
     });
