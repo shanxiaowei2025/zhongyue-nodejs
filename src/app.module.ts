@@ -62,6 +62,9 @@ import {
   BusinessOtherCommission,
   PerformanceCommission,
 } from './modules/salary/commission/entities'; // 新增提成表实体
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { Notification } from './modules/notifications/entities/notification.entity';
+import { NotificationRecipient } from './modules/notifications/entities/notification-recipient.entity';
 
 @Module({
   imports: [
@@ -137,6 +140,8 @@ import {
           BusinessConsultantCommission, // 新增业务提成表顾问实体
           BusinessOtherCommission, // 新增业务提成表其他实体
           PerformanceCommission, // 新增绩效提成表实体
+          Notification,
+          NotificationRecipient,
         ],
         synchronize: configService.get('DB_SYNCHRONIZE', 'false') === 'true',
         logging: configService.get('DB_LOGGING', 'false') === 'true',
@@ -162,6 +167,7 @@ import {
     FriendCirclePaymentModule, // 朋友圈扣款模块：直接导入，避免路由冲突
     AttendanceDeductionModule, // 考勤扣款模块：直接导入，避免路由冲突
     AttendanceModule, // 考勤模块：处理考勤同步相关的功能
+    NotificationsModule, // 通知模块
   ],
   controllers: [AppController], // 控制器：负责接收请求，像前台接待
   providers: [

@@ -33,7 +33,6 @@ src/
 │   ├── interceptors/      # 拦截器
 │   ├── interfaces/        # 接口定义
 │   ├── middleware/        # 中间件
-│   ├── pipes/             # 管道
 │   └── utils/             # 工具函数
 ├── config/                # 配置模块
 │   ├── app.config.ts      # 应用配置
@@ -49,7 +48,8 @@ src/
 │   ├── expense/           # 费用管理
 │   ├── storage/           # 文件存储
 │   ├── roles/             # 角色管理
-│   └── permissions/       # 权限管理
+│   ├── permissions/       # 权限管理
+│   └── notifications/     # 通知系统（新增）
 └── database/              # 数据库相关
     └── migrations/        # 数据库迁移文件
 ```
@@ -114,7 +114,72 @@ src/
 - 角色管理
 - 权限分配
 
-### 9. 薪资管理模块 (salary)
+### 9. 通知系统模块 (notifications)
+- 实时通知推送和管理
+- 支持多种接收范围：指定用户、角色、部门
+- 支持多端用户连接（浏览器、移动端），同一用户的全部活跃连接都会收到推送
+- 通知状态：未读/已读
+- 与业务模块集成（费用审批、合同签署、薪资等）
+- **定时数据清理**：每天凌晨3点自动清理半年前的通知数据，确保数据库性能
+
+#### 数据库表
+- `sys_notification`：通知主表（id、title、content、type、createdBy、createdAt）
+- `sys_notification_recipient`：通知接收表（id、notificationId、userId、readStatus、readAt、createdAt）
+
+##### 建表 SQL（MySQL）
+```sql
+CREATE TABLE `sys_notification` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '通知ID',
+  `title` varchar(255) NOT NULL COMMENT '通知标题',
+  `content` text NOT NULL COMMENT '通知内容',
+  `type` varchar(50) NOT NULL DEFAULT 'system' COMMENT '通知类型（自由字符串）',
+  `createdBy` bigint NOT NULL COMMENT '创建者用户ID',
+  `createdAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_sys_notification_createdBy` (`createdBy`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='通知主表';
+```
+
+```sql
+CREATE TABLE `sys_notification_recipient` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `notificationId` bigint NOT NULL COMMENT '通知ID',
+  `userId` bigint NOT NULL COMMENT '接收用户ID',
+  `readStatus` tinyint NOT NULL DEFAULT 0 COMMENT '已读状态：0未读，1已读',
+  `readAt` datetime NULL DEFAULT NULL COMMENT '阅读时间',
+  `createdAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_sys_notification_recipient_notificationId` (`notificationId`),
+  KEY `idx_sys_notification_recipient_userId` (`userId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='通知接收表';
+```
+
+> 说明：通知类型字段采用自由字符串，前端可自定义；当前未添加外键约束，可按需补充。
+
+#### REST API
+- `POST /api/notifications`：创建通知（支持 `targetUsers`、`targetRoles`、`targetDepts`）
+- `GET /api/notifications`：获取我的通知（分页，支持 `onlyNew=true`）
+- `GET /api/notifications/new`：仅未读通知
+- `DELETE /api/notifications/:id`：删除通知（后续可扩展权限校验）
+
+#### WebSocket
+- 命名空间：`/ws`
+- 连接参数：在 `auth` 或 `query` 中传 `token`
+- 事件：`new-notification`（服务器推送新通知）
+- 客户端示例：
+```ts
+import { io } from 'socket.io-client';
+const socket = io('http://localhost:3000/ws', { auth: { token: localStorage.getItem('token') }});
+socket.on('new-notification', (data) => { console.log('收到新通知:', data); });
+```
+
+#### 定时任务
+- **数据清理任务**：每天凌晨3点执行 (`@Cron('0 3 * * *')`)
+- **清理策略**：删除创建时间超过6个月的通知记录和对应的接收者记录
+- **实现机制**：使用数据库级别的CASCADE删除确保数据一致性
+- **日志记录**：清理过程中记录详细的统计信息和错误日志
+
+### 10. 薪资管理模块 (salary)
 - 薪资信息的CRUD操作
 - 薪资基数历程管理（仅限管理员和超级管理员）
 - ~~薪资自动生成功能~~ **已取消定时任务**：原每月13号自动生成薪资的功能已禁用，保留手动生成功能
@@ -515,67 +580,3 @@ POST /api/salary/auto-generate?month=2025-08-01
 - **查询优化**：统一使用 `DATE_FORMAT(field, "%Y-%m") LIKE "%YYYY-MM%"` 进行年月模糊查询
 
 详细文档请查看 [docs/README.md](docs/README.md)
-
-## 联系与支持
-
-如有问题或需要支持，请联系项目管理员。
-
-## 项目文档
-
-本项目使用Viki文档系统与GitHub集成，提供完整的开发文档。
-
-### 查看文档
-
-1. **在线查看**：部署Viki站点后，可通过站点URL访问文档
-
-2. **本地查看**：
-   ```bash
-   # 安装Viki CLI
-   npm install -g viki-cli
-   
-   # 启动文档服务
-   viki serve
-   ```
-   然后在浏览器访问 http://localhost:8080
-
-### 文档结构
-
-- **项目概述**: 系统整体介绍与架构说明
-- **开发指南**: 开发环境配置、代码规范和开发流程
-- **API文档**: 详细的API接口说明和使用示例
-- **数据库设计**: 数据库结构和关系说明
-- **部署指南**: 环境部署与配置说明
-
-### 贡献文档
-
-1. 修改相应的markdown文档
-2. 提交更改到GitHub
-3. 文档会自动同步到Viki系统
-
-详细文档请查看 [docs/README.md](docs/README.md)
-
-## 更新历史
-
-### 2025-01-12
-- **费用贡献接口优化**：
-  - 为 `/api/enterprise-service/expense-contribution/find-company-expenses` 接口添加年份筛选功能
-  - 新增 `year` 参数，支持按年份筛选企业费用记录
-  - 通过 chargeDate 字段进行年份匹配，返回指定年份的费用明细和总金额
-  - 使用示例：`GET /api/enterprise-service/expense-contribution/find-company-expenses?companyName=某某公司&year=2024`
-
-### 2025-01-12
-- **合同模块归属地功能**：
-  - 为合同实体添加 `location` 归属地字段
-  - 在创建合同DTO和查询合同DTO中添加归属地字段支持
-  - 更新合同查询逻辑，支持按归属地进行模糊查询
-  - 恢复合同权限服务中的归属地权限控制功能
-  - 支持基于用户部门的归属地权限验证（`contract_data_view_by_location`权限）
-  - 提供数据库迁移SQL脚本，为 `sys_contract` 表添加 `location` 字段
-
-### 2024-12-30
-- 放开佣金模块四个查询接口的权限限制：
-  - `GET /api/commission/sales` - 查询业务提成表销售记录列表
-  - `GET /api/commission/consultant` - 查询业务提成表顾问记录列表  
-  - `GET /api/commission/other` - 查询业务提成表其他记录列表
-  - `GET /api/commission/performance` - 查询绩效提成记录列表
-  - 这四个接口现在可以公开访问，无需角色权限验证，方便前端系统查询佣金数据
