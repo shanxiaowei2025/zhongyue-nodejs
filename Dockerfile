@@ -3,19 +3,22 @@ FROM node:20-bullseye AS base
 
 WORKDIR /usr/src/app
 
-# 安装Python、pip和健康检查工具
-RUN apt-get update && \
+# 安装系统依赖（使用缓存挂载优化）
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
     apt-get install -y --no-install-recommends python3 python3-pip wget && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+    apt-get clean
 
-# 设置npm和pnpm使用国内镜像
+# 设置npm和pnpm使用国内镜像（合并为单层）
 RUN npm config set registry https://registry.npmmirror.com && \
     npm install -g pnpm && \
     pnpm config set registry https://registry.npmmirror.com
 
-# 复制Python依赖文件并使用国内镜像源安装
+# 复制Python依赖文件并使用缓存挂载安装
 COPY requirements.txt ./
-RUN pip3 install --no-cache-dir \
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip3 install --no-cache-dir \
     --timeout=1000 \
     --retries=5 \
     -i https://pypi.tuna.tsinghua.edu.cn/simple/ \
@@ -25,11 +28,20 @@ RUN pip3 install --no-cache-dir \
 # 第二阶段：开发构建
 FROM base AS development
 
+# 复制依赖文件
 COPY package*.json pnpm-lock.yaml ./
-RUN pnpm install
 
+# 安装依赖（使用缓存挂载）
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store/v3 \
+    --mount=type=cache,target=/usr/src/app/node_modules \
+    pnpm install --frozen-lockfile
+
+# 复制源代码
 COPY . .
-RUN pnpm run build
+
+# 构建应用（使用缓存挂载）
+RUN --mount=type=cache,target=/usr/src/app/node_modules \
+    pnpm run build
 
 # 第三阶段：生产环境
 FROM base AS production
@@ -41,9 +53,10 @@ ENV NODE_ENV=${NODE_ENV}
 RUN groupadd -r nodeapp && \
     useradd -r -g nodeapp -d /usr/src/app nodeapp
 
-# 复制package文件并安装生产依赖（保持root权限进行安装）
+# 复制package文件并安装生产依赖（使用缓存挂载）
 COPY package*.json pnpm-lock.yaml ./
-RUN pnpm install --prod && \
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store/v3 \
+    pnpm install --prod --frozen-lockfile && \
     pnpm store prune
 
 # 从development阶段复制构建产物，直接设置所有者
