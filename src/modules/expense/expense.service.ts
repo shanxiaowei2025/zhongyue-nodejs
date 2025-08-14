@@ -552,15 +552,32 @@ export class ExpenseService {
           : [query.businessType];
         
         if (businessTypes.length > 0) {
-          const conditions = businessTypes.map((type, index) => 
-            `expense.businessType LIKE :businessType${index}`
-          );
+          const conditions = [];
           const params = {};
-          businessTypes.forEach((type, index) => {
-            params[`businessType${index}`] = `%${type}%`;
+          let paramIndex = 0;
+          
+          // 检查是否包含空值或null值
+          const hasEmptyValue = businessTypes.some(type => 
+            type === '' || type === null || type === undefined || type === 'null'
+          );
+          
+          // 如果包含空值，添加NULL或空字符串的条件
+          if (hasEmptyValue) {
+            conditions.push("(expense.businessType IS NULL OR expense.businessType = '')");
+          }
+          
+          // 处理非空值
+          businessTypes.forEach((type) => {
+            if (type !== '' && type !== null && type !== undefined && type !== 'null') {
+              conditions.push(`expense.businessType LIKE :businessType${paramIndex}`);
+              params[`businessType${paramIndex}`] = `%${type}%`;
+              paramIndex++;
+            }
           });
           
-          queryBuilder.andWhere(`(${conditions.join(' OR ')})`, params);
+          if (conditions.length > 0) {
+            queryBuilder.andWhere(`(${conditions.join(' OR ')})`, params);
+          }
         }
       }
     }

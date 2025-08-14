@@ -556,6 +556,13 @@ POST /api/salary/auto-generate?month=2025-08-01
 
 ## 更新历史
 
+### 2025-01-14
+- **费用管理模块businessType查询修复**：
+  - 修复多选业务类型筛选时包含空值导致的查询错误问题
+  - 优化businessType参数处理逻辑，正确处理数组中包含空值、null值的情况
+  - 当多选参数中包含空值时，会正确匹配数据库中businessType为NULL或空字符串的记录
+  - 解决了单项筛选正常但多项选择包含空值时查询失败的问题
+
 ### 2025-01-12
 - **费用贡献接口优化**：
   - 为 `/api/enterprise-service/expense-contribution/find-company-expenses` 接口添加年份筛选功能
