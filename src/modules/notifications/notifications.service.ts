@@ -156,8 +156,22 @@ export class NotificationsService {
       throw new BadRequestException('无权删除其他用户的通知记录');
     }
 
+    // 获取通知ID，用于后续检查
+    const notificationId = recipient.notificationId;
+
     // 删除接收者记录
     await this.recipientRepo.delete(recipientId);
+
+    // 检查该通知是否还有其他接收者
+    const remainingRecipients = await this.recipientRepo.count({
+      where: { notificationId }
+    });
+
+    // 如果没有剩余接收者，删除主表记录（避免孤儿记录）
+    if (remainingRecipients === 0) {
+      await this.notificationRepo.delete(notificationId);
+      this.logger.log(`自动清理孤儿通知记录，通知ID: ${notificationId}`);
+    }
 
     return {
       success: true,
