@@ -9,6 +9,8 @@ import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { QueryUserDto } from './dto/query-user.dto';
+import { SearchUserDto } from './dto/search-user.dto';
 import { RoleService } from '../roles/services/role.service';
 import { PermissionService } from '../permissions/services/permission.service';
 import * as bcrypt from 'bcryptjs';
@@ -113,7 +115,10 @@ export class UsersService {
   }
 
   // 获取用户列表（带分页和权限过滤）
-  async findAll(page: number = 1, limit: number = 10, currentUser: User) {
+  async findAll(queryUserDto: QueryUserDto, currentUser: User) {
+    const page = queryUserDto.page || 1;
+    const limit = queryUserDto.limit || 10;
+    
     let query = this.userRepository.createQueryBuilder('user');
 
     // 根据当前用户角色过滤可见用户
@@ -130,6 +135,14 @@ export class UsersService {
     } else {
       // 普通用户不能看到任何用户列表
       throw new ForbiddenException('没有权限查看用户列表');
+    }
+
+    // 添加角色筛选条件
+    if (queryUserDto.role) {
+      query = query.andWhere(
+        `JSON_CONTAINS(user.roles, :role, '$')`,
+        { role: JSON.stringify(queryUserDto.role) }
+      );
     }
 
     // 计算分页
@@ -152,7 +165,7 @@ export class UsersService {
 
   // 搜索用户（支持用户名模糊查询）
   async searchUsers(
-    query: { username?: string; page?: number; limit?: number },
+    query: SearchUserDto,
     currentUser: User,
   ) {
     const page = query.page || 1;

@@ -8,6 +8,16 @@ export class QueryUserDto {
   @IsString()
   username?: string;
 
+  @ApiProperty({ 
+    description: '角色筛选（单项筛选）', 
+    required: false,
+    example: 'admin',
+    enum: ['super_admin', 'admin', 'user']
+  })
+  @IsOptional()
+  @IsString()
+  role?: string;
+
   @ApiProperty({
     description: '当前页码',
     minimum: 1,
