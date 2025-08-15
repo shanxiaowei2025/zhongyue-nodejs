@@ -960,12 +960,12 @@ export class ContractService {
         throw new BadRequestException('查询参数无效');
       }
 
-      // 执行查询，获取代理记账合同且状态为已签署的记录，按委托结束日期降序排序
+      // 执行查询，获取代理记账合同且状态为已签署或已履行的记录，按委托结束日期降序排序
       const query = `
         SELECT entrustmentStartDate, entrustmentEndDate FROM sys_contract
         WHERE ${whereClause}
         AND contractType = '代理记账合同'
-        AND contractStatus = '1'
+        AND contractStatus IN ('1', '2')
         ORDER BY entrustmentEndDate DESC
         LIMIT 1
       `;
