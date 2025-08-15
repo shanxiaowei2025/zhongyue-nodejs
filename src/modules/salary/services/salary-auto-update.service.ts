@@ -126,18 +126,18 @@ export class SalaryAutoUpdateService {
     lastDayOfLastMonth: string,
   ): Promise<number> {
     try {
-      // 1. 筛选sys_expense表中auditDate为上个月且businessType为续费的记录
+      // 1. 筛选sys_expense表中auditDate为上个月的记录（不限制businessType，因为所有类型的费用都可能产生提成）
+      // socialInsuranceAgencyFee 只有在 socialInsuranceBusinessType = '续费' 时才参与计算
       const expenseQuery = `
         SELECT 
           SUM(agencyFee) as totalAgencyFee, 
-          SUM(socialInsuranceAgencyFee) as totalSocialInsuranceAgencyFee,
+          SUM(CASE WHEN socialInsuranceBusinessType = '续费' THEN socialInsuranceAgencyFee ELSE 0 END) as totalSocialInsuranceAgencyFee,
           SUM(accountingSoftwareFee) as totalAccountingSoftwareFee,
           SUM(invoiceSoftwareFee) as totalInvoiceSoftwareFee,
           SUM(addressFee) as totalAddressFee
         FROM sys_expense 
         WHERE 
           salesperson = ? AND 
-          businessType = '续费' AND 
           auditDate BETWEEN ? AND ? AND
           status = 1
       `;
@@ -151,7 +151,7 @@ export class SalaryAutoUpdateService {
       // 如果没有找到数据，则返回0
       if (!expenseResults.length) {
         this.logger.debug(
-          `员工 ${employeeName} 在上个月没有符合条件的代理费记录`,
+          `员工 ${employeeName} 在上个月没有符合条件的费用记录`,
         );
         return 0;
       }
@@ -228,13 +228,13 @@ export class SalaryAutoUpdateService {
           id,
           agencyFee,
           socialInsuranceAgencyFee,
+          socialInsuranceBusinessType,
           accountingSoftwareFee,
           invoiceSoftwareFee,
           addressFee
         FROM sys_expense 
         WHERE 
           salesperson = ? AND 
-          businessType = '续费' AND 
           auditDate BETWEEN ? AND ? AND
           status = 1
       `;
@@ -247,7 +247,7 @@ export class SalaryAutoUpdateService {
 
       if (!expenseRecords.length) {
         this.logger.debug(
-          `员工 ${employeeName} 在上个月没有符合条件的续费费用记录`,
+          `员工 ${employeeName} 在上个月没有符合条件的费用记录`,
         );
         return;
       }
@@ -256,7 +256,10 @@ export class SalaryAutoUpdateService {
       for (const record of expenseRecords) {
         // 代理费类（提成比例1%）
         const agencyFee = Number(record.agencyFee || 0);
-        const socialInsuranceAgencyFee = Number(record.socialInsuranceAgencyFee || 0);
+        // socialInsuranceAgencyFee 只有在 socialInsuranceBusinessType = '续费' 时才参与计算
+        const socialInsuranceAgencyFee = record.socialInsuranceBusinessType === '续费' 
+          ? Number(record.socialInsuranceAgencyFee || 0) 
+          : 0;
         const agencyTotalFee = agencyFee + socialInsuranceAgencyFee;
 
         // 软件费类（提成比例10%）
@@ -268,26 +271,18 @@ export class SalaryAutoUpdateService {
         // 计算该条记录的代理费提成
         const agencyCommission = agencyTotalFee * 0.01 + softwareTotalFee * 0.1;
 
-        // 更新数据库
-        if (agencyCommission > 0) {
-          await this.dataSource.query(
-            `UPDATE sys_expense SET agency_commission = ? WHERE id = ?`,
-            [agencyCommission, record.id],
-          );
+        // 更新数据库 - 无论提成是否为0都要更新，确保数据一致性
+        await this.dataSource.query(
+          `UPDATE sys_expense SET agency_commission = ? WHERE id = ?`,
+          [agencyCommission, record.id],
+        );
 
-          this.logger.debug(`
-            更新费用记录ID ${record.id} 的代理费提成: 
-            代理费: ${agencyFee}, 社保代理费: ${socialInsuranceAgencyFee}
-            记账软件费: ${accountingSoftwareFee}, 开票软件费: ${invoiceSoftwareFee}, 地址费: ${addressFee}
-            代理费提成: ${agencyCommission}
-          `);
-        } else {
-          // 如果提成为0，也要更新到数据库，确保数据一致性
-          await this.dataSource.query(
-            `UPDATE sys_expense SET agency_commission = 0 WHERE id = ?`,
-            [record.id],
-          );
-        }
+        this.logger.debug(`
+          更新费用记录ID ${record.id} 的代理费提成: 
+          代理费: ${agencyFee}, 社保代理费: ${socialInsuranceAgencyFee} (socialInsuranceBusinessType: ${record.socialInsuranceBusinessType})
+          记账软件费: ${accountingSoftwareFee}, 开票软件费: ${invoiceSoftwareFee}, 地址费: ${addressFee}
+          代理费提成: ${agencyCommission}
+        `);
       }
 
       this.logger.log(
@@ -366,10 +361,15 @@ export class SalaryAutoUpdateService {
       // 先计算所有记录的基础业务费用总和
       for (const expense of expenseResults) {
         // 基础业务费用总和
+        // socialInsuranceAgencyFee 只有在 socialInsuranceBusinessType = '新增' 时才参与计算
+        const socialInsuranceAgencyFee = expense.socialInsuranceBusinessType === '新增' 
+          ? Number(expense.socialInsuranceAgencyFee || 0) 
+          : 0;
+        
         const basicFee =
           Number(expense.licenseFee || 0) +
           Number(expense.agencyFee || 0) +
-          Number(expense.socialInsuranceAgencyFee || 0) +
+          socialInsuranceAgencyFee +
           Number(expense.housingFundAgencyFee || 0) +
           Number(expense.statisticalReportFee || 0) +
           Number(expense.changeFee || 0) +
@@ -429,10 +429,15 @@ export class SalaryAutoUpdateService {
           // 使用获取到的提成比率计算每条记录的提成
           for (const expense of expenseResults) {
             // 基础业务费用
+            // socialInsuranceAgencyFee 只有在 socialInsuranceBusinessType = '新增' 时才参与计算
+            const socialInsuranceAgencyFee = expense.socialInsuranceBusinessType === '新增' 
+              ? Number(expense.socialInsuranceAgencyFee || 0) 
+              : 0;
+            
             const basicFee =
               Number(expense.licenseFee || 0) +
               Number(expense.agencyFee || 0) +
-              Number(expense.socialInsuranceAgencyFee || 0) +
+              socialInsuranceAgencyFee +
               Number(expense.housingFundAgencyFee || 0) +
               Number(expense.statisticalReportFee || 0) +
               Number(expense.changeFee || 0) +
