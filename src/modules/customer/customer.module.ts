@@ -9,11 +9,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CustomerService } from './customer.service';
 import { CustomerController } from './customer.controller';
 import { Customer } from './entities/customer.entity';
+import { Clan } from './entities/clan.entity';
 import { User } from '../users/entities/user.entity';
 import { Role } from '../roles/entities/role.entity';
 import { Permission } from '../permissions/entities/permission.entity';
 import { Department } from '../department/entities/department.entity';
 import { CustomerPermissionService } from './services/customer-permission.service';
+import { ClanService } from './services/clan.service';
+import { ClanController } from './clan.controller';
 import { MulterModule } from '@nestjs/platform-express';
 import { join } from 'path';
 import * as fs from 'fs';
@@ -25,7 +28,7 @@ import { ServiceHistoryModule } from '../enterprise-service/service-history/serv
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Customer, User, Role, Permission, Department]),
+    TypeOrmModule.forFeature([Customer, Clan, User, Role, Permission, Department]),
     MulterModule.register({
       storage: memoryStorage(), // 使用内存存储而不是磁盘存储，确保file.buffer可用
     }),
@@ -33,9 +36,9 @@ import { ServiceHistoryModule } from '../enterprise-service/service-history/serv
     StorageModule,
     ServiceHistoryModule,
   ],
-  controllers: [CustomerController],
-  providers: [CustomerService, CustomerPermissionService],
-  exports: [CustomerService],
+  controllers: [CustomerController, ClanController],
+  providers: [CustomerService, ClanService, CustomerPermissionService],
+  exports: [CustomerService, ClanService],
 })
 export class CustomerModule {
   constructor() {

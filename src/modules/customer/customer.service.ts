@@ -132,6 +132,7 @@ export class CustomerService {
       businessStatus,
       customerLevel,
       location,
+      clanName,
       startDate,
       endDate,
       contributorName,
@@ -309,6 +310,18 @@ export class CustomerService {
       } else {
         queryBuilder.andWhere('customer.location LIKE :location', {
           location: `%${location}%`,
+        });
+      }
+    }
+
+    if (clanName !== undefined) {
+      if (clanName === '') {
+        queryBuilder.andWhere(
+          "(customer.clanName IS NULL OR customer.clanName = '')",
+        );
+      } else {
+        queryBuilder.andWhere('customer.clanName LIKE :clanName', {
+          clanName: `%${clanName}%`,
         });
       }
     }
@@ -817,6 +830,18 @@ export class CustomerService {
         }
       }
 
+      if (query.clanName !== undefined) {
+        if (query.clanName === '') {
+          queryBuilder.andWhere(
+            "(customer.clanName IS NULL OR customer.clanName = '')",
+          );
+        } else {
+          queryBuilder.andWhere('customer.clanName LIKE :clanName', {
+            clanName: `%${query.clanName}%`,
+          });
+        }
+      }
+
       if (query.startDate && query.endDate) {
         // 创建日期对象
         const start = new Date(query.startDate);
@@ -890,6 +915,7 @@ export class CustomerService {
         enterpriseType: '企业类型',
         unifiedSocialCreditCode: '统一社会信用代码',
         taxBureau: '所属分局',
+        clanName: '宗族名称',
         enterpriseStatus: '企业状态',
         customerLevel: '客户分级',
         sealStorageNumber: '章存放编号',

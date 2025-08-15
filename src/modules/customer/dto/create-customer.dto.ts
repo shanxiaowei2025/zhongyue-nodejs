@@ -137,6 +137,11 @@ export class CreateCustomerDto {
   @IsOptional()
   actualResponsibleRemark?: string;
 
+  @ApiPropertyOptional({ description: '宗族名称' })
+  @IsString()
+  @IsOptional()
+  clanName?: string;
+
   @ApiPropertyOptional({ description: '同宗企业' })
   @IsString()
   @IsOptional()

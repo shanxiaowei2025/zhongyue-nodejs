@@ -71,4 +71,9 @@ export class ExportCustomerDto {
   @IsOptional()
   @IsString()
   location?: string;
+
+  @ApiProperty({ description: '宗族名称', required: false })
+  @IsOptional()
+  @IsString()
+  clanName?: string;
 }

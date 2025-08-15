@@ -64,6 +64,9 @@ export class Customer {
   @Column({ nullable: true, comment: '实际负责人(备注)' })
   actualResponsibleRemark: string;
 
+  @Column({ nullable: true, comment: '宗族名称' })
+  clanName: string;
+
   @Column({ nullable: true, type: 'text', comment: '同宗企业' })
   affiliatedEnterprises: string;
 

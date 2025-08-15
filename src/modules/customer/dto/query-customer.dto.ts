@@ -95,6 +95,11 @@ export class QueryCustomerDto {
   @IsString()
   remarks?: string;
 
+  @ApiPropertyOptional({ description: '宗族名称' })
+  @IsOptional()
+  @IsString()
+  clanName?: string;
+
   @ApiPropertyOptional({ description: '归属地' })
   @IsOptional()
   @IsString()
