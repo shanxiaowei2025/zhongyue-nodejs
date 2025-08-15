@@ -10,8 +10,11 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { BusinessStatus } from '../enums/customer.enum';
+import { Clan } from './clan.entity';
 
 @Entity('sys_customer')
 export class Customer {
@@ -64,11 +67,12 @@ export class Customer {
   @Column({ nullable: true, comment: '实际负责人(备注)' })
   actualResponsibleRemark: string;
 
-  @Column({ nullable: true, comment: '宗族名称' })
-  clanName: string;
+  @Column({ nullable: true, comment: '宗族ID' })
+  clanId: number;
 
-  @Column({ nullable: true, type: 'text', comment: '同宗企业' })
-  affiliatedEnterprises: string;
+  @ManyToOne(() => Clan, { nullable: true })
+  @JoinColumn({ name: 'clanId' })
+  clan: Clan;
 
   @Column({ nullable: true, type: 'text', comment: '老板画像' })
   bossProfile: string;

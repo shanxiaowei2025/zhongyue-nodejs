@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString, IsDate } from 'class-validator';
+import { IsOptional, IsString, IsDate, IsNumber } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class ExportCustomerDto {
@@ -72,8 +72,8 @@ export class ExportCustomerDto {
   @IsString()
   location?: string;
 
-  @ApiProperty({ description: '宗族名称', required: false })
+  @ApiProperty({ description: '宗族ID', required: false })
   @IsOptional()
-  @IsString()
-  clanName?: string;
+  @IsNumber()
+  clanId?: number;
 }

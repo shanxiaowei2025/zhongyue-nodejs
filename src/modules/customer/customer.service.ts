@@ -132,7 +132,7 @@ export class CustomerService {
       businessStatus,
       customerLevel,
       location,
-      clanName,
+      clanId,
       startDate,
       endDate,
       contributorName,
@@ -314,14 +314,12 @@ export class CustomerService {
       }
     }
 
-    if (clanName !== undefined) {
-      if (clanName === '') {
-        queryBuilder.andWhere(
-          "(customer.clanName IS NULL OR customer.clanName = '')",
-        );
+    if (clanId !== undefined) {
+      if (clanId === null || clanId === 0) {
+        queryBuilder.andWhere('customer.clanId IS NULL');
       } else {
-        queryBuilder.andWhere('customer.clanName LIKE :clanName', {
-          clanName: `%${clanName}%`,
+        queryBuilder.andWhere('customer.clanId = :clanId', {
+          clanId: clanId,
         });
       }
     }
@@ -830,14 +828,12 @@ export class CustomerService {
         }
       }
 
-      if (query.clanName !== undefined) {
-        if (query.clanName === '') {
-          queryBuilder.andWhere(
-            "(customer.clanName IS NULL OR customer.clanName = '')",
-          );
+      if (query.clanId !== undefined) {
+        if (query.clanId === null || query.clanId === 0) {
+          queryBuilder.andWhere('customer.clanId IS NULL');
         } else {
-          queryBuilder.andWhere('customer.clanName LIKE :clanName', {
-            clanName: `%${query.clanName}%`,
+          queryBuilder.andWhere('customer.clanId = :clanId', {
+            clanId: query.clanId,
           });
         }
       }
@@ -915,7 +911,7 @@ export class CustomerService {
         enterpriseType: '企业类型',
         unifiedSocialCreditCode: '统一社会信用代码',
         taxBureau: '所属分局',
-        clanName: '宗族名称',
+        clanId: '宗族ID',
         enterpriseStatus: '企业状态',
         customerLevel: '客户分级',
         sealStorageNumber: '章存放编号',

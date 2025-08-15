@@ -38,15 +38,24 @@ export class ClanService {
    * 分页查询宗族列表
    */
   async findAll(queryDto: QueryClanDto) {
-    const { page = 1, pageSize = 10, clanName, memberName, creator } = queryDto;
+    const { page = 1, pageSize = 10, clanName, memberName, exactMatch = false, namesOnly = false } = queryDto;
     
     const queryBuilder = this.clanRepository.createQueryBuilder('clan');
 
-    // 宗族名称模糊查询
+    // 如果只需要名称列表，只选择必要字段
+    if (namesOnly) {
+      queryBuilder.select(['clan.id', 'clan.clanName']);
+    }
+
+    // 宗族名称查询（支持精确匹配和模糊查询）
     if (clanName) {
-      queryBuilder.andWhere('clan.clanName LIKE :clanName', { 
-        clanName: `%${clanName}%` 
-      });
+      if (exactMatch) {
+        queryBuilder.andWhere('clan.clanName = :clanName', { clanName });
+      } else {
+        queryBuilder.andWhere('clan.clanName LIKE :clanName', { 
+          clanName: `%${clanName}%` 
+        });
+      }
     }
 
     // 成员姓名模糊查询
@@ -57,21 +66,32 @@ export class ClanService {
       );
     }
 
-    // 创建人查询
-    if (creator) {
-      queryBuilder.andWhere('clan.creator LIKE :creator', { 
-        creator: `%${creator}%` 
-      });
-    }
-
     // 排序
-    queryBuilder.orderBy('clan.updateTime', 'DESC');
+    if (namesOnly) {
+      queryBuilder.orderBy('clan.clanName', 'ASC');
+    } else {
+      queryBuilder.orderBy('clan.updateTime', 'DESC');
+    }
 
     // 分页
     const skip = (page - 1) * pageSize;
     queryBuilder.skip(skip).take(pageSize);
 
     const [data, total] = await queryBuilder.getManyAndCount();
+
+    // 如果只需要名称列表，返回简化格式
+    if (namesOnly) {
+      return {
+        data: data.map(clan => ({
+          id: clan.id,
+          clanName: clan.clanName
+        })),
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize)
+      };
+    }
 
     return {
       data,
@@ -87,21 +107,6 @@ export class ClanService {
    */
   async findOne(id: number): Promise<Clan> {
     const clan = await this.clanRepository.findOne({ where: { id } });
-    
-    if (!clan) {
-      throw new NotFoundException('宗族不存在');
-    }
-
-    return clan;
-  }
-
-  /**
-   * 根据宗族名称查询
-   */
-  async findByClanName(clanName: string): Promise<Clan> {
-    const clan = await this.clanRepository.findOne({ 
-      where: { clanName } 
-    });
     
     if (!clan) {
       throw new NotFoundException('宗族不存在');
@@ -163,15 +168,5 @@ export class ClanService {
     await this.clanRepository.save(clan);
 
     return clan;
-  }
-
-  /**
-   * 获取所有宗族名称列表（用于下拉选择）
-   */
-  async getClanNames(): Promise<{ id: number; clanName: string }[]> {
-    return await this.clanRepository.find({
-      select: ['id', 'clanName'],
-      order: { clanName: 'ASC' }
-    });
   }
 } 

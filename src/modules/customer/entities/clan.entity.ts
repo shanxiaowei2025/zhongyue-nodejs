@@ -27,10 +27,4 @@ export class Clan {
 
   @UpdateDateColumn({ comment: '更新时间' })
   updateTime: Date;
-
-  @Column({ nullable: true, comment: '创建人' })
-  creator: string;
-
-  @Column({ nullable: true, comment: '备注' })
-  remark: string;
 } 

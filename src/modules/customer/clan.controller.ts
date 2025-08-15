@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { ClanService } from './services/clan.service';
-import { CreateClanDto } from './dto/create-clan.dto';
+import { CreateClanDto, AddMemberDto } from './dto/create-clan.dto';
 import { UpdateClanDto } from './dto/update-clan.dto';
 import { QueryClanDto } from './dto/query-clan.dto';
 
@@ -35,22 +35,36 @@ export class ClanController {
   }
 
   @Get()
-  @ApiOperation({ summary: '分页查询宗族列表' })
-  @ApiResponse({ status: 200, description: '查询成功' })
+  @ApiOperation({ 
+    summary: '查询宗族列表',
+    description: '支持分页查询和多条件筛选。当 namesOnly=true 时，只返回宗族ID和名称列表（用于下拉选择等场景）。当 exactMatch=true 时，按宗族名称进行精确匹配查询。'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: '查询成功',
+    schema: {
+      type: 'object',
+      properties: {
+        code: { type: 'number', example: 200 },
+        message: { type: 'string', example: '查询成功' },
+        data: {
+          type: 'object',
+          properties: {
+            data: {
+              type: 'array',
+              description: 'namesOnly=true时只包含id和clanName字段，否则返回完整宗族信息'
+            },
+            total: { type: 'number', description: '总记录数' },
+            page: { type: 'number', description: '当前页码' },
+            pageSize: { type: 'number', description: '每页数量' },
+            totalPages: { type: 'number', description: '总页数' }
+          }
+        }
+      }
+    }
+  })
   async findAll(@Query() queryDto: QueryClanDto) {
     const result = await this.clanService.findAll(queryDto);
-    return {
-      code: 200,
-      message: '查询成功',
-      data: result
-    };
-  }
-
-  @Get('names')
-  @ApiOperation({ summary: '获取所有宗族名称列表' })
-  @ApiResponse({ status: 200, description: '查询成功' })
-  async getClanNames() {
-    const result = await this.clanService.getClanNames();
     return {
       code: 200,
       message: '查询成功',
@@ -65,20 +79,6 @@ export class ClanController {
   @ApiResponse({ status: 404, description: '宗族不存在' })
   async findOne(@Param('id') id: string) {
     const result = await this.clanService.findOne(+id);
-    return {
-      code: 200,
-      message: '查询成功',
-      data: result
-    };
-  }
-
-  @Get('name/:clanName')
-  @ApiOperation({ summary: '根据宗族名称查询' })
-  @ApiParam({ name: 'clanName', description: '宗族名称' })
-  @ApiResponse({ status: 200, description: '查询成功' })
-  @ApiResponse({ status: 404, description: '宗族不存在' })
-  async findByClanName(@Param('clanName') clanName: string) {
-    const result = await this.clanService.findByClanName(clanName);
     return {
       code: 200,
       message: '查询成功',
@@ -115,18 +115,36 @@ export class ClanController {
     };
   }
 
-  @Post(':id/members/:memberName')
+  @Post('members')
   @ApiOperation({ summary: '添加成员到宗族' })
-  @ApiParam({ name: 'id', description: '宗族ID' })
-  @ApiParam({ name: 'memberName', description: '成员姓名' })
-  @ApiResponse({ status: 200, description: '添加成功' })
+  @ApiResponse({ 
+    status: 200, 
+    description: '添加成功',
+    schema: {
+      type: 'object',
+      properties: {
+        code: { type: 'number', example: 200 },
+        message: { type: 'string', example: '添加成员成功' },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', description: '宗族ID' },
+            memberName: { type: 'string', description: '成员姓名' }
+          }
+        }
+      }
+    }
+  })
   @ApiResponse({ status: 404, description: '宗族不存在' })
-  async addMember(@Param('id') id: string, @Param('memberName') memberName: string) {
-    const result = await this.clanService.addMember(+id, memberName);
+  async addMember(@Body() addMemberDto: AddMemberDto) {
+    await this.clanService.addMember(addMemberDto.id, addMemberDto.memberName);
     return {
       code: 200,
       message: '添加成员成功',
-      data: result
+      data: {
+        id: addMemberDto.id,
+        memberName: addMemberDto.memberName
+      }
     };
   }
 
