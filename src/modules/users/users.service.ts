@@ -26,7 +26,10 @@ export class UsersService {
 
   // 根据用户名查找用户
   async findByUsername(username: string): Promise<User | null> {
-    return this.userRepository.findOne({ where: { username } });
+    return this.userRepository.findOne({
+      where: { username },
+      relations: ['department'],
+    });
   }
 
   // 根据身份证号查找用户
@@ -39,7 +42,10 @@ export class UsersService {
 
   // 根据用户ID查找用户
   async findById(id: number): Promise<User | null> {
-    return this.userRepository.findOne({ where: { id } });
+    return this.userRepository.findOne({
+      where: { id },
+      relations: ['department'],
+    });
   }
 
   // 创建新用户，添加当前用户参数

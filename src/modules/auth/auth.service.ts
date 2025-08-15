@@ -74,6 +74,11 @@ export class AuthService {
           idCardNumber: user.idCardNumber,
           avatar: user.avatar,
           passwordUpdatedAt: user.passwordUpdatedAt,
+          // 添加部门信息
+          department: user.department ? {
+            id: user.department.id,
+            name: user.department.name,
+          } : null,
         },
       };
     } catch (error) {
@@ -176,6 +181,11 @@ export class AuthService {
       passwordUpdatedAt: user.passwordUpdatedAt,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
+      // 添加部门信息
+      department: user.department ? {
+        id: user.department.id,
+        name: user.department.name,
+      } : null,
     };
   }
 
