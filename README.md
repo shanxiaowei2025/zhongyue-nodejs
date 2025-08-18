@@ -72,6 +72,14 @@ src/
 - 客户分类和标签
 - 费用贡献金额跟踪
 - 客户档案信息查询：支持按企业名称或统一社会信用代码筛选
+- **宗族管理功能**：
+  - 宗族信息的CRUD操作（创建、查询、更新、删除）
+  - 支持宗族名称、成员列表、创建人、备注等字段管理
+  - 支持按宗族名称进行模糊查询和精确匹配
+  - 支持按成员姓名进行模糊查询
+  - 分页查询功能，默认每页10条记录
+  - 统一查询接口，支持通过参数控制返回格式
+  - 完整的Swagger API文档支持
 
 ### 企业服务模块 (enterprise-service)
 - 客户列表查询：支持按费用贡献金额倒序排列
@@ -241,6 +249,20 @@ socket.on('new-notification', (data) => { console.log('收到新通知:', data);
 
 ### 客户管理API
 - `/api/customer/archive/search`：查询客户档案信息，支持按企业名称或统一社会信用代码筛选，返回档案相关字段（**公开接口，无需认证**）
+
+### 宗族管理API
+- `/api/customer/clan`：宗族管理的完整CRUD接口
+  - `POST /api/customer/clan`：创建宗族记录
+  - `GET /api/customer/clan`：查询宗族列表（支持分页和多条件筛选）
+    - 支持 `namesOnly=true` 参数，只返回宗族ID和名称列表（用于下拉选择等场景）
+    - 支持按宗族名称进行模糊查询和精确匹配（`exactMatch=true`时精确匹配）
+    - 支持按成员姓名进行模糊查询
+    - 支持分页查询（page、pageSize参数）
+  - `GET /api/customer/clan/:id`：获取单个宗族详情
+  - `PATCH /api/customer/clan/:id`：更新宗族信息
+  - `DELETE /api/customer/clan/:id`：删除宗族记录
+  - `POST /api/customer/clan/members`：添加成员到宗族（请求体包含id和memberName）
+  - `DELETE /api/customer/clan/:id/members/:memberName`：从宗族中移除成员
 
 #### 客户档案查询接口详情
 **接口地址**: `GET /api/customer/archive/search`
@@ -621,6 +643,29 @@ POST /api/salary/auto-generate?month=2025-08-01
 详细文档请查看 [docs/README.md](docs/README.md)
 
 ## 更新历史
+
+### 2025-01-15
+- **宗族管理模块优化**：
+  - **添加成员接口重构**：
+    - 路由从 `POST /api/clan/{id}/members/{memberName}` 改为 `POST /api/clan/members`
+    - 参数从路径参数改为请求体参数：`{ "id": 1, "memberName": "六六3" }`
+    - 响应体返回宗族ID和成员姓名信息
+    - 删除成员接口保持不变
+  - **API接口简化**：删除重复的根据宗族名称查询接口（`GET /api/clan/name/{clanName}`），统一使用 `GET /api/clan` 接口
+  - **查询功能增强**：新增 `exactMatch` 参数支持精确匹配查询，原有模糊查询功能保留
+  - **接口统一性**：所有宗族查询需求统一通过一个接口实现，提升API设计的简洁性和一致性
+  - **文档更新**：更新Swagger文档和README说明，明确新的查询参数和使用方法
+
+- **宗族管理模块新增**：
+  - 在客户管理模块下新增宗族管理功能
+  - 创建宗族实体（Clan Entity）包含宗族名称、成员列表等字段
+  - 实现完整的CRUD操作：创建、查询、更新、删除
+  - 支持多条件查询：按宗族名称、成员姓名进行模糊匹配
+  - 分页查询支持，默认每页10条记录
+  - **统一查询接口**：合并分页查询和名称列表查询为单一接口，通过 `namesOnly` 参数控制返回格式
+  - 完整的DTO验证和Swagger文档配置
+  - 数据库表：`sys_clan`，包含id、clanName、memberList、createTime、updateTime字段
+  - API路由：`/api/customer/clan`，支持GET、POST、PATCH、DELETE操作
 
 ### 2025-01-14
 - **费用管理模块businessType查询修复**：

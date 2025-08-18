@@ -37,6 +37,7 @@ import * as Joi from 'joi'; // 用于验证配置的工具
 // 导入实体
 import { User } from './modules/users/entities/user.entity';
 import { Customer } from './modules/customer/entities/customer.entity';
+import { Clan } from './modules/customer/entities/clan.entity';
 
 import { Role } from './modules/roles/entities/role.entity'; // 路径已修改
 import { Permission } from './modules/permissions/entities/permission.entity'; // 路径已修改
@@ -117,6 +118,7 @@ import { NotificationRecipient } from './modules/notifications/entities/notifica
         entities: [
           User,
           Customer,
+          Clan,
           Role,
           Permission,
           Department,
