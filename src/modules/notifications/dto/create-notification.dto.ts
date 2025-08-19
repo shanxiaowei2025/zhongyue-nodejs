@@ -39,6 +39,17 @@ export class CreateNotificationDto {
   targetUsers?: number[] = [];
 
   @ApiPropertyOptional({ 
+    description: '根据用户名指定通知接收者', 
+    type: [String],
+    example: ['张三', '李四', '王五'],
+    default: []
+  })
+  @IsArray()
+  @ArrayUnique()
+  @IsOptional()
+  targetUserNames?: string[] = [];
+
+  @ApiPropertyOptional({ 
     description: '按角色推送，角色名数组', 
     type: [String],
     example: ['admin'],

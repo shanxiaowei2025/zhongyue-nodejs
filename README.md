@@ -124,7 +124,8 @@ src/
 
 ### 9. 通知系统模块 (notifications)
 - 实时通知推送和管理
-- 支持多种接收范围：指定用户、角色、部门
+- 支持多种接收范围：指定用户ID、指定用户名、角色、部门
+- **用户名指定功能**：支持通过用户名（`targetUserNames`）直接指定通知接收者，系统自动查找对应用户ID
 - 支持多端用户连接（浏览器、移动端），同一用户的全部活跃连接都会收到推送
 - 通知状态：未读/已读
 - 与业务模块集成（费用审批、合同签署、薪资等）
@@ -165,10 +166,20 @@ CREATE TABLE `sys_notification_recipient` (
 > 说明：通知类型字段采用自由字符串，前端可自定义；当前未添加外键约束，可按需补充。
 
 #### REST API
-- `POST /api/notifications`：创建通知（支持 `targetUsers`、`targetRoles`、`targetDepts`）
+- `POST /api/notifications`：创建通知（支持 `targetUsers`、`targetUserNames`、`targetRoles`、`targetDepts`）
 - `GET /api/notifications`：获取我的通知（分页，支持 `onlyNew=true`）
 - `GET /api/notifications/new`：仅未读通知
 - `DELETE /api/notifications/:id`：删除通知（后续可扩展权限校验）
+
+#### 创建通知请求示例
+```json
+{
+  "title": "通知测试",
+  "content": "给指定用户名的用户发送通知",
+  "type": "system",
+  "targetUserNames": ["张三", "李四", "王五"]
+}
+```
 
 #### WebSocket
 - 命名空间：`/ws`
@@ -643,6 +654,15 @@ POST /api/salary/auto-generate?month=2025-08-01
 详细文档请查看 [docs/README.md](docs/README.md)
 
 ## 更新历史
+
+### 2025-01-15
+- **通知系统功能增强**：
+  - 新增根据用户名发送通知功能
+  - 创建通知DTO新增 `targetUserNames` 字段，支持传入用户名数组
+  - 通知服务自动根据用户名查找对应用户ID并发送通知
+  - 优化用户名查询逻辑，使用TypeORM的`In`操作符提高查询效率
+  - 添加用户名未找到的警告日志，便于问题排查
+  - 支持的请求格式：`{ "targetUserNames": ["张三", "李四", "王五"] }`
 
 ### 2025-01-15
 - **宗族管理模块优化**：

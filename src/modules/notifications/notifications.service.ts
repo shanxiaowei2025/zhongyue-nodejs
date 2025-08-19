@@ -25,6 +25,7 @@ export class NotificationsService {
   async create(dto: CreateNotificationDto, creatorUserId: number) {
     const userIds = await this.resolveTargetUserIds(
       dto.targetUsers || [],
+      dto.targetUserNames || [],
       dto.targetRoles || [],
       dto.targetDepts || [],
     );
@@ -179,13 +180,33 @@ export class NotificationsService {
     };
   }
 
-  private async resolveTargetUserIds(targetUsers: number[], targetRoles: string[], targetDepts: number[]) {
+  private async resolveTargetUserIds(targetUsers: number[], targetUserNames: string[], targetRoles: string[], targetDepts: number[]) {
     const userIds = new Set<number>();
 
+    // 处理直接指定的用户ID
     for (const uid of targetUsers || []) {
       if (uid) userIds.add(Number(uid));
     }
 
+    // 处理根据用户名指定的用户
+    if (targetUserNames && targetUserNames.length > 0) {
+      const usersByNames = await this.userRepo.find({
+        where: { username: In(targetUserNames) },
+        select: ['id', 'username']
+      });
+      
+      // 记录找到的用户
+      const foundUserNames = usersByNames.map(u => u.username);
+      const notFoundUserNames = targetUserNames.filter(name => !foundUserNames.includes(name));
+      
+      if (notFoundUserNames.length > 0) {
+        this.logger.warn(`以下用户名未找到对应用户: ${notFoundUserNames.join(', ')}`);
+      }
+      
+      usersByNames.forEach((u) => userIds.add(u.id));
+    }
+
+    // 处理按角色推送
     if (targetRoles && targetRoles.length > 0) {
       const usersByRoles = await this.userRepo
         .createQueryBuilder('u')
@@ -199,6 +220,7 @@ export class NotificationsService {
       usersByRoles.forEach((u) => userIds.add(u.id));
     }
 
+    // 处理按部门推送
     if (targetDepts && targetDepts.length > 0) {
       const usersByDept = await this.userRepo.find({ where: { dept_id: In(targetDepts) } });
       usersByDept.forEach((u) => userIds.add(u.id));
