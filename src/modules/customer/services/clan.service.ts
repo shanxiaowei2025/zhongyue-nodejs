@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { Clan } from '../entities/clan.entity';
@@ -141,6 +141,12 @@ export class ClanService {
    */
   async remove(id: number): Promise<void> {
     const clan = await this.findOne(id);
+    
+    // 检查宗族是否存在成员
+    if (clan.memberList && clan.memberList.length > 0) {
+      throw new BadRequestException('该宗族存在成员，不可以删除');
+    }
+    
     await this.clanRepository.remove(clan);
   }
 
