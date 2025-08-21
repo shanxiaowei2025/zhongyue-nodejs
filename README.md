@@ -49,7 +49,8 @@ src/
 │   ├── storage/           # 文件存储
 │   ├── roles/             # 角色管理
 │   ├── permissions/       # 权限管理
-│   └── notifications/     # 通知系统（新增）
+│   ├── notifications/     # 通知系统
+│   └── reports/           # 报表分析（新增）
 └── database/              # 数据库相关
     └── migrations/        # 数据库迁移文件
 ```
@@ -220,6 +221,21 @@ socket.on('new-notification', (data) => { console.log('收到新通知:', data);
 - **员工状态同步功能**：新增员工从离职状态改为在职状态时，自动启用对应用户账号的功能，与原有的离职禁用用户账号功能形成完整闭环
 - **薪资接口考勤备注功能**：为四个薪资接口（管理员列表、员工列表、管理员详情、员工详情）添加 `attendanceRemark` 字段，通过姓名和年月从 `sys_attendance_deduction` 表获取考勤备注信息
 
+### 11. 报表分析模块 (reports)
+- **数据分析与报表功能**：提供多维度的业务数据分析和统计报表
+- **智能缓存系统**：使用Redis风格的缓存机制提升报表查询性能，支持用户级和全局缓存
+- **Excel导出功能**：支持将报表数据导出为Excel格式，便于数据分析和存档
+- **多种报表类型**：
+  - 代理费收费变化分析：分析代理记账费用的时间趋势变化
+  - 新增客户统计：统计指定时间段内的新增客户数量和趋势
+  - 员工业绩统计：分析业务员的销售业绩和贡献度
+  - 客户等级分布统计：分析客户等级的分布情况
+  - 客户流失统计：识别和分析客户流失情况
+  - 代理服务到期客户统计：基于年月比较筛选出代理服务已到期的客户（当前年月大于代理结束日期年月）
+  - 会计负责客户数量统计：统计各会计负责的客户数量分布
+- **权限控制**：报表数据基于费用数据权限进行过滤，确保用户只能查看有权限访问的数据
+- **数据库优化**：为报表查询添加专门的数据库索引，提升查询性能
+
 ## 权限控制
 
 系统采用基于角色的访问控制（RBAC）和基于权限的访问控制相结合的方式：
@@ -245,6 +261,15 @@ socket.on('new-notification', (data) => { console.log('收到新通知:', data);
   - 考勤扣款管理：仅限`admin`和`super_admin`角色访问
   - 朋友圈扣款管理：仅限`admin`和`super_admin`角色访问
   - 提成表管理：仅限`admin`和`super_admin`角色访问（除提成比例查询接口外）
+
+- 报表模块权限：
+  - **权限控制基于费用数据权限**：报表数据的访问范围基于用户的费用数据查看权限，确保用户只能看到有权限访问的数据
+  - 特定报表权限：`reports_view`、`reports_export`、各报表类型权限（`reports_agency_fee_analysis`、`reports_new_customer_stats`、`reports_employee_performance`等）用于控制用户是否可以访问报表功能
+
+- 费用数据查看权限（适用于报表分析）：
+  - `expense_data_view_all`：查看所有费用数据权限
+  - `expense_data_view_by_location`：按区域查看费用数据权限（基于用户部门）
+  - `expense_data_view_own`：查看自己提交的费用数据权限（基于销售人员字段）
 
 ## API路由说明
 
@@ -274,6 +299,65 @@ socket.on('new-notification', (data) => { console.log('收到新通知:', data);
   - `DELETE /api/customer/clan/:id`：删除宗族记录
   - `POST /api/customer/clan/members`：添加成员到宗族（请求体包含id和memberName）
   - `DELETE /api/customer/clan/:id/members/:memberName`：从宗族中移除成员
+
+### 报表分析API
+- `/api/reports`：报表分析的完整功能接口
+  - `GET /api/reports/agency-fee-analysis`：代理费收费变化分析
+    - 查询参数：`year` (年份，默认当前年), `threshold` (阈值，默认500), `page`, `pageSize`
+    - **权限控制**：基于三个权限控制数据访问范围：
+      - `expense_data_view_all`：查看所有费用数据（无过滤条件）
+      - `expense_data_view_by_location`：按区域查看，匹配 `sys_expense.companyLocation = sys_department.name`（用户所属部门名称）
+      - `expense_data_view_own`：查看自己数据，匹配 `sys_expense.salesperson = sys_user.username`（用户名）
+    - **统计维度**：按业务员(salesperson)统计业绩，而非按审核员统计
+  - `GET /api/reports/new-customer-stats`：新增客户统计
+    - 查询参数：`startDate`, `endDate`, `groupBy` (day/month/year), `export` (可选)
+  - `GET /api/reports/employee-performance`：员工业绩统计
+    - 查询参数：`month` (YYYY-MM格式), `employeeName` (可选), `department` (可选)
+    - **权限控制**：基于费用数据权限控制数据访问范围：
+      - `expense_data_view_all`：查看所有费用数据（无过滤条件）
+      - `expense_data_view_by_location`：按区域查看，匹配 `sys_expense.companyLocation = sys_department.name`（用户所属部门名称）
+      - `expense_data_view_own`：查看自己数据，匹配 `sys_expense.salesperson = sys_user.username`（用户名）
+    - **统计逻辑**：基于用户有权限查看的费用数据统计各业务员的业绩
+  - `GET /api/reports/customer-level-distribution`：客户等级分布统计
+    - 查询参数：
+      - `year` (可选)：年份，如：2024
+      - `month` (可选)：月份，1-12
+    - **统计逻辑**：
+      - 只传 `year`：按年统计，统计指定年份新增的客户等级分布
+      - 传 `year` + `month`：按月统计，统计指定年月新增的客户等级分布  
+      - 只传 `month`：按当年该月统计，统计当前年份指定月份新增的客户等级分布
+      - 都不传：按当前年月统计，统计当前年月新增的客户等级分布
+    - **权限控制**：基于客户数据权限控制数据访问范围：
+      - `customer_date_view_all`：查看全部客户数据（无过滤条件）
+      - `customer_date_view_by_location`：按区域查看，匹配 `customer.location = user.department.name`
+      - `customer_date_view_own`：查看自己负责的客户，匹配顾问会计/记账会计/开票员身份
+  - `GET /api/reports/customer-churn-stats`：客户流失统计
+    - 查询参数：
+      - `year` (可选)：年份，如：2024
+      - `month` (可选)：月份，1-12
+    - **统计逻辑**：
+      - 只传 `year`：按年统计，统计指定年份的客户流失情况
+      - 传 `year` + `month`：按月统计，统计指定年月的客户流失情况  
+      - 只传 `month`：按当年该月统计，统计当前年份指定月份的客户流失情况
+      - 都不传：按当前年月统计，统计当前年月的客户流失情况
+    - **权限控制**：基于客户数据权限控制数据访问范围：
+      - `customer_date_view_all`：查看全部客户数据（无过滤条件）
+      - `customer_date_view_by_location`：按区域查看，匹配 `customer.location = user.department.name`
+      - `customer_date_view_own`：查看自己负责的客户，匹配顾问会计/记账会计/开票员身份
+    - **流失定义**：企业状态为"cancelled"或业务状态为"lost"的客户
+    - **统计内容**：流失数量、流失率、流失原因分布、流失客户详情
+  - `GET /api/reports/service-expiry-stats`：代理服务到期客户统计
+    - **筛选逻辑**：
+      - 从sys_expense表筛选agencyFee字段非空的数据
+      - 按companyName分组，找出每个公司agencyEndDate值最大的记录
+      - 将当前年月与agencyEndDate的年月比较，当前年月大于agencyEndDate年月则计为到期客户
+    - **返回数据**：
+      - `totalExpiredCustomers`：到期客户总数量
+      - `expiredCustomers`：包含客户ID和agencyEndDate的到期客户列表
+  - `GET /api/reports/accountant-client-stats`：会计负责客户数量统计
+    - 查询参数：`export` (可选，导出Excel)
+  - `DELETE /api/reports/cache/:reportType`：清除指定报表类型的缓存
+  - `DELETE /api/reports/cache`：清除所有报表缓存
 
 #### 客户档案查询接口详情
 **接口地址**: `GET /api/customer/archive/search`
@@ -654,6 +738,33 @@ POST /api/salary/auto-generate?month=2025-08-01
 详细文档请查看 [docs/README.md](docs/README.md)
 
 ## 更新历史
+
+### 2025-01-15
+- **代理费收费变化分析接口完善**：
+  - ✅ **接口实现完成**：代理费收费变化分析接口已完全实现并可正常使用
+  - ✅ **权限控制系统**：实现基于费用数据权限的访问控制系统
+    - `expense_data_view_all`：查看所有费用数据（管理员权限）
+    - `expense_data_view_by_location`：按区域查看费用数据（分公司负责人权限）
+    - `expense_data_view_own`：查看自己提交的费用数据（普通业务员权限）
+  - ✅ **数据过滤逻辑**：权限过滤逻辑与费用管理模块保持一致，确保数据访问的统一性和安全性
+  - ✅ **缓存机制**：支持30分钟Redis风格缓存，提升查询性能
+  - ✅ **分页支持**：完整的分页查询功能，支持自定义页码和页面大小
+  - ✅ **汇总统计**：提供总客户数、受影响客户数、总减少金额、平均减少金额等统计信息
+  - ✅ **完整文档**：创建详细的API文档（`AGENCY_FEE_ANALYSIS_API.md`）和测试脚本
+  - ✅ **模块集成**：已在主应用模块中正确注册，所有依赖项配置完成
+
+- **报表分析模块新增**：
+  - 新增完整的报表分析模块，提供多维度业务数据分析功能
+  - 实现7种核心报表类型：代理费收费变化分析、新增客户统计、员工业绩统计、客户等级分布、客户流失统计、代理服务到期统计、会计负责客户数量统计
+  - 集成智能缓存系统，支持用户级和全局缓存，显著提升查询性能
+  - 支持Excel导出功能，使用exceljs库生成专业格式的报表文件
+  - 基于角色的权限控制，确保敏感报表数据的安全访问
+  - 数据库索引优化，为客户表和费用表添加专门的查询索引
+  - 完整的Swagger API文档和权限配置
+  - 报表缓存实体(ReportCache)集成到主应用模块
+  - 提供缓存管理接口，支持清除指定类型或全部报表缓存
+  - 新增exceljs依赖包，支持专业级Excel文件生成和导出
+  - 完善报表模块权限配置，为所有角色分配全部报表访问权限（后续可根据需要调整）
 
 ### 2025-01-15
 - **通知系统功能增强**：
