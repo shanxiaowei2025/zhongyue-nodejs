@@ -232,13 +232,19 @@ export class CustomerChurnStatsItem {
   @ApiProperty({ description: '时间周期' })
   period: string;
 
-  @ApiProperty({ description: '流失数量' })
+  @ApiProperty({ description: '总数量' })
   churnCount: number;
+
+  @ApiProperty({ description: '企业状态为cancelled的数量' })
+  cancelledEnterpriseCount: number;
+
+  @ApiProperty({ description: '业务状态为lost的数量' })
+  lostBusinessCount: number;
 
   @ApiProperty({ description: '流失率' })
   churnRate: number;
 
-  @ApiProperty({ description: '流失原因分布' })
+  @ApiProperty({ description: '状态变更原因分布' })
   churnReasons: Array<{
     reason: string;
     count: number;
@@ -246,7 +252,7 @@ export class CustomerChurnStatsItem {
 }
 
 /**
- * 流失客户详情
+ * 客户状态详情
  */
 export class ChurnedCustomerItem {
   @ApiProperty({ description: '客户ID' })
@@ -258,29 +264,37 @@ export class ChurnedCustomerItem {
   @ApiProperty({ description: '统一社会信用代码' })
   unifiedSocialCreditCode: string;
 
-  @ApiProperty({ description: '流失日期' })
+  @ApiProperty({ description: '状态变更日期' })
   churnDate: string;
 
-  @ApiProperty({ description: '流失原因' })
+  @ApiProperty({ description: '变更原因' })
   churnReason: string;
 
   @ApiProperty({ description: '最后服务日期' })
   lastServiceDate: string;
+
+  @ApiProperty({ description: '当前企业状态' })
+  currentEnterpriseStatus: string;
+
+  @ApiProperty({ description: '当前业务状态' })
+  currentBusinessStatus: string;
 }
 
 /**
  * 客户流失统计响应
  */
 export class CustomerChurnStatsResponse {
-  @ApiProperty({ description: '流失统计' })
+  @ApiProperty({ description: '客户状态统计' })
   churnStats: CustomerChurnStatsItem[];
 
-  @ApiProperty({ description: '流失客户详情' })
+  @ApiProperty({ description: '客户状态详情' })
   churnedCustomers: ChurnedCustomerItem[];
 
   @ApiProperty({ description: '汇总信息' })
   summary: {
     totalChurned: number;
+    cancelledEnterpriseCount: number;
+    lostBusinessCount: number;
     churnRate: number;
     recoveryOpportunities: number;
   };

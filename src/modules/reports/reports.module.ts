@@ -15,9 +15,13 @@ import { User } from '../users/entities/user.entity';
 import { Role } from '../roles/entities/role.entity';
 import { Permission } from '../permissions/entities/permission.entity';
 import { Department } from '../department/entities/department.entity';
+import { CustomerLevelHistory } from './customer-level-history/entities/customer-level-history.entity';
+import { CustomerStatusHistory } from './customer-status-history/entities/customer-status-history.entity';
 
 // 导入权限模块
 import { PermissionsModule } from '../permissions/permissions.module';
+import { CustomerLevelHistoryModule } from './customer-level-history/customer-level-history.module';
+import { CustomerStatusHistoryModule } from './customer-status-history/customer-status-history.module';
 
 @Module({
   imports: [
@@ -29,8 +33,12 @@ import { PermissionsModule } from '../permissions/permissions.module';
       Role,
       Permission,
       Department,
+      CustomerLevelHistory,
+      CustomerStatusHistory,
     ]),
     PermissionsModule,
+    CustomerLevelHistoryModule,
+    CustomerStatusHistoryModule,
     ScheduleModule.forRoot(), // 定时任务支持
   ],
   controllers: [ReportsController],

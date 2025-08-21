@@ -68,6 +68,8 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { Notification } from './modules/notifications/entities/notification.entity';
 import { NotificationRecipient } from './modules/notifications/entities/notification-recipient.entity';
 import { ReportCache } from './modules/reports/entities/report-cache.entity'; // 新增报表缓存实体
+import { CustomerLevelHistory } from './modules/reports/customer-level-history/entities/customer-level-history.entity'; // 新增客户等级历史实体
+import { CustomerStatusHistory } from './modules/reports/customer-status-history/entities/customer-status-history.entity'; // 新增客户状态历史实体
 
 @Module({
   imports: [
@@ -147,6 +149,8 @@ import { ReportCache } from './modules/reports/entities/report-cache.entity'; //
           Notification,
           NotificationRecipient,
           ReportCache, // 新增报表缓存实体
+          CustomerLevelHistory, // 新增客户等级历史实体
+          CustomerStatusHistory, // 新增客户状态历史实体
         ],
         synchronize: configService.get('DB_SYNCHRONIZE', 'false') === 'true',
         logging: configService.get('DB_LOGGING', 'false') === 'true',

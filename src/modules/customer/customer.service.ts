@@ -29,6 +29,7 @@ import { ExportCustomerDto } from './dto/export-customer.dto';
 import * as os from 'os';
 import { ConfigService } from '@nestjs/config';
 import { ServiceHistoryService } from '../enterprise-service/service-history/service-history.service';
+import { CustomerLevelHistoryService } from '../reports/customer-level-history/customer-level-history.service';
 
 const execPromise = promisify(exec);
 
@@ -46,6 +47,7 @@ export class CustomerService {
     private departmentRepository: Repository<Department>,
     private configService: ConfigService,
     private serviceHistoryService: ServiceHistoryService,
+    private customerLevelHistoryService: CustomerLevelHistoryService,
   ) {}
 
   // 创建客户
@@ -596,6 +598,11 @@ export class CustomerService {
       (updateCustomerDto.businessStatus !== undefined &&
         updateCustomerDto.businessStatus !== existingCustomer.businessStatus);
 
+    // 检查客户等级是否有变化
+    const customerLevelChanged = 
+      updateCustomerDto.customerLevel !== undefined &&
+      updateCustomerDto.customerLevel !== existingCustomer.customerLevel;
+
     // 更新客户信息
     await this.customerRepository.update(id, updateCustomerDto);
 
@@ -615,6 +622,83 @@ export class CustomerService {
           error.stack,
         );
         // 不阻止更新主流程，即使服务历程创建失败
+      }
+    }
+
+    // 如果客户等级有变化，创建等级历史记录
+    if (customerLevelChanged) {
+      try {
+        this.logger.log(
+          `客户 ${updatedCustomer.companyName} 的等级从 ${existingCustomer.customerLevel} 变更为 ${updatedCustomer.customerLevel}`,
+        );
+        
+        // 创建等级历史记录
+        await this.customerLevelHistoryService.autoCreateLevelHistory(
+          updatedCustomer.id,
+          updatedCustomer.companyName,
+          updatedCustomer.unifiedSocialCreditCode,
+          existingCustomer.customerLevel,
+          updatedCustomer.customerLevel,
+          user.username, // 操作人员
+          '客户信息更新'  // 变更原因
+        );
+        
+        this.logger.log(
+          `已为客户 ${updatedCustomer.companyName} 创建等级历史记录`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `创建客户等级历史记录失败: ${error.message}`,
+          error.stack,
+        );
+        // 不阻止更新主流程
+      }
+    }
+
+    // 检查客户状态是否有变化
+    const enterpriseStatusChanged = 
+      updateCustomerDto.enterpriseStatus !== undefined &&
+      updateCustomerDto.enterpriseStatus !== existingCustomer.enterpriseStatus;
+    
+    const businessStatusChanged = 
+      updateCustomerDto.businessStatus !== undefined &&
+      updateCustomerDto.businessStatus !== existingCustomer.businessStatus;
+
+    // 如果客户状态有变化，创建状态历史记录
+    if (enterpriseStatusChanged || businessStatusChanged) {
+      try {
+        this.logger.log(
+          `客户 ${updatedCustomer.companyName} 的状态发生变化: 企业状态 ${existingCustomer.enterpriseStatus} -> ${updatedCustomer.enterpriseStatus}, 业务状态 ${existingCustomer.businessStatus} -> ${updatedCustomer.businessStatus}`,
+        );
+        
+        // 动态导入避免循环依赖
+        const { CustomerStatusHistory } = await import('../reports/customer-status-history/entities/customer-status-history.entity');
+        
+        // 直接使用数据源创建记录
+        const statusHistoryRepository = this.customerRepository.manager.getRepository(CustomerStatusHistory);
+        
+        await statusHistoryRepository.save({
+          customerId: existingCustomer.id,
+          companyName: existingCustomer.companyName,
+          unifiedSocialCreditCode: existingCustomer.unifiedSocialCreditCode,
+          previousEnterpriseStatus: existingCustomer.enterpriseStatus,
+          currentEnterpriseStatus: updatedCustomer.enterpriseStatus,
+          previousBusinessStatus: existingCustomer.businessStatus,
+          currentBusinessStatus: updatedCustomer.businessStatus,
+          changeDate: new Date(),
+          changeReason: '客户状态更新',
+          changedBy: user.username,
+        });
+
+        this.logger.log(
+          `已为客户 ${updatedCustomer.companyName} 创建状态历史记录`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `创建状态历史记录失败: ${error.message}`,
+          error.stack,
+        );
+        // 不阻止更新主流程，即使状态历史创建失败
       }
     }
 

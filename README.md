@@ -331,21 +331,25 @@ socket.on('new-notification', (data) => { console.log('收到新通知:', data);
       - `customer_date_view_all`：查看全部客户数据（无过滤条件）
       - `customer_date_view_by_location`：按区域查看，匹配 `customer.location = user.department.name`
       - `customer_date_view_own`：查看自己负责的客户，匹配顾问会计/记账会计/开票员身份
-  - `GET /api/reports/customer-churn-stats`：客户流失统计
+  - `GET /api/reports/customer-churn-stats`：客户状态统计（已修改）
     - 查询参数：
       - `year` (可选)：年份，如：2024
       - `month` (可选)：月份，1-12
     - **统计逻辑**：
-      - 只传 `year`：按年统计，统计指定年份的客户流失情况
-      - 传 `year` + `month`：按月统计，统计指定年月的客户流失情况  
-      - 只传 `month`：按当年该月统计，统计当前年份指定月份的客户流失情况
-      - 都不传：按当前年月统计，统计当前年月的客户流失情况
+      - 不传参：统计当前时间之前的数据
+      - 只传 `year`：统计指定年份最后一天之前的数据
+      - 传 `year` + `month`：统计指定年月最后一天之前的数据
+      - 数据处理：根据 `companyName` 字段分组，找出每组 `changeDate` 字段最大值的数据
+    - **筛选条件**：统计 `currentEnterpriseStatus` 字段为 `cancelled` 或 `currentBusinessStatus` 字段为 `lost` 的记录
     - **权限控制**：基于客户数据权限控制数据访问范围：
       - `customer_date_view_all`：查看全部客户数据（无过滤条件）
       - `customer_date_view_by_location`：按区域查看，匹配 `customer.location = user.department.name`
       - `customer_date_view_own`：查看自己负责的客户，匹配顾问会计/记账会计/开票员身份
-    - **流失定义**：企业状态为"cancelled"或业务状态为"lost"的客户
-    - **统计内容**：流失数量、流失率、流失原因分布、流失客户详情
+    - **统计内容**：
+      - 总记录数、企业状态为cancelled的数量、业务状态为lost的数量
+      - 按时间周期统计（年或月）
+      - 状态变更原因分布
+      - 客户状态详情（包含当前企业状态和业务状态）
   - `GET /api/reports/service-expiry-stats`：代理服务到期客户统计
     - **筛选逻辑**：
       - 从sys_expense表筛选agencyFee字段非空的数据
