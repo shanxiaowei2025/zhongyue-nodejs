@@ -18,6 +18,13 @@ import { CreateEmployeeDto } from './modules/employee/dto/create-employee.dto';
 import { UpdateEmployeeDto } from './modules/employee/dto/update-employee.dto';
 import { QueryEmployeeDto } from './modules/employee/dto/query-employee.dto';
 import { Employee } from './modules/employee/entities/employee.entity';
+import { CreateVoucherRecordYearDto } from './modules/voucher-record/dto/create-voucher-record-year.dto';
+import { UpdateVoucherRecordYearDto } from './modules/voucher-record/dto/update-voucher-record-year.dto';
+import { CreateVoucherRecordMonthDto } from './modules/voucher-record/dto/create-voucher-record-month.dto';
+import { UpdateVoucherRecordMonthDto } from './modules/voucher-record/dto/update-voucher-record-month.dto';
+import { QueryVoucherRecordDto } from './modules/voucher-record/dto/query-voucher-record.dto';
+import { VoucherRecordYear } from './modules/voucher-record/entities/voucher-record-year.entity';
+import { VoucherRecordMonth } from './modules/voucher-record/entities/voucher-record-month.entity';
 import cookieParser from 'cookie-parser';
 import { join } from 'path';
 import express from 'express';
@@ -185,6 +192,14 @@ async function bootstrap() {
         UpdateEmployeeDto,
         QueryEmployeeDto,
         Employee,
+        // 凭证存放记录模块
+        CreateVoucherRecordYearDto,
+        UpdateVoucherRecordYearDto,
+        CreateVoucherRecordMonthDto,
+        UpdateVoucherRecordMonthDto,
+        QueryVoucherRecordDto,
+        VoucherRecordYear,
+        VoucherRecordMonth,
         // 删除不存在的模型引用
         // require('./modules/enterprise-service/financial-self-inspection/dto/count-response.dto').CountResponseDto
       ], // 确保包含额外模型

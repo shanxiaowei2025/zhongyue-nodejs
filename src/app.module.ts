@@ -66,6 +66,9 @@ import {
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { Notification } from './modules/notifications/entities/notification.entity';
 import { NotificationRecipient } from './modules/notifications/entities/notification-recipient.entity';
+import { VoucherRecordModule } from './modules/voucher-record/voucher-record.module'; // 新增凭证存放记录模块
+import { VoucherRecordYear } from './modules/voucher-record/entities/voucher-record-year.entity'; // 新增凭证年度记录实体
+import { VoucherRecordMonth } from './modules/voucher-record/entities/voucher-record-month.entity'; // 新增凭证月度记录实体
 
 @Module({
   imports: [
@@ -144,6 +147,8 @@ import { NotificationRecipient } from './modules/notifications/entities/notifica
           PerformanceCommission, // 新增绩效提成表实体
           Notification,
           NotificationRecipient,
+          VoucherRecordYear, // 新增凭证年度记录实体
+          VoucherRecordMonth, // 新增凭证月度记录实体
         ],
         synchronize: configService.get('DB_SYNCHRONIZE', 'false') === 'true',
         logging: configService.get('DB_LOGGING', 'false') === 'true',
@@ -170,6 +175,7 @@ import { NotificationRecipient } from './modules/notifications/entities/notifica
     AttendanceDeductionModule, // 考勤扣款模块：直接导入，避免路由冲突
     AttendanceModule, // 考勤模块：处理考勤同步相关的功能
     NotificationsModule, // 通知模块
+    VoucherRecordModule, // 凭证存放记录模块：处理凭证存放记录相关的功能
   ],
   controllers: [AppController], // 控制器：负责接收请求，像前台接待
   providers: [
