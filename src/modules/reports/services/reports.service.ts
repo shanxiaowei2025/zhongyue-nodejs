@@ -116,7 +116,19 @@ export class ReportsService {
       // 验证字段名，避免SQL注入
       const safeField = sortField.replace(/[^a-zA-Z0-9_]/g, '');
       if (safeField) {
-        queryBuilder.orderBy(`${alias}.${safeField}`, sortOrder);
+        // 字段映射：将API字段名映射到数据库字段名
+        const fieldMapping: { [key: string]: string } = {
+          'customerId': 'id',
+          'companyName': 'companyName',
+          'currentYearFee': 'currentYearFee',
+          'previousYearFee': 'previousYearFee',
+          'decreaseAmount': 'decreaseAmount',
+          'decreaseRate': 'decreaseRate',
+          'agencyEndDate': 'agencyEndDate'
+        };
+        
+        const dbField = fieldMapping[safeField] || safeField;
+        queryBuilder.orderBy(`${alias}.${dbField}`, sortOrder);
       }
     }
   }
@@ -1966,7 +1978,7 @@ export class ReportsService {
    * 定义每个报表接口允许排序的字段白名单
    */
   private readonly SORTABLE_FIELDS = {
-    agencyFeeAnalysis: ['companyName', 'decreaseAmount', 'currentYearFee', 'previousYearFee', 'decreasePercentage'],
+    agencyFeeAnalysis: ['customerId', 'currentYearFee', 'previousYearFee', 'decreaseAmount', 'decreaseRate'],
     newCustomerStats: ['customerId'],
     employeePerformance: ['totalRevenue', 'newCustomerRevenue', 'renewalRevenue', 'customerCount', 'otherRevenue'],
     customerLevelDistribution: ['level', 'count', 'percentage', 'revenue'],
