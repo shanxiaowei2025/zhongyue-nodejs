@@ -163,10 +163,7 @@ export class EmployeePerformanceItem {
 /**
  * 员工业绩统计响应
  */
-export class EmployeePerformanceResponse {
-  @ApiProperty({ description: '员工业绩列表' })
-  employees: EmployeePerformanceItem[];
-
+export class EmployeePerformanceResponse extends PaginatedResponseDto<EmployeePerformanceItem> {
   @ApiProperty({ description: '汇总信息' })
   summary: {
     totalRevenue: number;
@@ -211,10 +208,7 @@ export class CustomerLevelDetail {
 /**
  * 客户等级分布统计响应
  */
-export class CustomerLevelDistributionResponse {
-  @ApiProperty({ description: '等级分布统计' })
-  distribution: CustomerLevelDistributionItem[];
-
+export class CustomerLevelDistributionResponse extends PaginatedResponseDto<CustomerLevelDistributionItem> {
   @ApiProperty({ description: '详细信息' })
   details: CustomerLevelDetail[];
 
@@ -283,10 +277,7 @@ export class ChurnedCustomerItem {
 /**
  * 客户流失统计响应
  */
-export class CustomerChurnStatsResponse {
-  @ApiProperty({ description: '客户状态统计' })
-  churnStats: CustomerChurnStatsItem[];
-
+export class CustomerChurnStatsResponse extends PaginatedResponseDto<CustomerChurnStatsItem> {
   @ApiProperty({ description: '客户状态详情' })
   churnedCustomers: ChurnedCustomerItem[];
 
@@ -314,12 +305,13 @@ export class ExpiringCustomerItem {
 /**
  * 代理服务到期客户统计响应
  */
-export class ServiceExpiryStatsResponse {
-  @ApiProperty({ description: '到期客户总数量' })
-  totalExpiredCustomers: number;
-
-  @ApiProperty({ description: '到期客户列表' })
-  expiredCustomers: ExpiringCustomerItem[];
+export class ServiceExpiryStatsResponse extends PaginatedResponseDto<ExpiringCustomerItem> {
+  @ApiProperty({ description: '汇总信息' })
+  summary: {
+    totalExpiredCustomers: number;
+    expiringInMonth: number;
+    overdue: number;
+  };
 }
 
 /**
@@ -342,7 +334,15 @@ export class AccountantClientStatsItem {
 /**
  * 会计负责客户统计响应
  */
-export class AccountantClientStatsResponse {
-  @ApiProperty({ description: '会计统计列表' })
-  accountants: AccountantClientStatsItem[];
+export class AccountantClientStatsResponse extends PaginatedResponseDto<AccountantClientStatsItem> {
+  @ApiProperty({ description: '汇总信息' })
+  summary: {
+    totalAccountants: number;
+    totalClients: number;
+    averageClientsPerAccountant: number;
+    topPerformer: {
+      name: string;
+      clientCount: number;
+    };
+  };
 } 

@@ -612,8 +612,19 @@ export class ReportsService {
         ? sortedEmployees.filter(emp => emp.department.includes(query.department))
         : sortedEmployees;
 
+      // 分页处理
+      const total = filteredEmployees.length;
+      const page = query.page || 1;
+      const pageSize = query.pageSize || 10;
+      const offset = (page - 1) * pageSize;
+      const paginatedEmployees = filteredEmployees.slice(offset, offset + pageSize);
+
       const result: EmployeePerformanceResponse = {
-        employees: filteredEmployees,
+        list: paginatedEmployees,
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
         summary: {
           totalRevenue: filteredEmployees.reduce((sum, emp) => sum + emp.totalRevenue, 0),
           averageRevenue: filteredEmployees.length > 0 
@@ -719,8 +730,19 @@ export class ReportsService {
         })
       );
 
+      // 应用分页
+      const total = distribution.length;
+      const page = query.page || 1;
+      const pageSize = query.pageSize || 10;
+      const offset = (page - 1) * pageSize;
+      const paginatedDistribution = distribution.slice(offset, offset + pageSize);
+
       const result: CustomerLevelDistributionResponse = {
-        distribution,
+        list: paginatedDistribution,
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
         details,
         summary: {
           totalCustomers,
@@ -896,8 +918,19 @@ export class ReportsService {
       // 应用排序到客户详情
               const churnedCustomerItems = this.applySortToArray(churnedCustomerList, validSortField, query.sortOrder);
 
+      // 应用分页到流失统计
+      const total = churnStats.length;
+      const page = query.page || 1;
+      const pageSize = query.pageSize || 10;
+      const offset = (page - 1) * pageSize;
+      const paginatedChurnStats = churnStats.slice(offset, offset + pageSize);
+
       const result: CustomerChurnStatsResponse = {
-        churnStats,
+        list: paginatedChurnStats,
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
         churnedCustomers: churnedCustomerItems,
         summary: {
           totalChurned: statusResults.length,
@@ -1019,9 +1052,24 @@ export class ReportsService {
       const validSortField = this.validateSortField('serviceExpiryStats', query.sortField);
       const expiredCustomers = this.applySortToArray(expiredCustomerList, validSortField, query.sortOrder);
 
+      // 应用分页
+      const total = expiredCustomers.length;
+      const page = query.page || 1;
+      const pageSize = query.pageSize || 10;
+      const offset = (page - 1) * pageSize;
+      const paginatedCustomers = expiredCustomers.slice(offset, offset + pageSize);
+
       const result: ServiceExpiryStatsResponse = {
-        totalExpiredCustomers: expiredCustomers.length,
-        expiredCustomers,
+        list: paginatedCustomers,
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
+        summary: {
+          totalExpiredCustomers: expiredCustomers.length,
+          expiringInMonth: 0, // 可以根据需要添加逻辑
+          overdue: expiredCustomers.length,
+        },
       };
 
       // 缓存结果（30分钟）
@@ -1211,8 +1259,34 @@ export class ReportsService {
       const validSortField = this.validateSortField('accountantClientStats', query.sortField);
       const sortedAccountants = this.applySortToArray(accountants, validSortField, query.sortOrder);
 
+      // 应用分页
+      const total = sortedAccountants.length;
+      const page = query.page || 1;
+      const pageSize = query.pageSize || 10;
+      const offset = (page - 1) * pageSize;
+      const paginatedAccountants = sortedAccountants.slice(offset, offset + pageSize);
+
       const result: AccountantClientStatsResponse = {
-        accountants: sortedAccountants,
+        list: paginatedAccountants,
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
+        summary: {
+          totalAccountants: sortedAccountants.length,
+          totalClients: sortedAccountants.reduce((sum, acc) => sum + acc.clientCount, 0),
+          averageClientsPerAccountant: sortedAccountants.length > 0 
+            ? sortedAccountants.reduce((sum, acc) => sum + acc.clientCount, 0) / sortedAccountants.length 
+            : 0,
+          topPerformer: {
+            name: sortedAccountants.length > 0 
+              ? sortedAccountants.reduce((max, acc) => acc.clientCount > max.clientCount ? acc : max).accountantName
+              : '',
+            clientCount: sortedAccountants.length > 0 
+              ? sortedAccountants.reduce((max, acc) => acc.clientCount > max.clientCount ? acc : max).clientCount
+              : 0,
+          },
+        },
       };
 
       // 缓存结果（2小时）
