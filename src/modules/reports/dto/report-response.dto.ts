@@ -252,19 +252,19 @@ export class ChurnedCustomerItem {
   @ApiProperty({ description: '客户ID' })
   customerId: number;
 
-  @ApiProperty({ description: '企业名称' })
+  @ApiProperty({ description: '公司名称' })
   companyName: string;
 
   @ApiProperty({ description: '统一社会信用代码' })
   unifiedSocialCreditCode: string;
 
-  @ApiProperty({ description: '状态变更日期时间', example: '2024-08-28 14:30:00' })
+  @ApiProperty({ description: '流失日期' })
   churnDate: string;
 
-  @ApiProperty({ description: '变更原因' })
+  @ApiProperty({ description: '流失原因' })
   churnReason: string;
 
-  @ApiProperty({ description: '最后服务日期时间', example: '2024-08-28 14:30:00' })
+  @ApiProperty({ description: '最后服务日期' })
   lastServiceDate: string;
 
   @ApiProperty({ description: '当前企业状态' })
@@ -277,9 +277,9 @@ export class ChurnedCustomerItem {
 /**
  * 客户流失统计响应
  */
-export class CustomerChurnStatsResponse extends PaginatedResponseDto<CustomerChurnStatsItem> {
-  @ApiProperty({ description: '客户状态详情' })
-  churnedCustomers: ChurnedCustomerItem[];
+export class CustomerChurnStatsResponse extends PaginatedResponseDto<ChurnedCustomerItem> {
+  @ApiProperty({ description: '按时间周期统计' })
+  periodStats: CustomerChurnStatsItem[];
 
   @ApiProperty({ description: '汇总信息' })
   summary: {

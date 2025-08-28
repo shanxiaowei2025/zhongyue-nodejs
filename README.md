@@ -331,23 +331,30 @@ socket.on('new-notification', (data) => { console.log('收到新通知:', data);
       - `customer_date_view_all`：查看全部客户数据（无过滤条件）
       - `customer_date_view_by_location`：按区域查看，匹配 `customer.location = user.department.name`
       - `customer_date_view_own`：查看自己负责的客户，匹配顾问会计/记账会计/开票员身份
-  - `GET /api/reports/customer-churn-stats`：客户状态统计（已修改）
+  - `GET /api/reports/customer-churn-stats`：客户流失统计（已修改）
     - 查询参数：
       - `year` (可选)：年份，如：2024
       - `month` (可选)：月份，1-12
+      - `page` (可选)：页码，默认1
+      - `pageSize` (可选)：每页数量，默认10
+      - `sortField` (可选)：排序字段，支持 period、churnCount、churnRate、companyName、churnDate
+      - `sortOrder` (可选)：排序类型，ASC或DESC
     - **统计逻辑**：
       - 不传参：统计当前时间之前的数据
       - 只传 `year`：统计指定年份最后一天之前的数据
       - 传 `year` + `month`：统计指定年月最后一天之前的数据
       - 数据处理：根据 `companyName` 字段分组，找出每组 `changeDate` 字段最大值的数据
     - **筛选条件**：统计 `currentEnterpriseStatus` 字段为 `cancelled` 或 `currentBusinessStatus` 字段为 `lost` 的记录
+    - **分页逻辑**：按流失客户详情分页，每页返回指定数量的客户记录
+    - **响应结构**：
+      - `list`：分页的流失客户详情列表
+      - `periodStats`：按时间周期统计的汇总数据（不分页）
+      - `summary`：整体汇总信息
+      - 分页信息：`total`、`page`、`pageSize`、`totalPages`
     - **权限控制**：基于客户数据权限控制数据访问范围：
       - `customer_date_view_all`：查看全部客户数据（无过滤条件）
       - `customer_date_view_by_location`：按区域查看，匹配 `customer.location = user.department.name`
       - `customer_date_view_own`：查看自己负责的客户，匹配顾问会计/记账会计/开票员身份
-    - **统计内容**：
-      - 总记录数、企业状态为cancelled的数量、业务状态为lost的数量
-      - 按时间周期统计（年或月）
       - 状态变更原因分布
       - 客户状态详情（包含当前企业状态和业务状态）
     - **返回格式**：

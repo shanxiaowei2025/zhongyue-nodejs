@@ -317,13 +317,13 @@ export class ReportsController {
   @Get('customer-churn-stats')
   @ApiOperation({ 
     summary: '客户流失统计', 
-    description: '统计注销/流失客户数量和原因分布。支持按年/月时间过滤：只传year按年统计，传year+month按月统计，只传month按当年该月统计，都不传按当前年月统计' 
+    description: '统计注销/流失客户数量和原因分布。支持按年/月时间过滤：只传year按年统计，传year+month按月统计，只传month按当年该月统计，都不传按当前年月统计。分页按客户详情分页，同时返回时间周期统计汇总。' 
   })
   @ApiQuery({ name: 'sortField', required: false, description: '排序字段(固定选项)：period、churnCount、churnRate、companyName、churnDate' })
   @ApiQuery({ name: 'sortOrder', required: false, enum: ['ASC', 'DESC'], description: '排序类型：ASC-升序，DESC-降序' })
   @ApiResponse({ 
     status: 200, 
-    description: '返回客户流失统计数据', 
+    description: '返回客户流失统计数据，分页列表为客户详情，同时包含时间周期统计和汇总信息', 
     type: CustomerChurnStatsResponse 
   })
   async getCustomerChurnStats(

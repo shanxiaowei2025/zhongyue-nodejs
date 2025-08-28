@@ -884,7 +884,7 @@ export class ReportsService {
         periodStats.statusReasons.set(reason, reasonCount + 1);
       });
 
-      // 转换为最终格式
+      // 转换为最终格式 - 时间周期统计
       const churnStatsList = Array.from(periodStatsMap.values()).map(stats => ({
         period: stats.period,
         churnCount: stats.totalCount,
@@ -897,11 +897,11 @@ export class ReportsService {
         }))
       }));
 
-      // 应用排序到流失统计
+      // 应用排序到时间周期统计
       const validSortField = this.validateSortField('customerChurnStats', query.sortField);
-      const churnStats = this.applySortToArray(churnStatsList, validSortField, query.sortOrder);
+      const periodStats = this.applySortToArray(churnStatsList, validSortField, query.sortOrder);
 
-      // 客户详情
+      // 客户详情列表
       const churnedCustomerList = statusResults.map(record => ({
         customerId: record.customerId,
         companyName: record.companyName,
@@ -914,22 +914,22 @@ export class ReportsService {
       }));
 
       // 应用排序到客户详情
-              const churnedCustomerItems = this.applySortToArray(churnedCustomerList, validSortField, query.sortOrder);
+      const sortedChurnedCustomers = this.applySortToArray(churnedCustomerList, validSortField, query.sortOrder);
 
-      // 应用分页到流失统计
-      const total = churnStats.length;
+      // 应用分页到客户详情
+      const total = sortedChurnedCustomers.length;
       const page = query.page || 1;
       const pageSize = query.pageSize || 10;
       const offset = (page - 1) * pageSize;
-      const paginatedChurnStats = churnStats.slice(offset, offset + pageSize);
+      const paginatedChurnedCustomers = sortedChurnedCustomers.slice(offset, offset + pageSize);
 
       const result: CustomerChurnStatsResponse = {
-        list: paginatedChurnStats,
+        list: paginatedChurnedCustomers,
         total,
         page,
         pageSize,
         totalPages: Math.ceil(total / pageSize),
-        churnedCustomers: churnedCustomerItems,
+        periodStats: periodStats,
         summary: {
           totalChurned: statusResults.length,
           cancelledEnterpriseCount: cancelledEnterpriseRecords.length,
