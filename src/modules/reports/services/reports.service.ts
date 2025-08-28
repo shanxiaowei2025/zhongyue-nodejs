@@ -387,55 +387,42 @@ export class ReportsService {
       const customers = await queryBuilder.getMany();
       this.logger.warn(`[DEBUG] 新增客户统计查询返回结果数量: ${customers.length}`);
 
-      // 按月统计
-      const monthlyStatsMap = new Map<string, any>();
+      // 转换为客户详情列表
+      const customerDetails = customers.map(customer => ({
+        customerId: customer.id,
+        companyName: customer.companyName,
+        unifiedSocialCreditCode: customer.unifiedSocialCreditCode,
+        createTime: customer.createTime.toISOString(),
+        consultantAccountant: customer.consultantAccountant,
+        bookkeepingAccountant: customer.bookkeepingAccountant,
+        customerLevel: customer.customerLevel,
+        month: customer.createTime.toISOString().substring(0, 7), // YYYY-MM
+      }));
 
-      customers.forEach(customer => {
-        const month = customer.createTime.toISOString().substring(0, 7); // YYYY-MM
-        
-        if (!monthlyStatsMap.has(month)) {
-          monthlyStatsMap.set(month, {
-            month,
-            totalCount: 0,
-            authorizedCount: 0,
-            details: []
-          });
-        }
-
-        const monthStats = monthlyStatsMap.get(month);
-        monthStats.totalCount++;
-        monthStats.authorizedCount++; // 用户看到的都是有权限的
-        monthStats.details.push({
-          customerId: customer.id,
-          companyName: customer.companyName,
-          unifiedSocialCreditCode: customer.unifiedSocialCreditCode,
-          createTime: customer.createTime.toISOString(),
-          consultantAccountant: customer.consultantAccountant,
-          bookkeepingAccountant: customer.bookkeepingAccountant,
-          customerLevel: customer.customerLevel,
-        });
-      });
-
-      const monthlyStats = Array.from(monthlyStatsMap.values())
-        .sort((a, b) => a.month.localeCompare(b.month));
+      // 按创建时间排序
+      customerDetails.sort((a, b) => b.createTime.localeCompare(a.createTime));
 
       // 应用分页
-      const total = monthlyStats.length;
+      const total = customerDetails.length;
       const page = query.page || 1;
       const pageSize = query.pageSize || 10;
       const offset = (page - 1) * pageSize;
-      const paginatedStats = monthlyStats.slice(offset, offset + pageSize);
+      const paginatedCustomers = customerDetails.slice(offset, offset + pageSize);
+
+      // 计算月份统计用于汇总
+      const monthsSet = new Set(customerDetails.map(c => c.month));
+      const monthCount = monthsSet.size;
 
       const result: NewCustomerStatsResponse = {
-        list: paginatedStats,
+        list: paginatedCustomers,
         total,
         page,
         pageSize,
         totalPages: Math.ceil(total / pageSize),
         summary: {
-          totalNewCustomers: customers.length,
-          averagePerMonth: monthlyStats.length > 0 
-            ? customers.length / monthlyStats.length 
+          totalNewCustomers: customerDetails.length,
+          averagePerMonth: monthCount > 0 
+            ? Number((customerDetails.length / monthCount).toFixed(2))
             : 0,
         },
       };

@@ -101,6 +101,9 @@ export class NewCustomerItem {
 
   @ApiProperty({ description: '客户等级' })
   customerLevel: string;
+
+  @ApiProperty({ description: '创建月份 YYYY-MM' })
+  month: string;
 }
 
 /**
@@ -123,7 +126,7 @@ export class MonthlyNewCustomerStats {
 /**
  * 新增客户统计响应
  */
-export class NewCustomerStatsResponse extends PaginatedResponseDto<MonthlyNewCustomerStats> {
+export class NewCustomerStatsResponse extends PaginatedResponseDto<NewCustomerItem> {
   @ApiProperty({ description: '汇总信息' })
   summary: {
     totalNewCustomers: number;
