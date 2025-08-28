@@ -619,7 +619,11 @@ export class ReportsService {
           averageRevenue: filteredEmployees.length > 0 
             ? filteredEmployees.reduce((sum, emp) => sum + emp.totalRevenue, 0) / filteredEmployees.length 
             : 0,
-          topPerformer: filteredEmployees.length > 0 ? filteredEmployees[0].employeeName : '',
+          topPerformer: filteredEmployees.length > 0 
+            ? filteredEmployees.reduce((max, emp) => 
+                emp.totalRevenue > max.totalRevenue ? emp : max
+              ).employeeName 
+            : '',
         },
       };
 
