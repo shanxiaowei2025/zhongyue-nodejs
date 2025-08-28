@@ -32,24 +32,32 @@ export class AgencyFeeAnalysisDto extends PaginationDto {
  * 新增客户统计查询DTO
  */
 export class NewCustomerStatsDto extends PaginationDto {
-  @ApiProperty({ description: '年份', required: false })
+  @ApiProperty({ description: '年份，如：2024', required: false })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
   year?: number;
 
-  @ApiProperty({ description: '月份', required: false })
+  @ApiProperty({ description: '月份，1-12', required: false })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
   month?: number;
 
-  @ApiProperty({ description: '开始日期 YYYY-MM-DD', required: false })
+  @ApiProperty({ 
+    description: '开始日期 YYYY-MM-DD（基于客户创建时间customer.createTime字段筛选）', 
+    required: false,
+    example: '2024-01-01'
+  })
   @IsOptional()
   @IsDateString()
   startDate?: string;
 
-  @ApiProperty({ description: '结束日期 YYYY-MM-DD', required: false })
+  @ApiProperty({ 
+    description: '结束日期 YYYY-MM-DD（基于客户创建时间customer.createTime字段筛选）', 
+    required: false,
+    example: '2024-12-31'
+  })
   @IsOptional()
   @IsDateString()
   endDate?: string;

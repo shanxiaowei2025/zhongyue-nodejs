@@ -310,7 +310,27 @@ socket.on('new-notification', (data) => { console.log('收到新通知:', data);
       - `expense_data_view_own`：查看自己数据，匹配 `sys_expense.salesperson = sys_user.username`（用户名）
     - **统计维度**：按业务员(salesperson)统计业绩，而非按审核员统计
   - `GET /api/reports/new-customer-stats`：新增客户统计
-    - 查询参数：`startDate`, `endDate`, `groupBy` (day/month/year), `export` (可选)
+    - 查询参数：
+      - `year` (可选)：年份，如：2024
+      - `month` (可选)：月份，1-12
+      - `startDate` (可选)：开始日期 YYYY-MM-DD
+      - `endDate` (可选)：结束日期 YYYY-MM-DD
+      - `page` (可选)：页码，默认1
+      - `pageSize` (可选)：每页数量，默认10
+      - `sortField` (可选)：排序字段，支持 companyName、createTime、contributionAmount、customerLevel
+      - `sortOrder` (可选)：排序类型，ASC或DESC
+    - **筛选字段说明**：
+      - `startDate`和`endDate`参数基于**客户创建时间**(`customer.createTime`)字段进行筛选
+      - 统计指定时间范围内新增（创建）的客户数据
+    - **参数优先级**：
+      - `startDate` + `endDate`：优先使用指定的日期范围
+      - `year` + `month`：统计指定年月的数据
+      - `year`：统计指定年份的数据
+      - 无参数：默认统计当前年份的数据
+    - **权限控制**：基于客户数据权限控制数据访问范围：
+      - `customer_date_view_all`：查看全部客户数据（无过滤条件）
+      - `customer_date_view_by_location`：按区域查看，匹配 `customer.location = user.department.name`
+      - `customer_date_view_own`：查看自己负责的客户，匹配顾问会计/记账会计/开票员身份
   - `GET /api/reports/employee-performance`：员工业绩统计
     - 查询参数：`month` (YYYY-MM格式), `employeeName` (可选), `department` (可选)
     - **权限控制**：基于费用数据权限控制数据访问范围：

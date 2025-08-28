@@ -119,8 +119,28 @@ export class ReportsController {
   @Get('new-customer-stats')
   @ApiOperation({ 
     summary: '新增客户统计', 
-    description: '管理员查看全部新增客户，普通用户查看有权限的新增客户' 
+    description: `新增客户统计报表，支持多种时间筛选方式：
+    
+**筛选字段说明**：
+- startDate和endDate参数基于客户创建时间(customer.createTime)字段进行筛选
+- 统计指定时间范围内新增（创建）的客户数据
+
+**参数优先级**：
+1. startDate + endDate：优先使用指定的日期范围
+2. year + month：统计指定年月的数据  
+3. year：统计指定年份的数据
+4. 无参数：默认统计当前年份的数据
+
+**权限控制**：
+- 管理员：查看全部新增客户数据
+- 普通用户：仅查看有权限的新增客户数据（基于客户数据权限）` 
   })
+  @ApiQuery({ name: 'year', required: false, description: '年份，如：2024' })
+  @ApiQuery({ name: 'month', required: false, description: '月份，1-12' })
+  @ApiQuery({ name: 'startDate', required: false, description: '开始日期 YYYY-MM-DD（基于客户创建时间筛选）' })
+  @ApiQuery({ name: 'endDate', required: false, description: '结束日期 YYYY-MM-DD（基于客户创建时间筛选）' })
+  @ApiQuery({ name: 'page', required: false, description: '页码，默认1' })
+  @ApiQuery({ name: 'pageSize', required: false, description: '每页数量，默认10' })
   @ApiQuery({ name: 'sortField', required: false, description: '排序字段(固定选项)：companyName、createTime、contributionAmount、customerLevel' })
   @ApiQuery({ name: 'sortOrder', required: false, enum: ['ASC', 'DESC'], description: '排序类型：ASC-升序，DESC-降序' })
   @ApiResponse({ 
