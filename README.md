@@ -656,6 +656,23 @@ POST /api/salary/auto-generate?month=2025-08-01
 ## 更新历史
 
 ### 2025-01-15
+- **账务自查模块字段扩展**：
+  - **新增问题图片描述字段**：为账务自查表(`sys_financial_self_inspection`)添加 `problemImageDescription` 字段
+  - **字段规格**：VARCHAR(500)类型，可为NULL，用于存储问题的图片描述信息
+  - **功能增强**：
+    - 所有查询接口(`my-submitted`、`my-responsible`、`my-reviewed`)均支持按问题图片描述进行模糊搜索
+    - 创建和更新DTO中添加问题图片描述字段的验证和文档
+    - 查询DTO中添加问题图片描述的筛选参数
+  - **数据库更新**：
+    - 提供完整的SQL迁移脚本：`database/migrations/2025-01-15-add-problem-image-description.sql`
+    - 字段位置：在`problem`字段之后添加，保持表结构的逻辑顺序
+    - 字段验证：包含字段添加成功的验证查询和表结构展示
+  - **API影响**：
+    - `POST /api/enterprise-service/financial-self-inspection`：支持problemImageDescription字段
+    - `GET /api/enterprise-service/financial-self-inspection/my-*`：所有查询接口支持按问题图片描述筛选
+    - 向后兼容：现有功能不受影响，新字段为可选字段
+
+### 2025-01-15
 - **通知系统功能增强**：
   - 新增根据用户名发送通知功能
   - 创建通知DTO新增 `targetUserNames` 字段，支持传入用户名数组

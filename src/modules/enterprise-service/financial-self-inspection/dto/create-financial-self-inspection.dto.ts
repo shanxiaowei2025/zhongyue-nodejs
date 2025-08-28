@@ -54,6 +54,15 @@ export class CreateFinancialSelfInspectionDto {
   problem?: string;
 
   @ApiProperty({
+    description: '问题图片描述',
+    required: false,
+    example: '图片显示发票日期为2023年12月，但系统中未找到对应记录',
+  })
+  @IsOptional()
+  @IsString()
+  problemImageDescription?: string;
+
+  @ApiProperty({
     description: '解决方案',
     required: false,
     example: '补充入账',

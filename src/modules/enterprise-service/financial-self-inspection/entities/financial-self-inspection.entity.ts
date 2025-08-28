@@ -45,6 +45,9 @@ export class FinancialSelfInspection {
   @Column({ type: 'text', nullable: true, comment: '问题' })
   problem: string;
 
+  @Column({ type: 'varchar', length: 500, nullable: true, comment: '问题图片描述' })
+  problemImageDescription: string;
+
   @Column({ type: 'text', nullable: true, comment: '解决方案' })
   solution: string;
 

@@ -33,6 +33,11 @@ export class QueryFinancialSelfInspectionDto {
   @IsString()
   reviewer?: string;
 
+  @ApiProperty({ description: '问题图片描述', required: false })
+  @IsOptional()
+  @IsString()
+  problemImageDescription?: string;
+
   @ApiProperty({
     description:
       '状态(0：已提交未整改 1：已整改 2：抽查人确认 3：抽查人退回 4：复查人确认 5：复查人退回)',

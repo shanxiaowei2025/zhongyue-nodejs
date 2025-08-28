@@ -476,6 +476,7 @@ export class FinancialSelfInspectionService {
       bookkeepingAccountant,
       consultantAccountant,
       inspector,
+      problemImageDescription,
       inspectionDateStart,
       inspectionDateEnd,
       status,
@@ -562,6 +563,19 @@ export class FinancialSelfInspectionService {
       }
     }
 
+    if (problemImageDescription) {
+      if (hasWhereCondition) {
+        queryBuilder.andWhere('record.problemImageDescription LIKE :problemImageDesc', {
+          problemImageDesc: `%${problemImageDescription}%`,
+        });
+      } else {
+        queryBuilder.where('record.problemImageDescription LIKE :problemImageDesc', {
+          problemImageDesc: `%${problemImageDescription}%`,
+        });
+        hasWhereCondition = true;
+      }
+    }
+
     // 日期范围查询
     if (inspectionDateStart && inspectionDateEnd) {
       if (hasWhereCondition) {
@@ -643,6 +657,7 @@ export class FinancialSelfInspectionService {
       inspector,
       bookkeepingAccountant,
       consultantAccountant,
+      problemImageDescription,
       inspectionDateStart,
       inspectionDateEnd,
       status,
@@ -728,6 +743,19 @@ export class FinancialSelfInspectionService {
       } else {
         queryBuilder.where('record.consultantAccountant LIKE :consultant', {
           consultant: `%${consultantAccountant}%`,
+        });
+        hasWhereCondition = true;
+      }
+    }
+
+    if (problemImageDescription) {
+      if (hasWhereCondition) {
+        queryBuilder.andWhere('record.problemImageDescription LIKE :problemImageDesc', {
+          problemImageDesc: `%${problemImageDescription}%`,
+        });
+      } else {
+        queryBuilder.where('record.problemImageDescription LIKE :problemImageDesc', {
+          problemImageDesc: `%${problemImageDescription}%`,
         });
         hasWhereCondition = true;
       }
@@ -980,6 +1008,7 @@ export class FinancialSelfInspectionService {
       consultantAccountant,
       inspector,
       reviewer,
+      problemImageDescription,
       inspectionDateStart,
       inspectionDateEnd,
       status,
@@ -1065,6 +1094,19 @@ export class FinancialSelfInspectionService {
       } else {
         queryBuilder.where('record.inspector LIKE :inspector', {
           inspector: `%${inspector}%`,
+        });
+        hasWhereCondition = true;
+      }
+    }
+
+    if (problemImageDescription) {
+      if (hasWhereCondition) {
+        queryBuilder.andWhere('record.problemImageDescription LIKE :problemImageDesc', {
+          problemImageDesc: `%${problemImageDescription}%`,
+        });
+      } else {
+        queryBuilder.where('record.problemImageDescription LIKE :problemImageDesc', {
+          problemImageDesc: `%${problemImageDescription}%`,
         });
         hasWhereCondition = true;
       }
