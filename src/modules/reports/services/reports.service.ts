@@ -419,8 +419,19 @@ export class ReportsService {
       const monthlyStats = Array.from(monthlyStatsMap.values())
         .sort((a, b) => a.month.localeCompare(b.month));
 
+      // 应用分页
+      const total = monthlyStats.length;
+      const page = query.page || 1;
+      const pageSize = query.pageSize || 10;
+      const offset = (page - 1) * pageSize;
+      const paginatedStats = monthlyStats.slice(offset, offset + pageSize);
+
       const result: NewCustomerStatsResponse = {
-        monthlyStats,
+        list: paginatedStats,
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
         summary: {
           totalNewCustomers: customers.length,
           averagePerMonth: monthlyStats.length > 0 

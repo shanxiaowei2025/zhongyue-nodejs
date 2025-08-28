@@ -123,10 +123,7 @@ export class MonthlyNewCustomerStats {
 /**
  * 新增客户统计响应
  */
-export class NewCustomerStatsResponse {
-  @ApiProperty({ description: '按月统计数据' })
-  monthlyStats: MonthlyNewCustomerStats[];
-
+export class NewCustomerStatsResponse extends PaginatedResponseDto<MonthlyNewCustomerStats> {
   @ApiProperty({ description: '汇总信息' })
   summary: {
     totalNewCustomers: number;
