@@ -37,9 +37,14 @@ export class CreateStatusHistoryDto {
   @IsString({ message: '变更后业务状态必须是字符串' })
   currentBusinessStatus: string;
 
-  @ApiProperty({ description: '状态变更日期', example: '2025-01-15' })
-  @IsNotEmpty({ message: '变更日期不能为空' })
-  @IsDateString({}, { message: '变更日期格式不正确' })
+  @ApiProperty({ 
+    description: '状态变更日期时间', 
+    example: '2025-01-15T10:30:00Z',
+    type: 'string',
+    format: 'date-time'
+  })
+  @IsNotEmpty({ message: '变更日期时间不能为空' })
+  @IsDateString({}, { message: '变更日期时间格式不正确，请使用ISO 8601格式' })
   changeDate: string;
 
   @ApiProperty({ description: '变更原因', required: false })

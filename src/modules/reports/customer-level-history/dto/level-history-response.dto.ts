@@ -19,7 +19,7 @@ export class LevelHistoryItemDto {
   @ApiProperty({ description: '变更后的客户等级' })
   currentLevel: string;
 
-  @ApiProperty({ description: '等级变更日期' })
+  @ApiProperty({ description: '等级变更日期时间' })
   changeDate: string;
 
   @ApiProperty({ description: '变更原因' })

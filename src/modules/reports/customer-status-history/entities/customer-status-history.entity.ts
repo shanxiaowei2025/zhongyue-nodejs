@@ -43,7 +43,7 @@ export class CustomerStatusHistory {
   @Column({ comment: '变更后的业务状态', length: 50 })
   currentBusinessStatus: string;
 
-  @Column({ comment: '状态变更日期', type: 'date' })
+  @Column({ comment: '状态变更日期', type: 'datetime' })
   changeDate: Date;
 
   @Column({ comment: '变更原因', type: 'text', nullable: true })

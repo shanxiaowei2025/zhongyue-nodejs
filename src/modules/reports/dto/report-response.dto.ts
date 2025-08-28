@@ -264,13 +264,13 @@ export class ChurnedCustomerItem {
   @ApiProperty({ description: '统一社会信用代码' })
   unifiedSocialCreditCode: string;
 
-  @ApiProperty({ description: '状态变更日期' })
+  @ApiProperty({ description: '状态变更日期时间', example: '2024-08-28 14:30:00' })
   churnDate: string;
 
   @ApiProperty({ description: '变更原因' })
   churnReason: string;
 
-  @ApiProperty({ description: '最后服务日期' })
+  @ApiProperty({ description: '最后服务日期时间', example: '2024-08-28 14:30:00' })
   lastServiceDate: string;
 
   @ApiProperty({ description: '当前企业状态' })

@@ -28,6 +28,7 @@ import {
   ServiceExpiryStatsResponse,
   AccountantClientStatsResponse,
 } from '../dto/report-response.dto';
+import { DateUtils } from '../../../common/utils/date.utils';
 
 @Injectable()
 export class ReportsService {
@@ -49,6 +50,87 @@ export class ReportsService {
     private levelHistoryService: CustomerLevelHistoryService,
     private statusHistoryService: CustomerStatusHistoryService,
   ) {}
+
+  /**
+   * 应用排序到数组数据
+   * @param data 要排序的数据数组
+   * @param sortField 排序字段
+   * @param sortOrder 排序顺序：ASC 或 DESC
+   */
+  private applySortToArray<T extends Record<string, any>>(
+    data: T[], 
+    sortField?: string, 
+    sortOrder: 'ASC' | 'DESC' = 'DESC'
+  ): T[] {
+    if (!sortField || !data.length) {
+      return data;
+    }
+
+    return data.sort((a, b) => {
+      const valueA = this.getNestedValue(a, sortField);
+      const valueB = this.getNestedValue(b, sortField);
+
+      // 处理 null/undefined 值
+      if (valueA == null && valueB == null) return 0;
+      if (valueA == null) return sortOrder === 'ASC' ? -1 : 1;
+      if (valueB == null) return sortOrder === 'ASC' ? 1 : -1;
+
+      // 数字比较
+      if (typeof valueA === 'number' && typeof valueB === 'number') {
+        return sortOrder === 'ASC' ? valueA - valueB : valueB - valueA;
+      }
+
+      // 日期比较
+      if (valueA instanceof Date && valueB instanceof Date) {
+        return sortOrder === 'ASC' 
+          ? valueA.getTime() - valueB.getTime()
+          : valueB.getTime() - valueA.getTime();
+      }
+
+      // 字符串比较
+      const strA = String(valueA).toLowerCase();
+      const strB = String(valueB).toLowerCase();
+      
+      if (sortOrder === 'ASC') {
+        return strA.localeCompare(strB, 'zh-CN');
+      } else {
+        return strB.localeCompare(strA, 'zh-CN');
+      }
+    });
+  }
+
+  /**
+   * 应用排序到 TypeORM QueryBuilder
+   * @param queryBuilder TypeORM查询构建器
+   * @param alias 表别名
+   * @param sortField 排序字段
+   * @param sortOrder 排序顺序
+   */
+  private applySortToQueryBuilder<T>(
+    queryBuilder: SelectQueryBuilder<T>,
+    alias: string,
+    sortField?: string,
+    sortOrder: 'ASC' | 'DESC' = 'DESC'
+  ): void {
+    if (sortField) {
+      // 验证字段名，避免SQL注入
+      const safeField = sortField.replace(/[^a-zA-Z0-9_]/g, '');
+      if (safeField) {
+        queryBuilder.orderBy(`${alias}.${safeField}`, sortOrder);
+      }
+    }
+  }
+
+  /**
+   * 获取嵌套对象的值
+   * @param obj 对象
+   * @param path 路径，支持点号分隔（如：'user.name'）
+   */
+  private getNestedValue(obj: any, path: string): any {
+    return path.split('.').reduce((current, key) => {
+      return current && current[key] !== undefined ? current[key] : null;
+    }, obj);
+  }
 
   /**
    * 代理费收费变化分析
@@ -183,12 +265,16 @@ export class ReportsService {
         bookkeepingAccountant: item.bookkeepingAccountant,
       }));
 
+      // 应用排序
+      const validSortField = this.validateSortField('agencyFeeAnalysis', query.sortField);
+      const sortedList = this.applySortToArray(list, validSortField, query.sortOrder);
+
       // 分页处理
-      const total = list.length;
+      const total = sortedList.length;
       const page = query.page || 1;
       const pageSize = query.pageSize || 10;
       const offset = (page - 1) * pageSize;
-      const paginatedList = list.slice(offset, offset + pageSize);
+      const paginatedList = sortedList.slice(offset, offset + pageSize);
 
       // 汇总信息
       const summary = {
@@ -288,8 +374,11 @@ export class ReportsService {
         .where('customer.createTime BETWEEN :startDate AND :endDate', {
           startDate,
           endDate
-        })
-        .orderBy('customer.createTime', 'DESC');
+        });
+
+      // 应用排序
+      const validSortField = this.validateSortField('newCustomerStats', query.sortField);
+      this.applySortToQueryBuilder(queryBuilder, 'customer', validSortField, query.sortOrder);
 
       this.logger.warn(`[DEBUG] 应用客户权限过滤到新增客户统计查询`);
       // 应用权限过滤
@@ -512,13 +601,16 @@ export class ReportsService {
           totalRevenue: parseFloat(item.totalRevenue) || 0,
           customerCount: parseInt(item.customerCount) || 0,
           };
-        })
-        .sort((a, b) => b.totalRevenue - a.totalRevenue);
+        });
+
+      // 应用排序
+      const validSortField = this.validateSortField('employeePerformance', query.sortField);
+      const sortedEmployees = this.applySortToArray(employeesList, validSortField, query.sortOrder);
 
       // 部门过滤
       const filteredEmployees = query.department
-        ? employeesList.filter(emp => emp.department.includes(query.department))
-        : employeesList;
+        ? sortedEmployees.filter(emp => emp.department.includes(query.department))
+        : sortedEmployees;
 
       const result: EmployeePerformanceResponse = {
         employees: filteredEmployees,
@@ -596,12 +688,16 @@ export class ReportsService {
       const totalCustomers = rawResults.reduce((sum, item) => sum + parseInt(item.count), 0);
       const totalRevenue = rawResults.reduce((sum, item) => sum + parseFloat(item.revenue || 0), 0);
 
-      const distribution = rawResults.map(item => ({
+      const distributionList = rawResults.map(item => ({
         level: this.cleanCustomerLevel(item.level) || '未分级',
         count: parseInt(item.count),
         percentage: totalCustomers > 0 ? (parseInt(item.count) / totalCustomers) * 100 : 0,
         revenue: parseFloat(item.revenue || 0),
       }));
+
+      // 应用排序
+      const validSortField = this.validateSortField('customerLevelDistribution', query.sortField);
+      const distribution = this.applySortToArray(distributionList, validSortField, query.sortOrder);
 
       // 获取详细客户信息
       const details = await Promise.all(
@@ -765,7 +861,7 @@ export class ReportsService {
       });
 
       // 转换为最终格式
-      const churnStats = Array.from(periodStatsMap.values()).map(stats => ({
+      const churnStatsList = Array.from(periodStatsMap.values()).map(stats => ({
         period: stats.period,
         churnCount: stats.totalCount,
         cancelledEnterpriseCount: stats.cancelledEnterpriseCount,
@@ -775,19 +871,26 @@ export class ReportsService {
           reason,
           count
         }))
-      })).sort((a, b) => a.period.localeCompare(b.period));
+      }));
+
+      // 应用排序到流失统计
+      const validSortField = this.validateSortField('customerChurnStats', query.sortField);
+      const churnStats = this.applySortToArray(churnStatsList, validSortField, query.sortOrder);
 
       // 客户详情
-      const churnedCustomerItems = statusResults.map(record => ({
+      const churnedCustomerList = statusResults.map(record => ({
         customerId: record.customerId,
         companyName: record.companyName,
         unifiedSocialCreditCode: record.unifiedSocialCreditCode,
-        churnDate: record.churnDate,
+        churnDate: DateUtils.formatDateTime(new Date(record.churnDate)),
         churnReason: record.churnReason,
-        lastServiceDate: record.churnDate, // 简化处理，使用变更日期
+        lastServiceDate: DateUtils.formatDateTime(new Date(record.churnDate)), // 简化处理，使用变更日期
         currentEnterpriseStatus: record.currentEnterpriseStatus,
         currentBusinessStatus: record.currentBusinessStatus,
       }));
+
+      // 应用排序到客户详情
+              const churnedCustomerItems = this.applySortToArray(churnedCustomerList, validSortField, query.sortOrder);
 
       const result: CustomerChurnStatsResponse = {
         churnStats,
@@ -897,7 +1000,7 @@ export class ReportsService {
       const rawResults = await queryBuilder.getRawMany();
 
       // 筛选出到期的客户（当前年月大于agencyEndDate的年月）
-      const expiredCustomers = rawResults.filter(item => {
+      const expiredCustomerList = rawResults.filter(item => {
         const endYear = parseInt(item.endYear);
         const endMonth = parseInt(item.endMonth);
         
@@ -907,6 +1010,10 @@ export class ReportsService {
         customerId: parseInt(item.customerId),
         agencyEndDate: item.agencyEndDate,
       }));
+
+      // 应用排序
+      const validSortField = this.validateSortField('serviceExpiryStats', query.sortField);
+      const expiredCustomers = this.applySortToArray(expiredCustomerList, validSortField, query.sortOrder);
 
       const result: ServiceExpiryStatsResponse = {
         totalExpiredCustomers: expiredCustomers.length,
@@ -1096,11 +1203,12 @@ export class ReportsService {
         accountant.department = userDepartmentMap.get(accountant.accountantName) || '未知部门';
       });
 
-      // 排序
-      accountants.sort((a, b) => b.clientCount - a.clientCount);
+      // 应用排序
+      const validSortField = this.validateSortField('accountantClientStats', query.sortField);
+      const sortedAccountants = this.applySortToArray(accountants, validSortField, query.sortOrder);
 
       const result: AccountantClientStatsResponse = {
-        accountants,
+        accountants: sortedAccountants,
       };
 
       // 缓存结果（2小时）
@@ -1482,8 +1590,8 @@ export class ReportsService {
         currentEnterpriseStatus: record.currentEnterpriseStatus,
         currentBusinessStatus: record.currentBusinessStatus,
         churnDate: record.churnDate instanceof Date ? 
-          record.churnDate.toISOString().split('T')[0] : 
-          record.churnDate,
+          DateUtils.formatDateTime(record.churnDate) : 
+          DateUtils.formatDateTime(new Date(record.churnDate)),
         churnReason: this.getChurnReasonText(record.currentEnterpriseStatus, record.currentBusinessStatus, record.churnReason)
       }));
 
@@ -1520,7 +1628,9 @@ export class ReportsService {
       unifiedSocialCreditCode: customer.unifiedSocialCreditCode,
       currentEnterpriseStatus: customer.enterpriseStatus,
       currentBusinessStatus: customer.businessStatus,
-      churnDate: customer.updateTime?.toISOString().split('T')[0] || targetDate.toISOString().split('T')[0],
+      churnDate: customer.updateTime ? 
+        DateUtils.formatDateTime(customer.updateTime) : 
+        DateUtils.formatDateTime(targetDate),
       churnReason: this.getChurnReasonText(customer.enterpriseStatus, customer.businessStatus)
     }));
   }
@@ -1774,5 +1884,37 @@ export class ReportsService {
     }
     
     return trimmed;
+  }
+
+  /**
+   * 定义每个报表接口允许排序的字段白名单
+   */
+  private readonly SORTABLE_FIELDS = {
+    agencyFeeAnalysis: ['companyName', 'decreaseAmount', 'currentYearFee', 'previousYearFee', 'decreasePercentage'],
+    newCustomerStats: ['customerId'],
+    employeePerformance: ['totalRevenue', 'newCustomerRevenue', 'renewalRevenue', 'customerCount', 'otherRevenue'],
+    customerLevelDistribution: ['level', 'count', 'percentage', 'revenue'],
+    customerChurnStats: ['period', 'churnCount', 'churnRate', 'churnDate'],
+    serviceExpiryStats: ['customerId', 'agencyEndDate'],
+    accountantClientStats: ['clientCount']
+  };
+
+  /**
+   * 验证排序字段是否在白名单中
+   * @param reportType 报表类型
+   * @param sortField 排序字段
+   */
+  private validateSortField(reportType: keyof typeof this.SORTABLE_FIELDS, sortField?: string): string | null {
+    if (!sortField) {
+      return null;
+    }
+
+    const allowedFields = this.SORTABLE_FIELDS[reportType];
+    if (!allowedFields.includes(sortField)) {
+      this.logger.warn(`非法排序字段: ${sortField}, 允许的字段: ${allowedFields.join(', ')}`);
+      return null;
+    }
+
+    return sortField;
   }
 } 

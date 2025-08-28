@@ -37,7 +37,7 @@ export class CustomerLevelHistory {
   @Column({ comment: '变更后的客户等级', length: 50 })
   currentLevel: string;
 
-  @Column({ comment: '等级变更日期', type: 'date' })
+  @Column({ comment: '等级变更日期', type: 'datetime' })
   changeDate: Date;
 
   @Column({ comment: '变更原因', type: 'text', nullable: true })

@@ -53,6 +53,8 @@ export class ReportsController {
     summary: '代理费收费变化分析', 
     description: '识别代理费今年相比去年减少≥阈值的客户。数据权限基于expense_data_view_all（查看所有）、expense_data_view_by_location（按区域查看）、expense_data_view_own（查看自己）三个权限控制。' 
   })
+  @ApiQuery({ name: 'sortField', required: false, description: '排序字段(固定选项)：companyName、decreaseAmount、currentYearFee、previousYearFee、decreasePercentage' })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['ASC', 'DESC'], description: '排序类型：ASC-升序，DESC-降序' })
   @ApiResponse({ 
     status: 200, 
     description: '返回代理费收费变化分析数据，根据用户权限过滤', 
@@ -119,6 +121,8 @@ export class ReportsController {
     summary: '新增客户统计', 
     description: '管理员查看全部新增客户，普通用户查看有权限的新增客户' 
   })
+  @ApiQuery({ name: 'sortField', required: false, description: '排序字段(固定选项)：companyName、createTime、contributionAmount、customerLevel' })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['ASC', 'DESC'], description: '排序类型：ASC-升序，DESC-降序' })
   @ApiResponse({ 
     status: 200, 
     description: '返回新增客户统计数据', 
@@ -183,6 +187,8 @@ export class ReportsController {
     summary: '员工业绩统计', 
     description: '统计业务员(salesperson)的新增、续费、其他业务业绩，基于已审核通过的费用数据。数据权限基于expense_data_view_all（查看所有）、expense_data_view_by_location（按区域查看）、expense_data_view_own（查看自己）三个权限控制。' 
   })
+  @ApiQuery({ name: 'sortField', required: false, description: '排序字段(固定选项)：employeeName、totalRevenue、newCustomerRevenue、renewalRevenue、customerCount' })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['ASC', 'DESC'], description: '排序类型：ASC-升序，DESC-降序' })
   @ApiResponse({ 
     status: 200, 
     description: '返回员工业绩统计数据，根据用户权限过滤', 
@@ -247,6 +253,8 @@ export class ReportsController {
     summary: '客户等级分布统计', 
     description: '统计各等级客户数量和贡献分布。支持按年/月时间过滤：只传year按年统计，传year+month按月统计，只传month按当年该月统计，都不传按当前年月统计' 
   })
+  @ApiQuery({ name: 'sortField', required: false, description: '排序字段(固定选项)：level、count、percentage、revenue' })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['ASC', 'DESC'], description: '排序类型：ASC-升序，DESC-降序' })
   @ApiResponse({ 
     status: 200, 
     description: '返回客户等级分布统计数据', 
@@ -311,6 +319,8 @@ export class ReportsController {
     summary: '客户流失统计', 
     description: '统计注销/流失客户数量和原因分布。支持按年/月时间过滤：只传year按年统计，传year+month按月统计，只传month按当年该月统计，都不传按当前年月统计' 
   })
+  @ApiQuery({ name: 'sortField', required: false, description: '排序字段(固定选项)：period、churnCount、churnRate、companyName、churnDate' })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['ASC', 'DESC'], description: '排序类型：ASC-升序，DESC-降序' })
   @ApiResponse({ 
     status: 200, 
     description: '返回客户流失统计数据', 
@@ -375,6 +385,8 @@ export class ReportsController {
     summary: '代理服务到期客户统计', 
     description: '统计代理记账服务已到期或即将到期的客户' 
   })
+  @ApiQuery({ name: 'sortField', required: false, description: '排序字段(固定选项)：customerId、companyName、agencyEndDate' })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['ASC', 'DESC'], description: '排序类型：ASC-升序，DESC-降序' })
   @ApiResponse({ 
     status: 200, 
     description: '返回代理服务到期客户统计数据', 
@@ -439,6 +451,8 @@ export class ReportsController {
     summary: '会计负责客户数量统计', 
     description: '统计每个顾问会计、记账会计和开票员负责的客户数量' 
   })
+  @ApiQuery({ name: 'sortField', required: false, description: '排序字段(固定选项)：accountantName、clientCount、accountantType、department' })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['ASC', 'DESC'], description: '排序类型：ASC-升序，DESC-降序' })
   @ApiResponse({ 
     status: 200, 
     description: '返回会计负责客户数量统计数据', 

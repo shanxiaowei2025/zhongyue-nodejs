@@ -350,6 +350,9 @@ socket.on('new-notification', (data) => { console.log('收到新通知:', data);
       - 按时间周期统计（年或月）
       - 状态变更原因分布
       - 客户状态详情（包含当前企业状态和业务状态）
+    - **返回格式**：
+      - `churnDate` 和 `lastServiceDate` 字段返回完整日期时间格式：`YYYY-MM-DD HH:MM:SS`
+      - 支持精确到秒的时间记录，便于详细分析状态变更时点
   - `GET /api/reports/service-expiry-stats`：代理服务到期客户统计
     - **筛选逻辑**：
       - 从sys_expense表筛选agencyFee字段非空的数据
@@ -744,6 +747,21 @@ POST /api/salary/auto-generate?month=2025-08-01
 ## 更新历史
 
 ### 2025-01-15
+- **历史数据表changeDate字段类型优化**：
+  - **问题解决**：将 `customer_status_history` 和 `customer_level_history` 表中的 `changeDate` 字段从 `DATE` 类型修改为 `DATETIME` 类型
+  - **修改目的**：支持时分秒精度，解决统计时无法精确找出分组后每组 `changeDate` 字段最大值数据的问题
+  - **业务影响**：
+    - 客户流失统计现在可以精确找出每个公司状态变更的最新记录
+    - 客户等级分布统计可以准确确定客户在特定时间点的等级状态
+    - 解决了同一天多次状态变更时无法确定最新状态的问题
+  - **技术改进**：
+    - TypeORM 实体类字段类型：`type: 'date'` → `type: 'datetime'`
+    - API 接口支持 ISO 8601 日期时间格式：`2025-01-15T10:30:00Z`
+    - 重建数据库索引以确保查询性能
+    - 向后兼容：仍支持只传入日期部分，系统会自动补充时间为 `00:00:00`
+  - **文档更新**：创建详细的迁移说明文档 `docs/CHANGEDATE_DATETIME_MIGRATION.md`
+  - **数据库迁移**：提供完整的 SQL 迁移脚本 `database/migrations/2025-01-15-modify-changedate-to-datetime.sql`
+
 - **代理费收费变化分析接口完善**：
   - ✅ **接口实现完成**：代理费收费变化分析接口已完全实现并可正常使用
   - ✅ **权限控制系统**：实现基于费用数据权限的访问控制系统

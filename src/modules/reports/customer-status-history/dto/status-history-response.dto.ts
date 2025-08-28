@@ -25,7 +25,7 @@ export class StatusHistoryItemDto {
   @ApiProperty({ description: '变更后的业务状态' })
   currentBusinessStatus: string;
 
-  @ApiProperty({ description: '状态变更日期' })
+  @ApiProperty({ description: '状态变更日期时间' })
   changeDate: string;
 
   @ApiProperty({ description: '变更原因' })

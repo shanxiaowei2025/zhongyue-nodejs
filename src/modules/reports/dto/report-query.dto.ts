@@ -1,23 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsString, IsNumber, IsEnum, IsDateString, IsInt, Min, Max } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
-
-/**
- * 分页查询DTO基类
- */
-export class PaginationDto {
-  @ApiProperty({ description: '页码', default: 1, required: false })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  page?: number = 1;
-
-  @ApiProperty({ description: '每页数量', default: 10, required: false })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  pageSize?: number = 10;
-}
+import { PaginationDto } from '../../../common/dto/pagination.dto';
 
 /**
  * 代理费收费变化分析查询DTO
@@ -47,7 +31,7 @@ export class AgencyFeeAnalysisDto extends PaginationDto {
 /**
  * 新增客户统计查询DTO
  */
-export class NewCustomerStatsDto {
+export class NewCustomerStatsDto extends PaginationDto {
   @ApiProperty({ description: '年份', required: false })
   @IsOptional()
   @Type(() => Number)
@@ -74,7 +58,7 @@ export class NewCustomerStatsDto {
 /**
  * 员工业绩统计查询DTO
  */
-export class EmployeePerformanceDto {
+export class EmployeePerformanceDto extends PaginationDto {
   @ApiProperty({ description: '月份 YYYY-MM', required: false })
   @IsOptional()
   @IsString()
@@ -94,7 +78,7 @@ export class EmployeePerformanceDto {
 /**
  * 客户等级分布统计查询DTO
  */
-export class CustomerLevelDistributionDto {
+export class CustomerLevelDistributionDto extends PaginationDto {
   @ApiProperty({ 
     description: '年份，如：2024', 
     required: false,
@@ -123,7 +107,7 @@ export class CustomerLevelDistributionDto {
 /**
  * 客户流失统计查询DTO
  */
-export class CustomerChurnStatsDto {
+export class CustomerChurnStatsDto extends PaginationDto {
   @ApiProperty({ 
     description: '年份，如：2024', 
     required: false,
@@ -152,14 +136,14 @@ export class CustomerChurnStatsDto {
 /**
  * 代理服务到期客户统计查询DTO
  */
-export class ServiceExpiryStatsDto {
+export class ServiceExpiryStatsDto extends PaginationDto {
   // 新的逻辑不需要额外参数，基于年月比较判断到期
 }
 
 /**
  * 会计负责客户数量统计查询DTO
  */
-export class AccountantClientStatsDto {
+export class AccountantClientStatsDto extends PaginationDto {
   @ApiProperty({ description: '会计类型：consultantAccountant-顾问会计，bookkeepingAccountant-记账会计，invoiceOfficer-开票员', enum: ['consultantAccountant', 'bookkeepingAccountant', 'invoiceOfficer', 'all'], default: 'all', required: false })
   @IsOptional()
   @IsEnum(['consultantAccountant', 'bookkeepingAccountant', 'invoiceOfficer', 'all'])
@@ -169,6 +153,4 @@ export class AccountantClientStatsDto {
   @IsOptional()
   @IsString()
   accountantName?: string;
-
-
 } 
