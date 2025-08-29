@@ -1062,6 +1062,8 @@ export class ReportsService {
         .createQueryBuilder('expense')
         .select([
           'customer.id as customerId',
+          'customer.companyName as companyName',
+          'customer.unifiedSocialCreditCode as unifiedSocialCreditCode',
           'expense.agencyEndDate as agencyEndDate',
           'YEAR(expense.agencyEndDate) as endYear',
           'MONTH(expense.agencyEndDate) as endMonth'
@@ -1092,6 +1094,8 @@ export class ReportsService {
         return currentYear > endYear || (currentYear === endYear && currentMonth > endMonth);
       }).map(item => ({
         customerId: parseInt(item.customerId),
+        companyName: item.companyName,
+        unifiedSocialCreditCode: item.unifiedSocialCreditCode,
         agencyEndDate: item.agencyEndDate,
       }));
 

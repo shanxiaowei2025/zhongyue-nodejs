@@ -298,6 +298,12 @@ export class ExpiringCustomerItem {
   @ApiProperty({ description: '客户ID' })
   customerId: number;
 
+  @ApiProperty({ description: '公司名称' })
+  companyName: string;
+
+  @ApiProperty({ description: '统一社会信用代码' })
+  unifiedSocialCreditCode: string;
+
   @ApiProperty({ description: '代理结束日期' })
   agencyEndDate: string;
 }
