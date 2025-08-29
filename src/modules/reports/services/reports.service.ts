@@ -363,17 +363,19 @@ export class ReportsService {
       if (query.startDate && query.endDate) {
         startDate = new Date(query.startDate);
         endDate = new Date(query.endDate);
+        // 确保 endDate 包含整天
+        endDate.setHours(23, 59, 59, 999);
       } else if (query.year && query.month) {
         startDate = new Date(query.year, query.month - 1, 1);
-        endDate = new Date(query.year, query.month, 0);
+        endDate = new Date(query.year, query.month, 1); // 下个月第一天
       } else if (query.year) {
         startDate = new Date(query.year, 0, 1);
-        endDate = new Date(query.year, 11, 31);
+        endDate = new Date(query.year + 1, 0, 1); // 下一年第一天
       } else {
         // 默认查询当前年度
         const currentYear = new Date().getFullYear();
         startDate = new Date(currentYear, 0, 1);
-        endDate = new Date(currentYear, 11, 31);
+        endDate = new Date(currentYear + 1, 0, 1); // 下一年第一天
       }
 
       this.logger.warn(`[DEBUG] 新增客户统计查询时间范围: ${startDate.toISOString()} 到 ${endDate.toISOString()}`);
@@ -383,7 +385,7 @@ export class ReportsService {
       // 查询新增客户
       const queryBuilder = this.customerRepository
         .createQueryBuilder('customer')
-        .where('customer.createTime BETWEEN :startDate AND :endDate', {
+        .where('customer.createTime >= :startDate AND customer.createTime < :endDate', {
           startDate,
           endDate
         });

@@ -774,6 +774,22 @@ POST /api/salary/auto-generate?month=2025-08-01
 ## 更新历史
 
 ### 2025-01-15
+- **新增客户统计接口日期范围修复**：
+  - **问题描述**：修复新增客户统计接口在按年月查询时，无法统计到月末最后一天客户的问题
+  - **根本原因**：原代码使用 `BETWEEN` 操作符且 `endDate` 设置为月末第一秒（00:00:00），导致月末当天其他时间创建的客户被遗漏
+  - **修复方案**：
+    - 将查询条件从 `BETWEEN` 改为 `>= AND <` 的组合
+    - 调整日期范围计算：`endDate` 使用下个月第一天，确保包含当月所有时间
+    - 对于 `startDate` 和 `endDate` 参数查询，确保 `endDate` 包含整天（23:59:59.999）
+  - **影响接口**：`GET /api/reports/new-customer-stats`
+  - **修复效果**：现在可以正确统计到月末最后一天的所有客户记录
+  - **技术改进**：
+    - 按年月查询：`endDate = new Date(year, month, 1)` （下个月第一天）
+    - 按年查询：`endDate = new Date(year + 1, 0, 1)` （下一年第一天）
+    - 日期范围查询：`endDate.setHours(23, 59, 59, 999)` （包含整天）
+    - 查询条件：`createTime >= startDate AND createTime < endDate`
+
+### 2025-01-15
 - **历史数据表changeDate字段类型优化**：
   - **问题解决**：将 `customer_status_history` 和 `customer_level_history` 表中的 `changeDate` 字段从 `DATE` 类型修改为 `DATETIME` 类型
   - **修改目的**：支持时分秒精度，解决统计时无法精确找出分组后每组 `changeDate` 字段最大值数据的问题
