@@ -847,6 +847,14 @@ POST /api/salary/auto-generate?month=2025-08-01
   - 数据库表：`sys_clan`，包含id、clanName、memberList、createTime、updateTime字段
   - API路由：`/api/customer/clan`，支持GET、POST、PATCH、DELETE操作
 
+### 2025-01-15
+- **客户历史数据级联删除配置**：
+  - 为客户等级历史表（`customer_level_history`）配置级联删除 (`onDelete: 'CASCADE'`)
+  - 为客户状态历史表（`customer_status_history`）配置级联删除 (`onDelete: 'CASCADE'`)
+  - 现在删除客户时，相关的等级变更历史和状态变更历史记录会自动删除
+  - 解决了删除客户后留下孤立历史记录的数据完整性问题
+  - 确保数据库关联数据的一致性和完整性
+
 ### 2025-01-14
 - **费用管理模块businessType查询修复**：
   - 修复多选业务类型筛选时包含空值导致的查询错误问题

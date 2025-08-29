@@ -21,7 +21,7 @@ export class CustomerLevelHistory {
   @Column({ comment: '客户ID' })
   customerId: number;
 
-  @ManyToOne(() => Customer, { nullable: true })
+  @ManyToOne(() => Customer, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'customerId' })
   customer: Customer;
 

@@ -411,8 +411,8 @@ export class ReportsService {
         month: customer.createTime.toISOString().substring(0, 7), // YYYY-MM
       }));
 
-      // 按创建时间排序
-      customerDetails.sort((a, b) => b.createTime.localeCompare(a.createTime));
+      // 注释掉强制按创建时间排序，使用数据库查询的排序结果
+      // customerDetails.sort((a, b) => b.createTime.localeCompare(a.createTime));
 
       // 应用分页
       const total = customerDetails.length;
@@ -821,6 +821,10 @@ export class ReportsService {
       // 基于 customer_status_history 表统计符合条件的记录
       const statusResults = await this.getCustomerChurnStatsFromHistory(targetDate, customerFilter);
 
+      // 获取总客户数（用于计算流失率）
+      const totalCustomerCount = await this.getTotalCustomerCount(targetDate, customerFilter);
+      this.logger.warn(`总客户数: ${totalCustomerCount}`);
+
       // 分别统计 cancelled 和 lost 状态的记录
       const cancelledEnterpriseRecords = statusResults.filter(r => r.currentEnterpriseStatus === 'cancelled');
       const lostBusinessRecords = statusResults.filter(r => r.currentBusinessStatus === 'lost');
@@ -897,17 +901,23 @@ export class ReportsService {
       });
 
       // 转换为最终格式 - 时间周期统计
-      const churnStatsList = Array.from(periodStatsMap.values()).map(stats => ({
-        period: stats.period,
-        churnCount: stats.totalCount,
-        cancelledEnterpriseCount: stats.cancelledEnterpriseCount,
-        lostBusinessCount: stats.lostBusinessCount,
-        churnRate: 0, // 这里需要总客户数来计算，暂时设为0
-        churnReasons: Array.from(stats.statusReasons.entries()).map(([reason, count]) => ({
-          reason,
-          count
-        }))
-      }));
+      const churnStatsList = Array.from(periodStatsMap.values()).map(stats => {
+        // 计算流失率：流失客户数 / 总客户数 * 100，保留2位小数
+        const churnRate = totalCustomerCount > 0 ? 
+          Math.round((stats.totalCount / totalCustomerCount) * 10000) / 100 : 0;
+        
+        return {
+          period: stats.period,
+          churnCount: stats.totalCount,
+          cancelledEnterpriseCount: stats.cancelledEnterpriseCount,
+          lostBusinessCount: stats.lostBusinessCount,
+          churnRate: churnRate,
+          churnReasons: Array.from(stats.statusReasons.entries()).map(([reason, count]) => ({
+            reason,
+            count
+          }))
+        };
+      });
 
       // 应用排序到时间周期统计
       const validSortField = this.validateSortField('customerChurnStats', query.sortField);
@@ -946,7 +956,8 @@ export class ReportsService {
           totalChurned: statusResults.length,
           cancelledEnterpriseCount: cancelledEnterpriseRecords.length,
           lostBusinessCount: lostBusinessRecords.length,
-          churnRate: 0, // 需要总客户数来计算
+          churnRate: totalCustomerCount > 0 ? 
+            Math.round((statusResults.length / totalCustomerCount) * 10000) / 100 : 0,
           recoveryOpportunities: lostBusinessRecords.filter(r => 
             r.currentEnterpriseStatus === 'cancelled'
           ).length,
@@ -966,6 +977,42 @@ export class ReportsService {
     } catch (error) {
       this.logger.error(`客户流失统计失败: ${error.message}`, error.stack);
       throw error;
+    }
+  }
+
+  /**
+   * 获取总客户数（用于计算流失率）
+   */
+  private async getTotalCustomerCount(
+    targetDate: Date, 
+    customerFilter: any
+  ): Promise<number> {
+    try {
+      const queryBuilder = this.customerRepository.createQueryBuilder('customer');
+      
+      // 只统计在目标日期之前或当天创建的客户
+      queryBuilder.where('customer.createTime <= :targetDate', { targetDate });
+      
+      // 应用权限过滤
+      if (customerFilter.consultantAccountantIds && customerFilter.consultantAccountantIds.length > 0) {
+        queryBuilder.andWhere('customer.consultantAccountantId IN (:...consultantAccountantIds)', {
+          consultantAccountantIds: customerFilter.consultantAccountantIds
+        });
+      }
+      
+      if (customerFilter.bookkeepingAccountantIds && customerFilter.bookkeepingAccountantIds.length > 0) {
+        queryBuilder.andWhere('customer.bookkeepingAccountantId IN (:...bookkeepingAccountantIds)', {
+          bookkeepingAccountantIds: customerFilter.bookkeepingAccountantIds
+        });
+      }
+      
+      const count = await queryBuilder.getCount();
+      this.logger.warn(`查询总客户数，目标日期: ${targetDate.toISOString()}, 结果: ${count}`);
+      
+      return count;
+    } catch (error) {
+      this.logger.error(`获取总客户数失败: ${error.message}`, error.stack);
+      return 0;
     }
   }
 
