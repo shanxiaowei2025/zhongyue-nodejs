@@ -256,13 +256,14 @@ export class ReportsController {
   @Get('customer-level-distribution')
   @ApiOperation({ 
     summary: '客户等级分布统计', 
-    description: '统计各等级客户数量和贡献分布。支持按年/月时间过滤：只传year按年统计，传year+month按月统计，只传month按当年该月统计，都不传按当前年月统计' 
+    description: '统计各等级客户数量和贡献分布。支持按年/月时间过滤和等级筛选：只传year按年统计，传year+month按月统计，只传month按当年该月统计，都不传按当前年月统计。分页参数应用到客户详情列表。' 
   })
+  @ApiQuery({ name: 'level', required: false, description: '客户等级筛选，如：AA' })
   @ApiQuery({ name: 'sortField', required: false, description: '排序字段(固定选项)：level、count、percentage、revenue' })
   @ApiQuery({ name: 'sortOrder', required: false, enum: ['ASC', 'DESC'], description: '排序类型：ASC-升序，DESC-降序' })
   @ApiResponse({ 
     status: 200, 
-    description: '返回客户等级分布统计数据', 
+    description: '返回客户等级分布统计数据，list为客户详情列表(分页)，levelStats为等级统计信息(不分页)', 
     type: CustomerLevelDistributionResponse 
   })
   async getCustomerLevelDistribution(

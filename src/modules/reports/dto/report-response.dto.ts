@@ -190,27 +190,31 @@ export class CustomerLevelDistributionItem {
 }
 
 /**
- * 客户等级分布详情
+ * 客户等级分布详情 - 客户详情
  */
 export class CustomerLevelDetail {
+  @ApiProperty({ description: '客户ID' })
+  customerId: number;
+
+  @ApiProperty({ description: '企业名称' })
+  companyName: string;
+
+  @ApiProperty({ description: '统一社会信用代码' })
+  unifiedSocialCreditCode: string;
+
+  @ApiProperty({ description: '贡献金额' })
+  contributionAmount: number;
+
   @ApiProperty({ description: '客户等级' })
   level: string;
-
-  @ApiProperty({ description: '客户列表' })
-  customers: Array<{
-    customerId: number;
-    companyName: string;
-    unifiedSocialCreditCode: string;
-    contributionAmount: number;
-  }>;
 }
 
 /**
  * 客户等级分布统计响应
  */
-export class CustomerLevelDistributionResponse extends PaginatedResponseDto<CustomerLevelDistributionItem> {
-  @ApiProperty({ description: '详细信息' })
-  details: CustomerLevelDetail[];
+export class CustomerLevelDistributionResponse extends PaginatedResponseDto<CustomerLevelDetail> {
+  @ApiProperty({ description: '等级统计信息', type: [CustomerLevelDistributionItem] })
+  levelStats: CustomerLevelDistributionItem[];
 
   @ApiProperty({ description: '汇总信息' })
   summary: {

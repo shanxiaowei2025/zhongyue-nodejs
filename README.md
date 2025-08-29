@@ -342,11 +342,18 @@ socket.on('new-notification', (data) => { console.log('收到新通知:', data);
     - 查询参数：
       - `year` (可选)：年份，如：2024
       - `month` (可选)：月份，1-12
+      - `level` (可选)：客户等级筛选，如：AA
+      - `page`, `pageSize` (可选)：分页参数，应用到客户详情列表
+      - `sortField`, `sortOrder` (可选)：排序参数
     - **统计逻辑**：
       - 只传 `year`：按年统计，统计指定年份新增的客户等级分布
       - 传 `year` + `month`：按月统计，统计指定年月新增的客户等级分布  
       - 只传 `month`：按当年该月统计，统计当前年份指定月份新增的客户等级分布
       - 都不传：按当前年月统计，统计当前年月新增的客户等级分布
+    - **返回结构**：
+      - `list`：客户详情列表（分页），每个客户包含等级信息
+      - `levelStats`：等级统计信息（不分页），包含各等级的数量、占比、收入统计
+      - `summary`：汇总信息
     - **权限控制**：基于客户数据权限控制数据访问范围：
       - `customer_date_view_all`：查看全部客户数据（无过滤条件）
       - `customer_date_view_by_location`：按区域查看，匹配 `customer.location = user.department.name`
@@ -772,6 +779,17 @@ POST /api/salary/auto-generate?month=2025-08-01
 详细文档请查看 [docs/README.md](docs/README.md)
 
 ## 更新历史
+
+### 2025-01-17
+- **客户等级分布接口优化**：
+  - **返回结构调整**：将返回体details中的level字段移到customers数组中，每个客户对象现在直接包含level字段
+  - **分页逻辑优化**：分页参数现在应用到客户详情列表（details）而不是等级分布统计
+  - **新增level筛选参数**：支持按客户等级进行筛选，如 `level=AA`
+  - **响应结构重构**：
+    - `list`：客户详情列表（分页），包含customerId、companyName、unifiedSocialCreditCode、contributionAmount、level字段
+    - `levelStats`：等级统计信息（不分页），包含各等级的count、percentage、revenue统计
+    - `summary`：汇总信息保持不变
+  - **API兼容性**：保持原有查询参数的兼容性，新增level筛选参数为可选
 
 ### 2025-01-15
 - **新增客户统计接口日期范围修复**：

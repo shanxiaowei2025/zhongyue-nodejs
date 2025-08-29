@@ -715,47 +715,56 @@ export class ReportsService {
       const totalCustomers = rawResults.reduce((sum, item) => sum + parseInt(item.count), 0);
       const totalRevenue = rawResults.reduce((sum, item) => sum + parseFloat(item.revenue || 0), 0);
 
-      const distributionList = rawResults.map(item => ({
+      const levelStats = rawResults.map(item => ({
         level: this.cleanCustomerLevel(item.level) || '未分级',
         count: parseInt(item.count),
         percentage: totalCustomers > 0 ? (parseInt(item.count) / totalCustomers) * 100 : 0,
         revenue: parseFloat(item.revenue || 0),
       }));
 
-      // 应用排序
+      // 应用排序到等级统计
       const validSortField = this.validateSortField('customerLevelDistribution', query.sortField);
-      const distribution = this.applySortToArray(distributionList, validSortField, query.sortOrder);
+      const sortedLevelStats = this.applySortToArray(levelStats, validSortField, query.sortOrder);
 
-      // 获取详细客户信息
-      const details = await Promise.all(
-        distribution.map(async (levelItem) => {
-          const customers = await this.getCustomerDetailsByLevelFromHistory(
-            levelItem.level,
-            targetDate,
-            customerFilter
-          );
+      // 获取所有客户详细信息
+      let allCustomerDetails = [];
+      for (const levelItem of sortedLevelStats) {
+        const customers = await this.getCustomerDetailsByLevelFromHistory(
+          levelItem.level,
+          targetDate,
+          customerFilter
+        );
 
-          return {
-            level: levelItem.level,
-            customers
-          };
-        })
-      );
+        // 为每个客户添加等级信息
+        const customersWithLevel = customers.map(customer => ({
+          ...customer,
+          level: levelItem.level
+        }));
 
-      // 应用分页
-      const total = distribution.length;
+        allCustomerDetails.push(...customersWithLevel);
+      }
+
+      // 如果有level参数，过滤客户详情
+      if (query.level) {
+        allCustomerDetails = allCustomerDetails.filter(customer => 
+          customer.level === query.level
+        );
+      }
+
+      // 应用分页到客户详情
+      const total = allCustomerDetails.length;
       const page = query.page || 1;
       const pageSize = query.pageSize || 10;
       const offset = (page - 1) * pageSize;
-      const paginatedDistribution = distribution.slice(offset, offset + pageSize);
+      const paginatedCustomerDetails = allCustomerDetails.slice(offset, offset + pageSize);
 
       const result: CustomerLevelDistributionResponse = {
-        list: paginatedDistribution,
+        list: paginatedCustomerDetails,
         total,
         page,
         pageSize,
         totalPages: Math.ceil(total / pageSize),
-        details,
+        levelStats: sortedLevelStats,
         summary: {
           totalCustomers,
           totalRevenue,
@@ -1970,8 +1979,7 @@ export class ReportsService {
         .where('customer.id IN (:...customerIds)', { customerIds })
         .andWhere('customer.enterpriseStatus != :status', { status: '已注销' })
         .andWhere('customer.businessStatus != :businessStatus', { businessStatus: '已流失' })
-        .orderBy('customer.contributionAmount', 'DESC')
-        .limit(10); // 只取前10个客户
+        .orderBy('customer.contributionAmount', 'DESC');
 
       // 应用权限过滤
       await customerFilter(customerQueryBuilder);
@@ -2022,7 +2030,7 @@ export class ReportsService {
     agencyFeeAnalysis: ['customerId', 'currentYearFee', 'previousYearFee', 'decreaseAmount', 'decreaseRate'],
     newCustomerStats: ['customerId'],
     employeePerformance: ['totalRevenue', 'newCustomerRevenue', 'renewalRevenue', 'customerCount', 'otherRevenue'],
-    customerLevelDistribution: ['level', 'count', 'percentage', 'revenue'],
+    customerLevelDistribution: ['level', 'contributionAmount'],
     customerChurnStats: ['period', 'churnCount', 'churnRate', 'churnDate'],
     serviceExpiryStats: ['customerId', 'agencyEndDate'],
     accountantClientStats: ['clientCount']

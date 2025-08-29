@@ -108,6 +108,15 @@ export class CustomerLevelDistributionDto extends PaginationDto {
   @Min(1)
   @Max(12)
   month?: number;
+
+  @ApiProperty({ 
+    description: '客户等级筛选', 
+    required: false,
+    example: 'AA'
+  })
+  @IsOptional()
+  @IsString()
+  level?: string;
 }
 
 /**
