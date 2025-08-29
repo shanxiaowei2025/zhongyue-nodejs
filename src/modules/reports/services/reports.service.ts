@@ -751,6 +751,11 @@ export class ReportsService {
         );
       }
 
+      // 对客户详情列表应用排序
+      if (validSortField && ['contributionAmount', 'customerId'].includes(validSortField)) {
+        allCustomerDetails = this.applySortToArray(allCustomerDetails, validSortField, query.sortOrder);
+      }
+
       // 应用分页到客户详情
       const total = allCustomerDetails.length;
       const page = query.page || 1;
@@ -1978,8 +1983,7 @@ export class ReportsService {
         ])
         .where('customer.id IN (:...customerIds)', { customerIds })
         .andWhere('customer.enterpriseStatus != :status', { status: '已注销' })
-        .andWhere('customer.businessStatus != :businessStatus', { businessStatus: '已流失' })
-        .orderBy('customer.contributionAmount', 'DESC');
+        .andWhere('customer.businessStatus != :businessStatus', { businessStatus: '已流失' });
 
       // 应用权限过滤
       await customerFilter(customerQueryBuilder);
