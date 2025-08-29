@@ -829,11 +829,14 @@ export class ReportsService {
       const cancelledEnterpriseRecords = statusResults.filter(r => r.currentEnterpriseStatus === 'cancelled');
       const lostBusinessRecords = statusResults.filter(r => r.currentBusinessStatus === 'lost');
 
-      // 按期间统计
+      // 按期间统计 - 修复重复计数问题
       const periodStatsMap = new Map<string, any>();
+      
+      // 使用Set来跟踪已处理的客户，避免重复计数
+      const processedCustomersPerPeriod = new Map<string, Set<number>>();
 
-      // 统计 cancelled 企业状态记录
-      cancelledEnterpriseRecords.forEach(record => {
+      // 统计所有流失记录，避免重复计数
+      statusResults.forEach(record => {
         let period: string;
         const changeDate = new Date(record.churnDate);
         
@@ -854,48 +857,28 @@ export class ReportsService {
             totalCount: 0,
             statusReasons: new Map<string, number>()
           });
+          processedCustomersPerPeriod.set(period, new Set<number>());
         }
 
         const periodStats = periodStatsMap.get(period);
-        periodStats.cancelledEnterpriseCount++;
-        periodStats.totalCount++;
-
-        // 统计状态原因
-        const reason = record.churnReason || '企业状态正常';
-        const reasonCount = periodStats.statusReasons.get(reason) || 0;
-        periodStats.statusReasons.set(reason, reasonCount + 1);
-      });
-
-      // 统计 lost 业务状态记录
-      lostBusinessRecords.forEach(record => {
-        let period: string;
-        const changeDate = new Date(record.churnDate);
+        const processedCustomers = processedCustomersPerPeriod.get(period);
         
-        // 根据传入的参数决定统计维度
-        if (query.year && !query.month) {
-          // 只传year，按年统计
-          period = changeDate.getFullYear().toString();
-        } else {
-          // 其他情况都按月统计
-          period = changeDate.toISOString().substring(0, 7); // YYYY-MM
+        // 只有当客户在此期间未被处理过时才增加总计数
+        if (!processedCustomers.has(record.customerId)) {
+          processedCustomers.add(record.customerId);
+          periodStats.totalCount++;
         }
 
-        if (!periodStatsMap.has(period)) {
-          periodStatsMap.set(period, {
-            period,
-            cancelledEnterpriseCount: 0,
-            lostBusinessCount: 0,
-            totalCount: 0,
-            statusReasons: new Map<string, number>()
-          });
+        // 分别统计企业状态和业务状态（可能重叠，但这是业务需要）
+        if (record.currentEnterpriseStatus === 'cancelled') {
+          periodStats.cancelledEnterpriseCount++;
         }
-
-        const periodStats = periodStatsMap.get(period);
-        periodStats.lostBusinessCount++;
-        periodStats.totalCount++;
+        if (record.currentBusinessStatus === 'lost') {
+          periodStats.lostBusinessCount++;
+        }
 
         // 统计状态原因
-        const reason = record.churnReason || '业务状态流失';
+        const reason = record.churnReason || '状态变更';
         const reasonCount = periodStats.statusReasons.get(reason) || 0;
         periodStats.statusReasons.set(reason, reasonCount + 1);
       });
@@ -945,6 +928,11 @@ export class ReportsService {
       const offset = (page - 1) * pageSize;
       const paginatedChurnedCustomers = sortedChurnedCustomers.slice(offset, offset + pageSize);
 
+      // 计算唯一流失客户数（避免重复计数）
+      const uniqueChurnedCustomers = new Set(statusResults.map(r => r.customerId));
+      const uniqueCancelledCustomers = new Set(cancelledEnterpriseRecords.map(r => r.customerId));
+      const uniqueLostCustomers = new Set(lostBusinessRecords.map(r => r.customerId));
+      
       const result: CustomerChurnStatsResponse = {
         list: paginatedChurnedCustomers,
         total,
@@ -953,11 +941,11 @@ export class ReportsService {
         totalPages: Math.ceil(total / pageSize),
         periodStats: periodStats,
         summary: {
-          totalChurned: statusResults.length,
-          cancelledEnterpriseCount: cancelledEnterpriseRecords.length,
-          lostBusinessCount: lostBusinessRecords.length,
+          totalChurned: uniqueChurnedCustomers.size,
+          cancelledEnterpriseCount: uniqueCancelledCustomers.size,
+          lostBusinessCount: uniqueLostCustomers.size,
           churnRate: totalCustomerCount > 0 ? 
-            Math.round((statusResults.length / totalCustomerCount) * 10000) / 100 : 0,
+            Math.round((uniqueChurnedCustomers.size / totalCustomerCount) * 10000) / 100 : 0,
           recoveryOpportunities: lostBusinessRecords.filter(r => 
             r.currentEnterpriseStatus === 'cancelled'
           ).length,
