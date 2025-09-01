@@ -1,0 +1,358 @@
+import { ApiProperty } from '@nestjs/swagger';
+
+/**
+ * 分页响应DTO基类
+ */
+export class PaginatedResponseDto<T> {
+  @ApiProperty({ description: '数据列表' })
+  list: T[];
+
+  @ApiProperty({ description: '总数量' })
+  total: number;
+
+  @ApiProperty({ description: '当前页码' })
+  page: number;
+
+  @ApiProperty({ description: '每页数量' })
+  pageSize: number;
+
+  @ApiProperty({ description: '总页数' })
+  totalPages: number;
+}
+
+/**
+ * 代理费收费变化分析 - 客户记录
+ */
+export class AgencyFeeAnalysisItem {
+  @ApiProperty({ description: '客户ID' })
+  customerId: number;
+
+  @ApiProperty({ description: '企业名称' })
+  companyName: string;
+
+  @ApiProperty({ description: '统一社会信用代码' })
+  unifiedSocialCreditCode: string;
+
+  @ApiProperty({ description: '今年费用' })
+  currentYearFee: number;
+
+  @ApiProperty({ description: '去年费用' })
+  previousYearFee: number;
+
+  @ApiProperty({ description: '减少金额' })
+  decreaseAmount: number;
+
+  @ApiProperty({ description: '减少比例' })
+  decreaseRate: number;
+
+  @ApiProperty({ description: '顾问会计' })
+  consultantAccountant: string;
+
+  @ApiProperty({ description: '记账会计' })
+  bookkeepingAccountant: string;
+}
+
+/**
+ * 代理费收费变化分析 - 汇总信息
+ */
+export class AgencyFeeAnalysisSummary {
+  @ApiProperty({ description: '总客户数' })
+  totalCustomers: number;
+
+  @ApiProperty({ description: '受影响客户数' })
+  affectedCustomers: number;
+
+  @ApiProperty({ description: '总减少金额' })
+  totalDecrease: number;
+
+  @ApiProperty({ description: '平均减少金额' })
+  averageDecrease: number;
+}
+
+/**
+ * 代理费收费变化分析响应
+ */
+export class AgencyFeeAnalysisResponse extends PaginatedResponseDto<AgencyFeeAnalysisItem> {
+  @ApiProperty({ description: '汇总信息' })
+  summary: AgencyFeeAnalysisSummary;
+}
+
+/**
+ * 新增客户详情
+ */
+export class NewCustomerItem {
+  @ApiProperty({ description: '客户ID' })
+  customerId: number;
+
+  @ApiProperty({ description: '企业名称' })
+  companyName: string;
+
+  @ApiProperty({ description: '统一社会信用代码' })
+  unifiedSocialCreditCode: string;
+
+  @ApiProperty({ description: '创建时间' })
+  createTime: string;
+
+  @ApiProperty({ description: '顾问会计' })
+  consultantAccountant: string;
+
+  @ApiProperty({ description: '记账会计' })
+  bookkeepingAccountant: string;
+
+  @ApiProperty({ description: '客户等级' })
+  customerLevel: string;
+
+  @ApiProperty({ description: '创建月份 YYYY-MM' })
+  month: string;
+}
+
+/**
+ * 月度新增客户统计
+ */
+export class MonthlyNewCustomerStats {
+  @ApiProperty({ description: '月份 YYYY-MM' })
+  month: string;
+
+  @ApiProperty({ description: '总新增数量' })
+  totalCount: number;
+
+  @ApiProperty({ description: '用户有权限查看的数量' })
+  authorizedCount: number;
+
+  @ApiProperty({ description: '详细客户列表' })
+  details: NewCustomerItem[];
+}
+
+/**
+ * 新增客户统计响应
+ */
+export class NewCustomerStatsResponse extends PaginatedResponseDto<NewCustomerItem> {
+  @ApiProperty({ description: '汇总信息' })
+  summary: {
+    totalNewCustomers: number;
+    averagePerMonth: number;
+  };
+}
+
+/**
+ * 员工业绩统计项
+ */
+export class EmployeePerformanceItem {
+  @ApiProperty({ description: '员工姓名' })
+  employeeName: string;
+
+  @ApiProperty({ description: '部门' })
+  department: string;
+
+  @ApiProperty({ description: '新增客户业绩' })
+  newCustomerRevenue: number;
+
+  @ApiProperty({ description: '续费业务业绩' })
+  renewalRevenue: number;
+
+  @ApiProperty({ description: '其他业务业绩' })
+  otherRevenue: number;
+
+  @ApiProperty({ description: '总业绩' })
+  totalRevenue: number;
+
+  @ApiProperty({ description: '服务客户数' })
+  customerCount: number;
+}
+
+/**
+ * 员工业绩统计响应
+ */
+export class EmployeePerformanceResponse extends PaginatedResponseDto<EmployeePerformanceItem> {
+  @ApiProperty({ description: '汇总信息' })
+  summary: {
+    totalRevenue: number;
+    averageRevenue: number;
+    topPerformer: string;
+  };
+}
+
+/**
+ * 客户等级分布项
+ */
+export class CustomerLevelDistributionItem {
+  @ApiProperty({ description: '客户等级' })
+  level: string;
+
+  @ApiProperty({ description: '数量' })
+  count: number;
+
+  @ApiProperty({ description: '占比' })
+  percentage: number;
+
+  @ApiProperty({ description: '贡献收入' })
+  revenue: number;
+}
+
+/**
+ * 客户等级分布详情 - 客户详情
+ */
+export class CustomerLevelDetail {
+  @ApiProperty({ description: '客户ID' })
+  customerId: number;
+
+  @ApiProperty({ description: '企业名称' })
+  companyName: string;
+
+  @ApiProperty({ description: '统一社会信用代码' })
+  unifiedSocialCreditCode: string;
+
+  @ApiProperty({ description: '贡献金额' })
+  contributionAmount: number;
+
+  @ApiProperty({ description: '客户等级' })
+  level: string;
+}
+
+/**
+ * 客户等级分布统计响应
+ */
+export class CustomerLevelDistributionResponse extends PaginatedResponseDto<CustomerLevelDetail> {
+  @ApiProperty({ description: '等级统计信息', type: [CustomerLevelDistributionItem] })
+  levelStats: CustomerLevelDistributionItem[];
+
+  @ApiProperty({ description: '汇总信息' })
+  summary: {
+    totalCustomers: number;
+    totalRevenue: number;
+  };
+}
+
+/**
+ * 客户流失统计项
+ */
+export class CustomerChurnStatsItem {
+  @ApiProperty({ description: '时间周期' })
+  period: string;
+
+  @ApiProperty({ description: '总数量' })
+  churnCount: number;
+
+  @ApiProperty({ description: '企业状态为cancelled的数量' })
+  cancelledEnterpriseCount: number;
+
+  @ApiProperty({ description: '业务状态为lost的数量' })
+  lostBusinessCount: number;
+
+  @ApiProperty({ description: '流失率' })
+  churnRate: number;
+
+  @ApiProperty({ description: '状态变更原因分布' })
+  churnReasons: Array<{
+    reason: string;
+    count: number;
+  }>;
+}
+
+/**
+ * 客户状态详情
+ */
+export class ChurnedCustomerItem {
+  @ApiProperty({ description: '客户ID' })
+  customerId: number;
+
+  @ApiProperty({ description: '公司名称' })
+  companyName: string;
+
+  @ApiProperty({ description: '统一社会信用代码' })
+  unifiedSocialCreditCode: string;
+
+  @ApiProperty({ description: '流失日期' })
+  churnDate: string;
+
+  @ApiProperty({ description: '流失原因' })
+  churnReason: string;
+
+  @ApiProperty({ description: '最后服务日期' })
+  lastServiceDate: string;
+
+  @ApiProperty({ description: '当前企业状态' })
+  currentEnterpriseStatus: string;
+
+  @ApiProperty({ description: '当前业务状态' })
+  currentBusinessStatus: string;
+}
+
+/**
+ * 客户流失统计响应
+ */
+export class CustomerChurnStatsResponse extends PaginatedResponseDto<ChurnedCustomerItem> {
+  @ApiProperty({ description: '按时间周期统计' })
+  periodStats: CustomerChurnStatsItem[];
+
+  @ApiProperty({ description: '汇总信息' })
+  summary: {
+    totalChurned: number;
+    cancelledEnterpriseCount: number;
+    lostBusinessCount: number;
+    churnRate: number;
+    recoveryOpportunities: number;
+  };
+}
+
+/**
+ * 到期客户详情
+ */
+export class ExpiringCustomerItem {
+  @ApiProperty({ description: '客户ID' })
+  customerId: number;
+
+  @ApiProperty({ description: '公司名称' })
+  companyName: string;
+
+  @ApiProperty({ description: '统一社会信用代码' })
+  unifiedSocialCreditCode: string;
+
+  @ApiProperty({ description: '代理结束日期' })
+  agencyEndDate: string;
+}
+
+/**
+ * 代理服务到期客户统计响应
+ */
+export class ServiceExpiryStatsResponse extends PaginatedResponseDto<ExpiringCustomerItem> {
+  @ApiProperty({ description: '汇总信息' })
+  summary: {
+    totalExpiredCustomers: number;
+    expiringInMonth: number;
+    overdue: number;
+  };
+}
+
+/**
+ * 会计负责客户统计项
+ */
+export class AccountantClientStatsItem {
+  @ApiProperty({ description: '会计姓名' })
+  accountantName: string;
+
+  @ApiProperty({ description: '会计类型：consultantAccountant-顾问会计，bookkeepingAccountant-记账会计，invoiceOfficer-开票员' })
+  accountantType: 'consultantAccountant' | 'bookkeepingAccountant' | 'invoiceOfficer';
+
+  @ApiProperty({ description: '负责的客户数量' })
+  clientCount: number;
+
+  @ApiProperty({ description: '部门' })
+  department?: string;
+}
+
+/**
+ * 会计负责客户统计响应
+ */
+export class AccountantClientStatsResponse extends PaginatedResponseDto<AccountantClientStatsItem> {
+  @ApiProperty({ description: '汇总信息' })
+  summary: {
+    totalAccountants: number;
+    totalClients: number;
+    averageClientsPerAccountant: number;
+    topPerformer: {
+      name: string;
+      clientCount: number;
+    };
+  };
+} 

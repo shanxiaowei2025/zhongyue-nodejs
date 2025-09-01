@@ -25,6 +25,8 @@ import { memoryStorage } from 'multer';
 import { PermissionsModule } from '../permissions/permissions.module';
 import { StorageModule } from '../storage/storage.module';
 import { ServiceHistoryModule } from '../enterprise-service/service-history/service-history.module';
+import { CustomerLevelHistoryModule } from '../reports/customer-level-history/customer-level-history.module';
+import { CustomerStatusHistoryModule } from '../reports/customer-status-history/customer-status-history.module';
 
 @Module({
   imports: [
@@ -35,6 +37,8 @@ import { ServiceHistoryModule } from '../enterprise-service/service-history/serv
     PermissionsModule,
     StorageModule,
     ServiceHistoryModule,
+    CustomerLevelHistoryModule,
+    CustomerStatusHistoryModule,
   ],
   controllers: [CustomerController, ClanController],
   providers: [CustomerService, ClanService, CustomerPermissionService],

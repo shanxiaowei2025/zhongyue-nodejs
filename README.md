@@ -49,7 +49,8 @@ src/
 │   ├── storage/           # 文件存储
 │   ├── roles/             # 角色管理
 │   ├── permissions/       # 权限管理
-│   └── notifications/     # 通知系统（新增）
+│   ├── notifications/     # 通知系统
+│   └── reports/           # 报表分析（新增）
 └── database/              # 数据库相关
     └── migrations/        # 数据库迁移文件
 ```
@@ -220,6 +221,128 @@ socket.on('new-notification', (data) => { console.log('收到新通知:', data);
 - **员工状态同步功能**：新增员工从离职状态改为在职状态时，自动启用对应用户账号的功能，与原有的离职禁用用户账号功能形成完整闭环
 - **薪资接口考勤备注功能**：为四个薪资接口（管理员列表、员工列表、管理员详情、员工详情）添加 `attendanceRemark` 字段，通过姓名和年月从 `sys_attendance_deduction` 表获取考勤备注信息
 
+### 11. 报表分析模块 (reports)
+- **数据分析与报表功能**：提供多维度的业务数据分析和统计报表
+- **智能缓存系统**：使用基于权限的缓存机制提升报表查询性能，支持用户级和全局缓存
+- **角色变更缓存处理**：当用户角色发生变更时，自动清除相关缓存确保数据准确性
+- **Excel导出功能**：支持将报表数据导出为Excel格式，便于数据分析和存档
+- **多种报表类型**：
+  - 代理费收费变化分析：分析代理记账费用的时间趋势变化
+  - 新增客户统计：统计指定时间段内的新增客户数量和趋势
+  - 员工业绩统计：分析业务员的销售业绩和贡献度
+  - 客户等级分布统计：分析客户等级的分布情况
+  - 客户流失统计：识别和分析客户流失情况
+  - 代理服务到期客户统计：基于年月比较筛选出代理服务已到期的客户（当前年月大于代理结束日期年月）
+  - 会计负责客户数量统计：统计各会计负责的客户数量分布
+- **权限控制**：报表数据基于费用数据权限进行过滤，确保用户只能查看有权限访问的数据
+- **数据库优化**：为报表查询添加专门的数据库索引，提升查询性能
+
+#### 缓存机制说明
+报表模块采用了基于权限的智能缓存机制：
+
+1. **权限感知缓存**：缓存键包含用户权限信息，确保不同权限的用户获取不同的缓存数据
+2. **角色变更处理**：当用户角色发生变更时，系统提供专门的接口清除相关缓存
+3. **自动过期机制**：缓存默认有效期30分钟，系统每天凌晨2点自动清理过期缓存
+4. **Upsert优化**：修复了缓存存储机制，使用先查询再更新的方式，避免唯一约束冲突
+5. **数据库表结构**：提供了完整的缓存表创建脚本，确保系统正常运行
+
+#### 缓存表创建
+在首次部署时，需要执行以下SQL脚本创建缓存表：
+
+```bash
+mysql -u username -p database_name < database/create_report_cache_table.sql
+```
+
+#### 角色变更缓存清理
+当用户角色发生变更时，需要调用以下接口清除缓存：
+
+```bash
+# 清除指定用户的所有报表缓存
+DELETE /api/reports/clear-cache/{userId}
+
+# 清除用户角色变更相关的缓存（推荐）
+DELETE /api/reports/clear-role-change-cache/{userId}
+```
+
+**使用场景**：
+- 用户从普通员工升级为管理员
+- 用户从管理员降级为普通员工
+- 用户的部门或权限发生变更
+- 批量角色调整后需要确保数据准确性
+
+### 角色变更缓存处理解决方案
+
+系统已实现了完整的角色变更缓存处理机制，确保用户角色发生变更时能获取到正确的报表数据。
+
+#### 问题背景
+当用户角色发生变更时（如从普通用户升级为管理员，或从管理员降级为普通用户），由于报表缓存机制的存在，用户可能仍然看到基于旧角色权限的缓存数据，而不是基于新角色权限的正确数据。
+
+#### 解决方案
+
+1. **权限感知缓存键**：
+   - 缓存键现在包含完整的用户权限信息（权限列表、管理员标识、角色信息）
+   - 确保不同权限的用户获取不同的缓存数据
+   - 当用户权限发生变更时，新的缓存键不会命中旧的缓存
+
+2. **自动缓存清理**：
+   - 用户管理模块在角色分配或更新时自动检测角色变更
+   - 发现角色变更后异步调用报表缓存清理接口
+   - 不阻塞主业务流程，确保系统性能
+
+3. **手动缓存清理接口**：
+   ```bash
+   # 清除指定用户的所有报表缓存
+   DELETE /api/reports/clear-cache/{userId}
+   
+   # 清除用户角色变更相关的缓存（推荐）
+   DELETE /api/reports/clear-role-change-cache/{userId}
+   ```
+
+#### 技术实现细节
+
+1. **缓存键生成优化**：
+   ```typescript
+   const cacheKey = this.cacheService.generateCacheKey({
+     ...query,
+     userId: userId, // 始终使用具体的用户ID
+     permissions: userPermissions.sort(), // 添加权限信息到缓存键
+     isAdmin: isAdmin, // 添加管理员标识
+     userRoles: userRoles.sort() // 添加角色信息
+   });
+   ```
+
+2. **用户服务集成**：
+   - `assignRolesToUser()` 方法：角色分配时自动检测变更并清理缓存
+   - `update()` 方法：用户信息更新时检测角色变更并清理缓存
+   - 异步处理：缓存清理不影响主业务流程
+
+3. **缓存清理策略**：
+   - 清除目标用户的所有报表缓存
+   - 清除可能包含管理员数据的通用缓存
+   - 支持批量用户缓存清理
+
+#### 使用建议
+
+1. **角色变更后的验证**：
+   - 角色变更后，建议用户重新登录或刷新页面
+   - 系统会自动使用新的权限获取正确的报表数据
+
+2. **批量角色调整**：
+   - 进行批量角色调整时，系统会自动处理每个用户的缓存清理
+   - 如需手动清理，可调用批量清理接口
+
+3. **监控和日志**：
+   - 所有缓存清理操作都有详细的日志记录
+   - 可通过日志监控缓存清理的执行情况
+
+#### 注意事项
+
+1. **缓存清理是异步的**：不会阻塞用户角色变更的主流程
+2. **网络依赖**：缓存清理通过HTTP请求实现，确保服务间通信正常
+3. **降级处理**：如果缓存清理失败，不会影响角色变更操作，只会记录错误日志
+
+这个解决方案确保了用户角色变更后能够获取到正确的报表数据，同时保持了系统的性能和稳定性。
+
 ## 权限控制
 
 系统采用基于角色的访问控制（RBAC）和基于权限的访问控制相结合的方式：
@@ -245,6 +368,15 @@ socket.on('new-notification', (data) => { console.log('收到新通知:', data);
   - 考勤扣款管理：仅限`admin`和`super_admin`角色访问
   - 朋友圈扣款管理：仅限`admin`和`super_admin`角色访问
   - 提成表管理：仅限`admin`和`super_admin`角色访问（除提成比例查询接口外）
+
+- 报表模块权限：
+  - **权限控制基于费用数据权限**：报表数据的访问范围基于用户的费用数据查看权限，确保用户只能看到有权限访问的数据
+  - 特定报表权限：`reports_view`、`reports_export`、各报表类型权限（`reports_agency_fee_analysis`、`reports_new_customer_stats`、`reports_employee_performance`等）用于控制用户是否可以访问报表功能
+
+- 费用数据查看权限（适用于报表分析）：
+  - `expense_data_view_all`：查看所有费用数据权限
+  - `expense_data_view_by_location`：按区域查看费用数据权限（基于用户部门）
+  - `expense_data_view_own`：查看自己提交的费用数据权限（基于销售人员字段）
 
 ## API路由说明
 
@@ -274,6 +406,106 @@ socket.on('new-notification', (data) => { console.log('收到新通知:', data);
   - `DELETE /api/customer/clan/:id`：删除宗族记录
   - `POST /api/customer/clan/members`：添加成员到宗族（请求体包含id和memberName）
   - `DELETE /api/customer/clan/:id/members/:memberName`：从宗族中移除成员
+
+### 报表分析API
+- `/api/reports`：报表分析的完整功能接口
+  - `GET /api/reports/agency-fee-analysis`：代理费收费变化分析
+    - 查询参数：`year` (年份，默认当前年), `threshold` (阈值，默认500), `page`, `pageSize`
+    - **权限控制**：基于三个权限控制数据访问范围：
+      - `expense_data_view_all`：查看所有费用数据（无过滤条件）
+      - `expense_data_view_by_location`：按区域查看，匹配 `sys_expense.companyLocation = sys_department.name`（用户所属部门名称）
+      - `expense_data_view_own`：查看自己数据，匹配 `sys_expense.salesperson = sys_user.username`（用户名）
+    - **统计维度**：按业务员(salesperson)统计业绩，而非按审核员统计
+  - `GET /api/reports/new-customer-stats`：新增客户统计
+    - 查询参数：
+      - `year` (可选)：年份，如：2024
+      - `month` (可选)：月份，1-12
+      - `startDate` (可选)：开始日期 YYYY-MM-DD
+      - `endDate` (可选)：结束日期 YYYY-MM-DD
+      - `page` (可选)：页码，默认1
+      - `pageSize` (可选)：每页数量，默认10
+      - `sortField` (可选)：排序字段，支持 companyName、createTime、contributionAmount、customerLevel
+      - `sortOrder` (可选)：排序类型，ASC或DESC
+    - **筛选字段说明**：
+      - `startDate`和`endDate`参数基于**客户创建时间**(`customer.createTime`)字段进行筛选
+      - 统计指定时间范围内新增（创建）的客户数据
+    - **参数优先级**：
+      - `startDate` + `endDate`：优先使用指定的日期范围
+      - `year` + `month`：统计指定年月的数据
+      - `year`：统计指定年份的数据
+      - 无参数：默认统计当前年份的数据
+    - **权限控制**：基于客户数据权限控制数据访问范围：
+      - `customer_date_view_all`：查看全部客户数据（无过滤条件）
+      - `customer_date_view_by_location`：按区域查看，匹配 `customer.location = user.department.name`
+      - `customer_date_view_own`：查看自己负责的客户，匹配顾问会计/记账会计/开票员身份
+  - `GET /api/reports/employee-performance`：员工业绩统计
+    - 查询参数：`month` (YYYY-MM格式), `employeeName` (可选), `department` (可选)
+    - **权限控制**：基于费用数据权限控制数据访问范围：
+      - `expense_data_view_all`：查看所有费用数据（无过滤条件）
+      - `expense_data_view_by_location`：按区域查看，匹配 `sys_expense.companyLocation = sys_department.name`（用户所属部门名称）
+      - `expense_data_view_own`：查看自己数据，匹配 `sys_expense.salesperson = sys_user.username`（用户名）
+    - **统计逻辑**：基于用户有权限查看的费用数据统计各业务员的业绩
+  - `GET /api/reports/customer-level-distribution`：客户等级分布统计
+    - 查询参数：
+      - `year` (可选)：年份，如：2024
+      - `month` (可选)：月份，1-12
+      - `level` (可选)：客户等级筛选，如：AA
+      - `page`, `pageSize` (可选)：分页参数，应用到客户详情列表
+      - `sortField`, `sortOrder` (可选)：排序参数
+    - **统计逻辑**：
+      - 只传 `year`：按年统计，统计指定年份新增的客户等级分布
+      - 传 `year` + `month`：按月统计，统计指定年月新增的客户等级分布  
+      - 只传 `month`：按当年该月统计，统计当前年份指定月份新增的客户等级分布
+      - 都不传：按当前年月统计，统计当前年月新增的客户等级分布
+    - **返回结构**：
+      - `list`：客户详情列表（分页），每个客户包含等级信息
+      - `levelStats`：等级统计信息（不分页），包含各等级的数量、占比、收入统计
+      - `summary`：汇总信息
+    - **权限控制**：基于客户数据权限控制数据访问范围：
+      - `customer_date_view_all`：查看全部客户数据（无过滤条件）
+      - `customer_date_view_by_location`：按区域查看，匹配 `customer.location = user.department.name`
+      - `customer_date_view_own`：查看自己负责的客户，匹配顾问会计/记账会计/开票员身份
+  - `GET /api/reports/customer-churn-stats`：客户流失统计（已修改）
+    - 查询参数：
+      - `year` (可选)：年份，如：2024
+      - `month` (可选)：月份，1-12
+      - `page` (可选)：页码，默认1
+      - `pageSize` (可选)：每页数量，默认10
+      - `sortField` (可选)：排序字段，支持 period、churnCount、churnRate、companyName、churnDate
+      - `sortOrder` (可选)：排序类型，ASC或DESC
+    - **统计逻辑**：
+      - 不传参：统计当前时间之前的数据
+      - 只传 `year`：统计指定年份最后一天之前的数据
+      - 传 `year` + `month`：统计指定年月最后一天之前的数据
+      - 数据处理：根据 `companyName` 字段分组，找出每组 `changeDate` 字段最大值的数据
+    - **筛选条件**：统计 `currentEnterpriseStatus` 字段为 `cancelled` 或 `currentBusinessStatus` 字段为 `lost` 的记录
+    - **分页逻辑**：按流失客户详情分页，每页返回指定数量的客户记录
+    - **响应结构**：
+      - `list`：分页的流失客户详情列表
+      - `periodStats`：按时间周期统计的汇总数据（不分页）
+      - `summary`：整体汇总信息
+      - 分页信息：`total`、`page`、`pageSize`、`totalPages`
+    - **权限控制**：基于客户数据权限控制数据访问范围：
+      - `customer_date_view_all`：查看全部客户数据（无过滤条件）
+      - `customer_date_view_by_location`：按区域查看，匹配 `customer.location = user.department.name`
+      - `customer_date_view_own`：查看自己负责的客户，匹配顾问会计/记账会计/开票员身份
+      - 状态变更原因分布
+      - 客户状态详情（包含当前企业状态和业务状态）
+    - **返回格式**：
+      - `churnDate` 和 `lastServiceDate` 字段返回完整日期时间格式：`YYYY-MM-DD HH:MM:SS`
+      - 支持精确到秒的时间记录，便于详细分析状态变更时点
+  - `GET /api/reports/service-expiry-stats`：代理服务到期客户统计
+    - **筛选逻辑**：
+      - 从sys_expense表筛选agencyFee字段非空的数据
+      - 按companyName分组，找出每个公司agencyEndDate值最大的记录
+      - 将当前年月与agencyEndDate的年月比较，当前年月大于agencyEndDate年月则计为到期客户
+    - **返回数据**：
+      - `totalExpiredCustomers`：到期客户总数量
+      - `expiredCustomers`：包含客户ID和agencyEndDate的到期客户列表
+  - `GET /api/reports/accountant-client-stats`：会计负责客户数量统计
+    - 查询参数：`export` (可选，导出Excel)
+  - `DELETE /api/reports/cache/:reportType`：清除指定报表类型的缓存
+  - `DELETE /api/reports/cache`：清除所有报表缓存
 
 #### 客户档案查询接口详情
 **接口地址**: `GET /api/customer/archive/search`
@@ -655,6 +887,75 @@ POST /api/salary/auto-generate?month=2025-08-01
 
 ## 更新历史
 
+### 2025-01-17
+- **客户等级分布接口优化**：
+  - **返回结构调整**：将返回体details中的level字段移到customers数组中，每个客户对象现在直接包含level字段
+  - **分页逻辑优化**：分页参数现在应用到客户详情列表（details）而不是等级分布统计
+  - **新增level筛选参数**：支持按客户等级进行筛选，如 `level=AA`
+  - **响应结构重构**：
+    - `list`：客户详情列表（分页），包含customerId、companyName、unifiedSocialCreditCode、contributionAmount、level字段
+    - `levelStats`：等级统计信息（不分页），包含各等级的count、percentage、revenue统计
+    - `summary`：汇总信息保持不变
+  - **API兼容性**：保持原有查询参数的兼容性，新增level筛选参数为可选
+
+### 2025-01-15
+- **新增客户统计接口日期范围修复**：
+  - **问题描述**：修复新增客户统计接口在按年月查询时，无法统计到月末最后一天客户的问题
+  - **根本原因**：原代码使用 `BETWEEN` 操作符且 `endDate` 设置为月末第一秒（00:00:00），导致月末当天其他时间创建的客户被遗漏
+  - **修复方案**：
+    - 将查询条件从 `BETWEEN` 改为 `>= AND <` 的组合
+    - 调整日期范围计算：`endDate` 使用下个月第一天，确保包含当月所有时间
+    - 对于 `startDate` 和 `endDate` 参数查询，确保 `endDate` 包含整天（23:59:59.999）
+  - **影响接口**：`GET /api/reports/new-customer-stats`
+  - **修复效果**：现在可以正确统计到月末最后一天的所有客户记录
+  - **技术改进**：
+    - 按年月查询：`endDate = new Date(year, month, 1)` （下个月第一天）
+    - 按年查询：`endDate = new Date(year + 1, 0, 1)` （下一年第一天）
+    - 日期范围查询：`endDate.setHours(23, 59, 59, 999)` （包含整天）
+    - 查询条件：`createTime >= startDate AND createTime < endDate`
+
+### 2025-01-15
+- **历史数据表changeDate字段类型优化**：
+  - **问题解决**：将 `customer_status_history` 和 `customer_level_history` 表中的 `changeDate` 字段从 `DATE` 类型修改为 `DATETIME` 类型
+  - **修改目的**：支持时分秒精度，解决统计时无法精确找出分组后每组 `changeDate` 字段最大值数据的问题
+  - **业务影响**：
+    - 客户流失统计现在可以精确找出每个公司状态变更的最新记录
+    - 客户等级分布统计可以准确确定客户在特定时间点的等级状态
+    - 解决了同一天多次状态变更时无法确定最新状态的问题
+  - **技术改进**：
+    - TypeORM 实体类字段类型：`type: 'date'` → `type: 'datetime'`
+    - API 接口支持 ISO 8601 日期时间格式：`2025-01-15T10:30:00Z`
+    - 重建数据库索引以确保查询性能
+    - 向后兼容：仍支持只传入日期部分，系统会自动补充时间为 `00:00:00`
+  - **文档更新**：创建详细的迁移说明文档 `docs/CHANGEDATE_DATETIME_MIGRATION.md`
+  - **数据库迁移**：提供完整的 SQL 迁移脚本 `database/migrations/2025-01-15-modify-changedate-to-datetime.sql`
+
+- **代理费收费变化分析接口完善**：
+  - ✅ **接口实现完成**：代理费收费变化分析接口已完全实现并可正常使用
+  - ✅ **权限控制系统**：实现基于费用数据权限的访问控制系统
+    - `expense_data_view_all`：查看所有费用数据（管理员权限）
+    - `expense_data_view_by_location`：按区域查看费用数据（分公司负责人权限）
+    - `expense_data_view_own`：查看自己提交的费用数据（普通业务员权限）
+  - ✅ **数据过滤逻辑**：权限过滤逻辑与费用管理模块保持一致，确保数据访问的统一性和安全性
+  - ✅ **缓存机制**：支持30分钟Redis风格缓存，提升查询性能
+  - ✅ **分页支持**：完整的分页查询功能，支持自定义页码和页面大小
+  - ✅ **汇总统计**：提供总客户数、受影响客户数、总减少金额、平均减少金额等统计信息
+  - ✅ **完整文档**：创建详细的API文档（`AGENCY_FEE_ANALYSIS_API.md`）和测试脚本
+  - ✅ **模块集成**：已在主应用模块中正确注册，所有依赖项配置完成
+
+- **报表分析模块新增**：
+  - 新增完整的报表分析模块，提供多维度业务数据分析功能
+  - 实现7种核心报表类型：代理费收费变化分析、新增客户统计、员工业绩统计、客户等级分布、客户流失统计、代理服务到期统计、会计负责客户数量统计
+  - 集成智能缓存系统，支持用户级和全局缓存，显著提升查询性能
+  - 支持Excel导出功能，使用exceljs库生成专业格式的报表文件
+  - 基于角色的权限控制，确保敏感报表数据的安全访问
+  - 数据库索引优化，为客户表和费用表添加专门的查询索引
+  - 完整的Swagger API文档和权限配置
+  - 报表缓存实体(ReportCache)集成到主应用模块
+  - 提供缓存管理接口，支持清除指定类型或全部报表缓存
+  - 新增exceljs依赖包，支持专业级Excel文件生成和导出
+  - 完善报表模块权限配置，为所有角色分配全部报表访问权限（后续可根据需要调整）
+
 ### 2025-01-15
 - **账务自查模块字段扩展**：
   - **新增问题图片描述字段**：为账务自查表(`sys_financial_self_inspection`)添加 `problemImageDescription` 字段
@@ -704,6 +1005,14 @@ POST /api/salary/auto-generate?month=2025-08-01
   - 数据库表：`sys_clan`，包含id、clanName、memberList、createTime、updateTime字段
   - API路由：`/api/customer/clan`，支持GET、POST、PATCH、DELETE操作
 
+### 2025-01-15
+- **客户历史数据级联删除配置**：
+  - 为客户等级历史表（`customer_level_history`）配置级联删除 (`onDelete: 'CASCADE'`)
+  - 为客户状态历史表（`customer_status_history`）配置级联删除 (`onDelete: 'CASCADE'`)
+  - 现在删除客户时，相关的等级变更历史和状态变更历史记录会自动删除
+  - 解决了删除客户后留下孤立历史记录的数据完整性问题
+  - 确保数据库关联数据的一致性和完整性
+
 ### 2025-01-14
 - **费用管理模块businessType查询修复**：
   - 修复多选业务类型筛选时包含空值导致的查询错误问题
@@ -734,3 +1043,92 @@ POST /api/salary/auto-generate?month=2025-08-01
   - `GET /api/commission/other` - 查询业务提成表其他记录列表
   - `GET /api/commission/performance` - 查询绩效提成记录列表
   - 这四个接口现在可以公开访问，无需角色权限验证，方便前端系统查询佣金数据
+
+### 客户等级分布报表排序问题修复
+
+#### 问题描述
+在客户等级分布报表中发现排序功能存在问题：
+- 当指定 `sortField=contributionAmount&sortOrder=DESC` 时，返回结果中最大值为9920
+- 当不指定排序参数时，返回结果中存在比9920更大的数据（如12000）
+- 这表明排序逻辑存在不一致性
+
+#### 根本原因分析
+
+1. **缓存键不一致**：
+   - 带排序参数的请求和不带排序参数的请求生成了不同的缓存键
+   - 旧的缓存键生成逻辑过于简化，没有包含完整的权限信息
+   - 导致不同的请求可能命中了错误的缓存数据
+
+2. **数据类型转换问题**：
+   - `contributionAmount` 字段在数据库中定义为 `decimal(15,2)` 类型
+   - 从数据库返回时可能被当作字符串处理
+   - 排序算法中的数字比较逻辑没有正确处理数字字符串
+
+3. **查询参数规范化缺失**：
+   - 不同的查询参数组合（有无排序字段）没有被规范化
+   - 导致缓存键生成不一致
+
+#### 解决方案
+
+1. **优化缓存键生成逻辑**：
+   ```typescript
+   // 规范化查询参数，确保缓存键的一致性
+   const normalizedQuery = {
+     ...query,
+     sortField: query.sortField || null, // 明确设置为null而不是undefined
+     sortOrder: query.sortOrder || 'DESC', // 使用默认值
+   };
+   
+   // 生成包含权限信息的缓存键
+   const cacheKey = this.cacheService.generateCacheKey({
+     ...normalizedQuery,
+     userId: userId, // 使用具体的用户ID
+     permissions: userPermissions.sort(), // 添加权限信息
+     isAdmin: isAdmin, // 添加管理员标识
+     userRoles: userRoles.sort() // 添加角色信息
+   });
+   ```
+
+2. **修复数据类型转换**：
+   ```typescript
+   // 确保contributionAmount被正确转换为数字类型
+   const result = customers.map(customer => ({
+     customerId: customer.id,
+     companyName: customer.companyName,
+     unifiedSocialCreditCode: customer.unifiedSocialCreditCode,
+     contributionAmount: parseFloat(customer.contributionAmount?.toString() || '0') || 0,
+   }));
+   ```
+
+3. **增强排序算法**：
+   ```typescript
+   // 数字比较（包括数字字符串）
+   const numA = typeof valueA === 'number' ? valueA : parseFloat(String(valueA));
+   const numB = typeof valueB === 'number' ? valueB : parseFloat(String(valueB));
+   
+   if (!isNaN(numA) && !isNaN(numB)) {
+     return sortOrder === 'ASC' ? numA - numB : numB - numA;
+   }
+   ```
+
+4. **添加调试接口**：
+   ```bash
+   # 临时调试接口：清除指定用户的客户等级分布缓存
+   DELETE /api/reports/customer-level-distribution/clear-cache/{userId}
+   ```
+
+#### 技术细节
+
+- **权限感知缓存**：确保不同权限的用户获得不同的缓存数据
+- **参数规范化**：统一处理有无排序参数的请求
+- **类型安全**：确保数字字段被正确处理和比较
+- **向后兼容**：修复不影响现有功能
+
+#### 验证方法
+
+1. 清除缓存后重新请求
+2. 对比带排序参数和不带排序参数的结果
+3. 验证 `contributionAmount` 字段的数值排序正确性
+4. 确认权限变更后缓存自动更新
+
+这个修复确保了报表排序功能的正确性和一致性，同时保持了系统的性能优势。

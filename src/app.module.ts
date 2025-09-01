@@ -26,6 +26,7 @@ import { SubsidySummaryModule } from './modules/salary/subsidy-summary/subsidy-s
 import { FriendCirclePaymentModule } from './modules/salary/friend-circle-payment/friend-circle-payment.module'; // 直接导入朋友圈扣款模块
 import { AttendanceDeductionModule } from './modules/salary/attendance-deduction/attendance-deduction.module'; // 直接导入考勤扣款模块
 import { AttendanceModule } from './modules/attendance/attendance.module'; // 新增考勤模块
+import { ReportsModule } from './modules/reports/reports.module'; // 新增报表模块
 import { Deposit } from './modules/salary/deposit/entities/deposit.entity'; // 新增保证金表实体
 
 // 导入各种配置文件
@@ -66,6 +67,9 @@ import {
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { Notification } from './modules/notifications/entities/notification.entity';
 import { NotificationRecipient } from './modules/notifications/entities/notification-recipient.entity';
+import { ReportCache } from './modules/reports/entities/report-cache.entity'; // 新增报表缓存实体
+import { CustomerLevelHistory } from './modules/reports/customer-level-history/entities/customer-level-history.entity'; // 新增客户等级历史实体
+import { CustomerStatusHistory } from './modules/reports/customer-status-history/entities/customer-status-history.entity'; // 新增客户状态历史实体
 
 @Module({
   imports: [
@@ -144,6 +148,9 @@ import { NotificationRecipient } from './modules/notifications/entities/notifica
           PerformanceCommission, // 新增绩效提成表实体
           Notification,
           NotificationRecipient,
+          ReportCache, // 新增报表缓存实体
+          CustomerLevelHistory, // 新增客户等级历史实体
+          CustomerStatusHistory, // 新增客户状态历史实体
         ],
         synchronize: configService.get('DB_SYNCHRONIZE', 'false') === 'true',
         logging: configService.get('DB_LOGGING', 'false') === 'true',
@@ -169,6 +176,7 @@ import { NotificationRecipient } from './modules/notifications/entities/notifica
     FriendCirclePaymentModule, // 朋友圈扣款模块：直接导入，避免路由冲突
     AttendanceDeductionModule, // 考勤扣款模块：直接导入，避免路由冲突
     AttendanceModule, // 考勤模块：处理考勤同步相关的功能
+    ReportsModule, // 报表模块：处理报表分析相关的功能
     NotificationsModule, // 通知模块
   ],
   controllers: [AppController], // 控制器：负责接收请求，像前台接待
