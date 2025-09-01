@@ -317,15 +317,18 @@ export class ReportsService {
       };
 
       // 缓存结果（30分钟）
-      await this.cacheService.setCache(
-        'agency_fee_analysis',
-        cacheKey,
-        result,
-        1800,
-        userId
-      );
-
-      this.logger.log(`用户 ${userId} 生成新数据并缓存`);
+      try {
+        await this.cacheService.setCache(
+          'agency_fee_analysis',
+          cacheKey,
+          result,
+          1800,
+          userId
+        );
+        this.logger.log(`用户 ${userId} 生成新数据并缓存成功`);
+      } catch (cacheError) {
+        this.logger.warn(`用户 ${userId} 缓存设置失败，但不影响数据返回: ${cacheError.message}`);
+      }
       return result;
     } catch (error) {
       this.logger.error(`代理费收费变化分析失败: ${error.message}`, error.stack);
@@ -462,13 +465,18 @@ export class ReportsService {
       };
 
       // 缓存结果（1小时）
-      await this.cacheService.setCache(
-        'new_customer_stats',
-        cacheKey,
-        result,
-        3600,
-        userId
-      );
+      try {
+        await this.cacheService.setCache(
+          'new_customer_stats',
+          cacheKey,
+          result,
+          3600,
+          userId
+        );
+        this.logger.log(`新增客户统计缓存设置成功`);
+      } catch (cacheError) {
+        this.logger.warn(`新增客户统计缓存设置失败，但不影响数据返回: ${cacheError.message}`);
+      }
 
       return result;
     } catch (error) {
@@ -679,13 +687,18 @@ export class ReportsService {
       };
 
       // 缓存结果（30分钟）
-      await this.cacheService.setCache(
-        'employee_performance',
-        cacheKey,
-        result,
-        1800,
-        userId
-      );
+      try {
+        await this.cacheService.setCache(
+          'employee_performance',
+          cacheKey,
+          result,
+          1800,
+          userId
+        );
+        this.logger.log(`员工业绩统计缓存设置成功`);
+      } catch (cacheError) {
+        this.logger.warn(`员工业绩统计缓存设置失败，但不影响数据返回: ${cacheError.message}`);
+      }
 
       return result;
     } catch (error) {
@@ -825,13 +838,18 @@ export class ReportsService {
       };
 
       // 缓存结果（2小时）
-      await this.cacheService.setCache(
-        'customer_level_distribution',
-        cacheKey,
-        result,
-        7200,
-        userId
-      );
+      try {
+        await this.cacheService.setCache(
+          'customer_level_distribution',
+          cacheKey,
+          result,
+          7200,
+          userId
+        );
+        this.logger.log(`客户等级分布统计缓存设置成功`);
+      } catch (cacheError) {
+        this.logger.warn(`客户等级分布统计缓存设置失败，但不影响数据返回: ${cacheError.message}`);
+      }
 
       return result;
     } catch (error) {
@@ -1017,13 +1035,18 @@ export class ReportsService {
       };
 
       // 缓存结果（2小时，与客户等级分布统计保持一致）
-      await this.cacheService.setCache(
-        'customer_churn_stats',
-        cacheKey,
-        result,
-        7200,
-        userId
-      );
+      try {
+        await this.cacheService.setCache(
+          'customer_churn_stats',
+          cacheKey,
+          result,
+          7200,
+          userId
+        );
+        this.logger.log(`客户流失统计缓存设置成功`);
+      } catch (cacheError) {
+        this.logger.warn(`客户流失统计缓存设置失败，但不影响数据返回: ${cacheError.message}`);
+      }
 
       return result;
     } catch (error) {
@@ -1186,13 +1209,18 @@ export class ReportsService {
       };
 
       // 缓存结果（30分钟）
-      await this.cacheService.setCache(
-        'service_expiry_stats',
-        cacheKey,
-        result,
-        1800,
-        userId
-      );
+      try {
+        await this.cacheService.setCache(
+          'service_expiry_stats',
+          cacheKey,
+          result,
+          1800,
+          userId
+        );
+        this.logger.log(`代理服务到期统计缓存设置成功`);
+      } catch (cacheError) {
+        this.logger.warn(`代理服务到期统计缓存设置失败，但不影响数据返回: ${cacheError.message}`);
+      }
 
       return result;
     } catch (error) {
@@ -1403,13 +1431,18 @@ export class ReportsService {
       };
 
       // 缓存结果（2小时）
-      await this.cacheService.setCache(
-        'accountant_client_stats',
-        cacheKey,
-        result,
-        7200,
-        userId
-      );
+      try {
+        await this.cacheService.setCache(
+          'accountant_client_stats',
+          cacheKey,
+          result,
+          7200,
+          userId
+        );
+        this.logger.log(`会计负责客户统计缓存设置成功`);
+      } catch (cacheError) {
+        this.logger.warn(`会计负责客户统计缓存设置失败，但不影响数据返回: ${cacheError.message}`);
+      }
 
       return result;
     } catch (error) {

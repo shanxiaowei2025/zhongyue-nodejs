@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan, LessThan, In } from 'typeorm';
 import { Cron } from '@nestjs/schedule';
+import { createHash } from 'crypto';
 import { ReportCache } from '../entities/report-cache.entity';
 
 @Injectable()
@@ -74,16 +75,33 @@ export class ReportsCacheService {
       // 添加详细的时间调试日志
       this.logger.debug(`设置缓存 - 当前UTC时间: ${nowUTC.toISOString()}, 过期UTC时间: ${expiresAtUTC.toISOString()}, TTL: ${ttl}s`);
 
-      // 使用upsert操作，如果存在则更新，不存在则创建
-      await this.cacheRepository.save({
-        reportType,
-        cacheKey,
-        cacheData: data,
-        userId,
-        expiresAt: expiresAtUTC
+      // 先查询是否存在相同的缓存记录
+      const existingCache = await this.cacheRepository.findOne({
+        where: {
+          reportType,
+          cacheKey,
+          userId
+        }
       });
 
-      this.logger.debug(`缓存设置成功: ${reportType}-${cacheKey}-${userId}, 过期时间: ${expiresAtUTC.toISOString()}`);
+      if (existingCache) {
+        // 如果存在，更新现有记录
+        existingCache.cacheData = data;
+        existingCache.expiresAt = expiresAtUTC;
+        await this.cacheRepository.save(existingCache);
+        this.logger.debug(`缓存更新成功: ${reportType}-${cacheKey}-${userId}, 过期时间: ${expiresAtUTC.toISOString()}`);
+      } else {
+        // 如果不存在，创建新记录
+        const newCache = this.cacheRepository.create({
+          reportType,
+          cacheKey,
+          cacheData: data,
+          userId,
+          expiresAt: expiresAtUTC
+        });
+        await this.cacheRepository.save(newCache);
+        this.logger.debug(`缓存创建成功: ${reportType}-${cacheKey}-${userId}, 过期时间: ${expiresAtUTC.toISOString()}`);
+      }
     } catch (error) {
       this.logger.error(`设置缓存失败: ${error.message}`, error.stack);
     }
@@ -202,7 +220,14 @@ export class ReportsCacheService {
         return obj;
       }, {} as Record<string, any>);
 
-    return Buffer.from(JSON.stringify(sortedParams)).toString('base64');
+    // 使用 MD5 哈希确保缓存键长度不超过数据库字段限制
+    // MD5 哈希固定为32字符，远小于255字符限制
+    const jsonString = JSON.stringify(sortedParams);
+    const hash = createHash('md5').update(jsonString).digest('hex');
+    
+    this.logger.debug(`生成缓存键 - 原始参数长度: ${jsonString.length}, 哈希结果: ${hash}`);
+    
+    return hash;
   }
 
   /**
