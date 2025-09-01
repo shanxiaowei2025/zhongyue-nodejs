@@ -75,9 +75,12 @@ export class ReportsService {
       if (valueA == null) return sortOrder === 'ASC' ? -1 : 1;
       if (valueB == null) return sortOrder === 'ASC' ? 1 : -1;
 
-      // 数字比较
-      if (typeof valueA === 'number' && typeof valueB === 'number') {
-        return sortOrder === 'ASC' ? valueA - valueB : valueB - valueA;
+      // 数字比较（包括数字字符串）
+      const numA = typeof valueA === 'number' ? valueA : parseFloat(String(valueA));
+      const numB = typeof valueB === 'number' ? valueB : parseFloat(String(valueB));
+      
+      if (!isNaN(numA) && !isNaN(numB)) {
+        return sortOrder === 'ASC' ? numA - numB : numB - numA;
       }
 
       // 日期比较
@@ -164,10 +167,17 @@ export class ReportsService {
         throw new Error('您没有权限查看代理费收费变化分析报表');
       }
 
-      // 生成缓存键
+      // 获取用户权限信息，用于生成更精确的缓存键
+      const userPermissions = await this.permissionService.getUserPermissions(userId);
+      const isAdmin = await this.permissionService.isAdmin(userId);
+      
+      // 生成包含权限信息的缓存键，确保不同权限的用户有不同的缓存
       const cacheKey = this.cacheService.generateCacheKey({
         ...query,
-        userId: await this.permissionService.isAdmin(userId) ? 'admin' : userId
+        userId: userId, // 始终使用具体的用户ID
+        permissions: userPermissions.sort(), // 添加权限信息到缓存键
+        isAdmin: isAdmin, // 添加管理员标识
+        userRoles: (await this.permissionService.getUserInfo(userId))?.roles?.sort() || [] // 添加角色信息
       });
 
       // 尝试从缓存获取
@@ -177,6 +187,7 @@ export class ReportsService {
         userId
       );
       if (cachedData) {
+        this.logger.log(`用户 ${userId} 命中缓存，返回缓存数据`);
         return cachedData;
       }
 
@@ -314,6 +325,7 @@ export class ReportsService {
         userId
       );
 
+      this.logger.log(`用户 ${userId} 生成新数据并缓存`);
       return result;
     } catch (error) {
       this.logger.error(`代理费收费变化分析失败: ${error.message}`, error.stack);
@@ -340,10 +352,17 @@ export class ReportsService {
         throw new Error('您没有权限查看新增客户统计报表');
       }
 
-      // 生成缓存键
+      // 获取用户权限信息，用于生成更精确的缓存键
+      const userPermissions = await this.permissionService.getUserPermissions(userId);
+      const isAdmin = await this.permissionService.isAdmin(userId);
+      
+      // 生成包含权限信息的缓存键，确保不同权限的用户有不同的缓存
       const cacheKey = this.cacheService.generateCacheKey({
         ...query,
-        userId: await this.permissionService.isAdmin(userId) ? 'admin' : userId
+        userId: userId, // 始终使用具体的用户ID
+        permissions: userPermissions.sort(), // 添加权限信息到缓存键
+        isAdmin: isAdmin, // 添加管理员标识
+        userRoles: (await this.permissionService.getUserInfo(userId))?.roles?.sort() || [] // 添加角色信息
       });
 
       // 尝试从缓存获取
@@ -353,6 +372,7 @@ export class ReportsService {
         userId
       );
       if (cachedData) {
+        this.logger.log(`用户 ${userId} 命中缓存，返回缓存数据`);
         return cachedData;
       }
 
@@ -476,10 +496,17 @@ export class ReportsService {
         throw new Error('您没有权限查看员工业绩统计报表');
       }
 
-      // 生成缓存键
+      // 获取用户权限信息，用于生成更精确的缓存键
+      const userPermissions = await this.permissionService.getUserPermissions(userId);
+      const isAdmin = await this.permissionService.isAdmin(userId);
+      
+      // 生成包含权限信息的缓存键，确保不同权限的用户有不同的缓存
       const cacheKey = this.cacheService.generateCacheKey({
         ...query,
-        userId: await this.permissionService.isAdmin(userId) ? 'admin' : userId
+        userId: userId, // 始终使用具体的用户ID
+        permissions: userPermissions.sort(), // 添加权限信息到缓存键
+        isAdmin: isAdmin, // 添加管理员标识
+        userRoles: (await this.permissionService.getUserInfo(userId))?.roles?.sort() || [] // 添加角色信息
       });
 
       // 尝试从缓存获取
@@ -489,6 +516,7 @@ export class ReportsService {
         userId
       );
       if (cachedData) {
+        this.logger.log(`用户 ${userId} 命中缓存，返回缓存数据`);
         return cachedData;
       }
 
@@ -686,10 +714,25 @@ export class ReportsService {
         throw new Error('您没有权限查看客户等级分布统计报表');
       }
 
-      // 生成缓存键
-      const cacheKey = this.cacheService.generateCacheKey({
+      // 获取用户权限信息，用于生成更精确的缓存键
+      const userPermissions = await this.permissionService.getUserPermissions(userId);
+      const isAdmin = await this.permissionService.isAdmin(userId);
+      
+      // 规范化查询参数，确保缓存键的一致性
+      const normalizedQuery = {
         ...query,
-        userId: await this.permissionService.isAdmin(userId) ? 'admin' : userId
+        // 确保排序字段规范化
+        sortField: query.sortField || null, // 明确设置为null而不是undefined
+        sortOrder: query.sortOrder || 'DESC', // 使用默认值
+      };
+      
+      // 生成包含权限信息的缓存键，确保不同权限的用户有不同的缓存
+      const cacheKey = this.cacheService.generateCacheKey({
+        ...normalizedQuery,
+        userId: userId, // 始终使用具体的用户ID
+        permissions: userPermissions.sort(), // 添加权限信息到缓存键
+        isAdmin: isAdmin, // 添加管理员标识
+        userRoles: (await this.permissionService.getUserInfo(userId))?.roles?.sort() || [] // 添加角色信息
       });
 
       // 尝试从缓存获取
@@ -699,6 +742,7 @@ export class ReportsService {
         userId
       );
       if (cachedData) {
+        this.logger.log(`用户 ${userId} 命中缓存，返回缓存数据`);
         return cachedData;
       }
 
@@ -1995,7 +2039,7 @@ export class ReportsService {
         customerId: customer.id,
         companyName: customer.companyName,
         unifiedSocialCreditCode: customer.unifiedSocialCreditCode,
-        contributionAmount: customer.contributionAmount || 0,
+        contributionAmount: parseFloat(customer.contributionAmount?.toString() || '0') || 0,
       }));
 
       this.logger.warn(`等级 ${targetLevel} 的客户详情查询完成，返回 ${result.length} 条记录`);

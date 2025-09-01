@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -17,6 +18,8 @@ import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>, // 注入用户数据库操作工具
@@ -252,6 +255,11 @@ export class UsersService {
       throw new NotFoundException(`用户ID ${id} 不存在`);
     }
 
+    // 检查角色是否发生变更
+    const originalRoles = user.roles || [];
+    const newRoles = updateUserDto.roles || originalRoles;
+    const hasRoleChanged = updateUserDto.roles && !this.compareArrays(originalRoles, newRoles);
+
     // 如果要修改角色，需要额外检查
     if (
       updateUserDto.roles &&
@@ -280,7 +288,19 @@ export class UsersService {
 
     // 更新用户信息
     const updatedUser = this.userRepository.merge(user, updateUserDto);
-    return this.userRepository.save(updatedUser);
+    const savedUser = await this.userRepository.save(updatedUser);
+
+    // 如果角色发生变更，清除报表缓存
+    if (hasRoleChanged) {
+      this.logger.log(`用户 ${id} 角色通过update方法发生变更，从 [${originalRoles.join(', ')}] 变更为 [${newRoles.join(', ')}]，准备清除报表缓存`);
+      
+      // 异步清除缓存，不阻塞主流程
+      this.clearUserReportCache(id).catch(error => {
+        this.logger.error(`清除用户 ${id} 报表缓存失败: ${error.message}`, error.stack);
+      });
+    }
+
+    return savedUser;
   }
 
   // 更新用户个人资料（只允许更新idCardNumber和phone）
@@ -393,10 +413,53 @@ export class UsersService {
       }
     }
 
+    // 检查角色是否发生变更
+    const originalRoles = user.roles || [];
+    const hasRoleChanged = !this.compareArrays(originalRoles, roleNames);
+
     // 更新用户角色
     user.roles = roleNames;
 
-    return this.userRepository.save(user);
+    const savedUser = await this.userRepository.save(user);
+
+    // 如果角色发生变更，清除报表缓存
+    if (hasRoleChanged) {
+      this.logger.log(`用户 ${userId} 角色发生变更，从 [${originalRoles.join(', ')}] 变更为 [${roleNames.join(', ')}]，准备清除报表缓存`);
+      
+      // 异步清除缓存，不阻塞主流程
+      this.clearUserReportCache(userId).catch(error => {
+        this.logger.error(`清除用户 ${userId} 报表缓存失败: ${error.message}`, error.stack);
+      });
+    }
+
+    return savedUser;
+  }
+
+  /**
+   * 清除用户报表缓存
+   * 当用户角色发生变更时调用
+   */
+  private async clearUserReportCache(userId: number): Promise<void> {
+    try {
+      // 这里需要调用报表模块的缓存清理服务
+      // 由于避免循环依赖，我们通过HTTP请求的方式调用
+      const fetch = (await import('node-fetch')).default;
+      
+      const response = await fetch(`http://localhost:3000/api/reports/clear-role-change-cache/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        this.logger.log(`用户 ${userId} 报表缓存清除成功`);
+      } else {
+        this.logger.warn(`用户 ${userId} 报表缓存清除失败: HTTP ${response.status}`);
+      }
+    } catch (error) {
+      this.logger.error(`清除用户 ${userId} 报表缓存时发生错误: ${error.message}`, error.stack);
+    }
   }
 
   // 检查用户是否有指定权限 (通过角色)

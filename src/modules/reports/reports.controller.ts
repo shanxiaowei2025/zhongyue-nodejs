@@ -10,11 +10,15 @@ import {
   Logger,
   UsePipes,
   ValidationPipe,
+  Delete,
+  Param,
+  ParseIntPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiQuery, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiQuery, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ReportsService } from './services/reports.service';
+import { ReportsCacheService } from './services/reports-cache.service';
 // import { ReportsExportService } from './services/reports-export.service'; // 临时注释掉导出服务
 import {
   AgencyFeeAnalysisDto,
@@ -45,6 +49,7 @@ export class ReportsController {
 
   constructor(
     private readonly reportsService: ReportsService,
+    private readonly cacheService: ReportsCacheService,
     // private readonly exportService: ReportsExportService, // 临时注释掉导出服务
   ) {}
 
@@ -517,4 +522,92 @@ export class ReportsController {
     }
   }
   */
+
+  @Delete('clear-cache/:userId')
+  @ApiOperation({ 
+    summary: '清除用户缓存', 
+    description: '根据用户ID清除其相关的报表缓存' 
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: '缓存已清除' 
+  })
+  async clearUserCache(
+    @Param('userId') userId: string
+  ): Promise<void> {
+    try {
+      const userIdNum = parseInt(userId);
+      if (isNaN(userIdNum)) {
+        throw new HttpException('无效的用户ID', HttpStatus.BAD_REQUEST);
+      }
+      
+      this.logger.log(`用户 ${userIdNum} 请求清除缓存`);
+      await this.cacheService.clearUserCache(userIdNum);
+      this.logger.log(`用户 ${userIdNum} 缓存已清除`);
+    } catch (error) {
+      this.logger.error(`清除用户缓存失败: ${error.message}`, error.stack);
+      throw new HttpException(
+        error.message || '清除缓存失败',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Delete('clear-role-change-cache/:userId')
+  @ApiOperation({ 
+    summary: '清除用户角色变更缓存', 
+    description: '当用户角色发生变更时，清除相关的报表缓存以确保数据准确性' 
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: '角色变更缓存已清除' 
+  })
+  async clearUserRoleChangeCache(
+    @Param('userId') userId: string
+  ): Promise<void> {
+    try {
+      const userIdNum = parseInt(userId);
+      if (isNaN(userIdNum)) {
+        throw new HttpException('无效的用户ID', HttpStatus.BAD_REQUEST);
+      }
+      
+      this.logger.log(`用户 ${userIdNum} 角色变更，清除相关缓存`);
+      await this.cacheService.clearUserRoleChangeCache(userIdNum);
+      this.logger.log(`用户 ${userIdNum} 角色变更缓存已清除`);
+    } catch (error) {
+      this.logger.error(`清除用户角色变更缓存失败: ${error.message}`, error.stack);
+      throw new HttpException(
+        error.message || '清除角色变更缓存失败',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  /**
+   * 临时调试接口：清除客户等级分布缓存
+   */
+  @Delete('customer-level-distribution/clear-cache/:userId')
+  @ApiOperation({ 
+    summary: '清除客户等级分布缓存（调试用）', 
+    description: '清除指定用户的客户等级分布报表缓存，用于调试排序问题' 
+  })
+  @ApiParam({ name: 'userId', description: '用户ID' })
+  async clearCustomerLevelDistributionCache(
+    @Param('userId', ParseIntPipe) targetUserId: number,
+    @Request() req: any
+  ): Promise<{ message: string }> {
+    try {
+      this.logger.log(`用户 ${req.user.id} 请求清除用户 ${targetUserId} 的客户等级分布缓存`);
+      
+      await this.cacheService.clearUserCache(targetUserId);
+      
+      return { message: `用户 ${targetUserId} 的客户等级分布缓存已清除` };
+    } catch (error) {
+      this.logger.error(`清除缓存失败: ${error.message}`, error.stack);
+      throw new HttpException(
+        error.message || '清除缓存失败',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
 } 

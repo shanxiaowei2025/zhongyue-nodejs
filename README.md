@@ -223,7 +223,8 @@ socket.on('new-notification', (data) => { console.log('收到新通知:', data);
 
 ### 11. 报表分析模块 (reports)
 - **数据分析与报表功能**：提供多维度的业务数据分析和统计报表
-- **智能缓存系统**：使用Redis风格的缓存机制提升报表查询性能，支持用户级和全局缓存
+- **智能缓存系统**：使用基于权限的缓存机制提升报表查询性能，支持用户级和全局缓存
+- **角色变更缓存处理**：当用户角色发生变更时，自动清除相关缓存确保数据准确性
 - **Excel导出功能**：支持将报表数据导出为Excel格式，便于数据分析和存档
 - **多种报表类型**：
   - 代理费收费变化分析：分析代理记账费用的时间趋势变化
@@ -235,6 +236,103 @@ socket.on('new-notification', (data) => { console.log('收到新通知:', data);
   - 会计负责客户数量统计：统计各会计负责的客户数量分布
 - **权限控制**：报表数据基于费用数据权限进行过滤，确保用户只能查看有权限访问的数据
 - **数据库优化**：为报表查询添加专门的数据库索引，提升查询性能
+
+#### 缓存机制说明
+报表模块采用了基于权限的智能缓存机制：
+
+1. **权限感知缓存**：缓存键包含用户权限信息，确保不同权限的用户获取不同的缓存数据
+2. **角色变更处理**：当用户角色发生变更时，系统提供专门的接口清除相关缓存
+3. **自动过期机制**：缓存默认有效期30分钟，系统每天凌晨2点自动清理过期缓存
+
+#### 角色变更缓存清理
+当用户角色发生变更时，需要调用以下接口清除缓存：
+
+```bash
+# 清除指定用户的所有报表缓存
+DELETE /api/reports/clear-cache/{userId}
+
+# 清除用户角色变更相关的缓存（推荐）
+DELETE /api/reports/clear-role-change-cache/{userId}
+```
+
+**使用场景**：
+- 用户从普通员工升级为管理员
+- 用户从管理员降级为普通员工
+- 用户的部门或权限发生变更
+- 批量角色调整后需要确保数据准确性
+
+### 角色变更缓存处理解决方案
+
+系统已实现了完整的角色变更缓存处理机制，确保用户角色发生变更时能获取到正确的报表数据。
+
+#### 问题背景
+当用户角色发生变更时（如从普通用户升级为管理员，或从管理员降级为普通用户），由于报表缓存机制的存在，用户可能仍然看到基于旧角色权限的缓存数据，而不是基于新角色权限的正确数据。
+
+#### 解决方案
+
+1. **权限感知缓存键**：
+   - 缓存键现在包含完整的用户权限信息（权限列表、管理员标识、角色信息）
+   - 确保不同权限的用户获取不同的缓存数据
+   - 当用户权限发生变更时，新的缓存键不会命中旧的缓存
+
+2. **自动缓存清理**：
+   - 用户管理模块在角色分配或更新时自动检测角色变更
+   - 发现角色变更后异步调用报表缓存清理接口
+   - 不阻塞主业务流程，确保系统性能
+
+3. **手动缓存清理接口**：
+   ```bash
+   # 清除指定用户的所有报表缓存
+   DELETE /api/reports/clear-cache/{userId}
+   
+   # 清除用户角色变更相关的缓存（推荐）
+   DELETE /api/reports/clear-role-change-cache/{userId}
+   ```
+
+#### 技术实现细节
+
+1. **缓存键生成优化**：
+   ```typescript
+   const cacheKey = this.cacheService.generateCacheKey({
+     ...query,
+     userId: userId, // 始终使用具体的用户ID
+     permissions: userPermissions.sort(), // 添加权限信息到缓存键
+     isAdmin: isAdmin, // 添加管理员标识
+     userRoles: userRoles.sort() // 添加角色信息
+   });
+   ```
+
+2. **用户服务集成**：
+   - `assignRolesToUser()` 方法：角色分配时自动检测变更并清理缓存
+   - `update()` 方法：用户信息更新时检测角色变更并清理缓存
+   - 异步处理：缓存清理不影响主业务流程
+
+3. **缓存清理策略**：
+   - 清除目标用户的所有报表缓存
+   - 清除可能包含管理员数据的通用缓存
+   - 支持批量用户缓存清理
+
+#### 使用建议
+
+1. **角色变更后的验证**：
+   - 角色变更后，建议用户重新登录或刷新页面
+   - 系统会自动使用新的权限获取正确的报表数据
+
+2. **批量角色调整**：
+   - 进行批量角色调整时，系统会自动处理每个用户的缓存清理
+   - 如需手动清理，可调用批量清理接口
+
+3. **监控和日志**：
+   - 所有缓存清理操作都有详细的日志记录
+   - 可通过日志监控缓存清理的执行情况
+
+#### 注意事项
+
+1. **缓存清理是异步的**：不会阻塞用户角色变更的主流程
+2. **网络依赖**：缓存清理通过HTTP请求实现，确保服务间通信正常
+3. **降级处理**：如果缓存清理失败，不会影响角色变更操作，只会记录错误日志
+
+这个解决方案确保了用户角色变更后能够获取到正确的报表数据，同时保持了系统的性能和稳定性。
 
 ## 权限控制
 
@@ -919,3 +1017,92 @@ POST /api/salary/auto-generate?month=2025-08-01
   - `GET /api/commission/other` - 查询业务提成表其他记录列表
   - `GET /api/commission/performance` - 查询绩效提成记录列表
   - 这四个接口现在可以公开访问，无需角色权限验证，方便前端系统查询佣金数据
+
+### 客户等级分布报表排序问题修复
+
+#### 问题描述
+在客户等级分布报表中发现排序功能存在问题：
+- 当指定 `sortField=contributionAmount&sortOrder=DESC` 时，返回结果中最大值为9920
+- 当不指定排序参数时，返回结果中存在比9920更大的数据（如12000）
+- 这表明排序逻辑存在不一致性
+
+#### 根本原因分析
+
+1. **缓存键不一致**：
+   - 带排序参数的请求和不带排序参数的请求生成了不同的缓存键
+   - 旧的缓存键生成逻辑过于简化，没有包含完整的权限信息
+   - 导致不同的请求可能命中了错误的缓存数据
+
+2. **数据类型转换问题**：
+   - `contributionAmount` 字段在数据库中定义为 `decimal(15,2)` 类型
+   - 从数据库返回时可能被当作字符串处理
+   - 排序算法中的数字比较逻辑没有正确处理数字字符串
+
+3. **查询参数规范化缺失**：
+   - 不同的查询参数组合（有无排序字段）没有被规范化
+   - 导致缓存键生成不一致
+
+#### 解决方案
+
+1. **优化缓存键生成逻辑**：
+   ```typescript
+   // 规范化查询参数，确保缓存键的一致性
+   const normalizedQuery = {
+     ...query,
+     sortField: query.sortField || null, // 明确设置为null而不是undefined
+     sortOrder: query.sortOrder || 'DESC', // 使用默认值
+   };
+   
+   // 生成包含权限信息的缓存键
+   const cacheKey = this.cacheService.generateCacheKey({
+     ...normalizedQuery,
+     userId: userId, // 使用具体的用户ID
+     permissions: userPermissions.sort(), // 添加权限信息
+     isAdmin: isAdmin, // 添加管理员标识
+     userRoles: userRoles.sort() // 添加角色信息
+   });
+   ```
+
+2. **修复数据类型转换**：
+   ```typescript
+   // 确保contributionAmount被正确转换为数字类型
+   const result = customers.map(customer => ({
+     customerId: customer.id,
+     companyName: customer.companyName,
+     unifiedSocialCreditCode: customer.unifiedSocialCreditCode,
+     contributionAmount: parseFloat(customer.contributionAmount?.toString() || '0') || 0,
+   }));
+   ```
+
+3. **增强排序算法**：
+   ```typescript
+   // 数字比较（包括数字字符串）
+   const numA = typeof valueA === 'number' ? valueA : parseFloat(String(valueA));
+   const numB = typeof valueB === 'number' ? valueB : parseFloat(String(valueB));
+   
+   if (!isNaN(numA) && !isNaN(numB)) {
+     return sortOrder === 'ASC' ? numA - numB : numB - numA;
+   }
+   ```
+
+4. **添加调试接口**：
+   ```bash
+   # 临时调试接口：清除指定用户的客户等级分布缓存
+   DELETE /api/reports/customer-level-distribution/clear-cache/{userId}
+   ```
+
+#### 技术细节
+
+- **权限感知缓存**：确保不同权限的用户获得不同的缓存数据
+- **参数规范化**：统一处理有无排序参数的请求
+- **类型安全**：确保数字字段被正确处理和比较
+- **向后兼容**：修复不影响现有功能
+
+#### 验证方法
+
+1. 清除缓存后重新请求
+2. 对比带排序参数和不带排序参数的结果
+3. 验证 `contributionAmount` 字段的数值排序正确性
+4. 确认权限变更后缓存自动更新
+
+这个修复确保了报表排序功能的正确性和一致性，同时保持了系统的性能优势。

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan, LessThan } from 'typeorm';
+import { Repository, MoreThan, LessThan, In } from 'typeorm';
 import { Cron } from '@nestjs/schedule';
 import { ReportCache } from '../entities/report-cache.entity';
 
@@ -102,6 +102,62 @@ export class ReportsCacheService {
       this.logger.debug(`用户缓存清除成功: ${userId}`);
     } catch (error) {
       this.logger.error(`清除用户缓存失败: ${error.message}`, error.stack);
+    }
+  }
+
+  /**
+   * 清除用户角色变更相关的缓存
+   * 当用户角色发生变更时，需要清除该用户的所有报表缓存，确保获取到正确的权限数据
+   */
+  async clearUserRoleChangeCache(userId: number): Promise<void> {
+    try {
+      // 清除该用户的所有缓存
+      await this.cacheRepository.delete({ userId });
+      
+      // 如果用户可能变成了管理员，还需要清除一些可能与管理员权限相关的缓存
+      // 这里我们可以清除一些通用的缓存键模式
+      const adminCachePatterns = [
+        'admin',
+        'all_data',
+        'global'
+      ];
+      
+      // 查找并删除可能包含管理员数据的缓存
+      for (const pattern of adminCachePatterns) {
+        const cachesToDelete = await this.cacheRepository
+          .createQueryBuilder('cache')
+          .where('cache.cacheKey LIKE :pattern', { pattern: `%${pattern}%` })
+          .getMany();
+        
+        if (cachesToDelete.length > 0) {
+          await this.cacheRepository.remove(cachesToDelete);
+          this.logger.debug(`清除包含模式 "${pattern}" 的缓存，数量: ${cachesToDelete.length}`);
+        }
+      }
+      
+      this.logger.log(`用户 ${userId} 角色变更缓存清理完成`);
+    } catch (error) {
+      this.logger.error(`清除用户角色变更缓存失败: ${error.message}`, error.stack);
+    }
+  }
+
+  /**
+   * 批量清除多个用户的缓存
+   * 适用于批量角色变更的场景
+   */
+  async clearMultipleUserCache(userIds: number[]): Promise<void> {
+    try {
+      if (userIds.length === 0) {
+        return;
+      }
+
+      await this.cacheRepository.delete({ 
+        userId: In(userIds) 
+      });
+      
+      this.logger.log(`批量清除用户缓存完成，用户数量: ${userIds.length}`);
+    } catch (error) {
+      this.logger.error(`批量清除用户缓存失败: ${error.message}`, error.stack);
     }
   }
 
