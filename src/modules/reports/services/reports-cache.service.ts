@@ -14,6 +14,13 @@ export class ReportsCacheService {
   ) {}
 
   /**
+   * 获取当前UTC时间
+   */
+  private getCurrentUTCTime(): Date {
+    return new Date();
+  }
+
+  /**
    * 获取缓存数据
    */
   async getCache(
@@ -22,17 +29,23 @@ export class ReportsCacheService {
     userId?: number
   ): Promise<any> {
     try {
+      const nowUTC = this.getCurrentUTCTime();
+      
+      // 添加详细的时间调试日志
+      this.logger.debug(`查询缓存 - 当前UTC时间: ${nowUTC.toISOString()}, 本地时间: ${nowUTC.toString()}`);
+      
       const cache = await this.cacheRepository.findOne({
         where: {
           reportType,
           cacheKey,
           userId,
-          expiresAt: MoreThan(new Date())
+          expiresAt: MoreThan(nowUTC) // 使用UTC时间进行比较
         }
       });
 
       if (cache) {
         this.logger.debug(`缓存命中: ${reportType}-${cacheKey}-${userId}`);
+        this.logger.debug(`缓存过期时间: ${cache.expiresAt.toISOString()}, 当前UTC时间: ${nowUTC.toISOString()}`);
         return cache.cacheData;
       }
 
@@ -55,7 +68,11 @@ export class ReportsCacheService {
     userId?: number
   ): Promise<void> {
     try {
-      const expiresAt = new Date(Date.now() + ttl * 1000);
+      const nowUTC = this.getCurrentUTCTime();
+      const expiresAtUTC = new Date(nowUTC.getTime() + ttl * 1000);
+
+      // 添加详细的时间调试日志
+      this.logger.debug(`设置缓存 - 当前UTC时间: ${nowUTC.toISOString()}, 过期UTC时间: ${expiresAtUTC.toISOString()}, TTL: ${ttl}s`);
 
       // 使用upsert操作，如果存在则更新，不存在则创建
       await this.cacheRepository.save({
@@ -63,10 +80,10 @@ export class ReportsCacheService {
         cacheKey,
         cacheData: data,
         userId,
-        expiresAt
+        expiresAt: expiresAtUTC
       });
 
-      this.logger.debug(`缓存设置成功: ${reportType}-${cacheKey}-${userId}, TTL: ${ttl}s`);
+      this.logger.debug(`缓存设置成功: ${reportType}-${cacheKey}-${userId}, 过期时间: ${expiresAtUTC.toISOString()}`);
     } catch (error) {
       this.logger.error(`设置缓存失败: ${error.message}`, error.stack);
     }
@@ -195,8 +212,13 @@ export class ReportsCacheService {
   @Cron('0 2 * * *')
   async clearExpiredCache(): Promise<void> {
     try {
+      const nowUTC = this.getCurrentUTCTime();
+      
+      // 添加详细的时间调试日志
+      this.logger.log(`开始清理过期缓存 - 当前UTC时间: ${nowUTC.toISOString()}, 本地时间: ${nowUTC.toString()}`);
+      
       const deleteResult = await this.cacheRepository.delete({
-        expiresAt: LessThan(new Date())
+        expiresAt: LessThan(nowUTC) // 使用UTC时间进行比较
       });
 
       this.logger.log(`清理过期缓存完成，删除 ${deleteResult.affected || 0} 条记录`);

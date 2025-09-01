@@ -720,10 +720,14 @@ export class ReportsService {
       
       // 规范化查询参数，确保缓存键的一致性
       const normalizedQuery = {
-        ...query,
-        // 确保排序字段规范化
-        sortField: query.sortField || null, // 明确设置为null而不是undefined
-        sortOrder: query.sortOrder || 'DESC', // 使用默认值
+        year: query.year || null,
+        month: query.month || null,
+        level: query.level || null,
+        page: query.page || 1,
+        pageSize: query.pageSize || 10,
+        // 确保排序字段规范化 - 关键修复：确保排序参数的一致性
+        sortField: query.sortField || null,
+        sortOrder: query.sortOrder || 'DESC',
       };
       
       // 生成包含权限信息的缓存键，确保不同权限的用户有不同的缓存
@@ -2034,13 +2038,31 @@ export class ReportsService {
 
       const customers = await customerQueryBuilder.getMany();
       
-      // 转换为返回格式
-      const result = customers.map(customer => ({
-        customerId: customer.id,
-        companyName: customer.companyName,
-        unifiedSocialCreditCode: customer.unifiedSocialCreditCode,
-        contributionAmount: parseFloat(customer.contributionAmount?.toString() || '0') || 0,
-      }));
+      // 转换为返回格式 - 关键修复：确保contributionAmount为数字类型
+      const result = customers.map(customer => {
+        const contributionAmount = customer.contributionAmount;
+        let numericContribution = 0;
+        
+        // 更严格的数字转换逻辑
+        if (contributionAmount !== null && contributionAmount !== undefined) {
+          if (typeof contributionAmount === 'number') {
+            numericContribution = contributionAmount;
+          } else if (typeof contributionAmount === 'string') {
+            const parsed = parseFloat(contributionAmount);
+            numericContribution = isNaN(parsed) ? 0 : parsed;
+          } else {
+            const parsed = parseFloat(String(contributionAmount));
+            numericContribution = isNaN(parsed) ? 0 : parsed;
+          }
+        }
+        
+        return {
+          customerId: customer.id,
+          companyName: customer.companyName,
+          unifiedSocialCreditCode: customer.unifiedSocialCreditCode,
+          contributionAmount: numericContribution,
+        };
+      });
 
       this.logger.warn(`等级 ${targetLevel} 的客户详情查询完成，返回 ${result.length} 条记录`);
       return result;
