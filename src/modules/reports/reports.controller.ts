@@ -330,7 +330,7 @@ export class ReportsController {
     summary: '客户流失统计', 
     description: '统计注销/流失客户数量和原因分布。支持按年/月时间过滤：只传year按年统计，传year+month按月统计，只传month按当年该月统计，都不传按当前年月统计。分页按客户详情分页，同时返回时间周期统计汇总。' 
   })
-  @ApiQuery({ name: 'sortField', required: false, enum: ['period', 'churnCount', 'churnRate', 'churnDate'], description: '排序字段：period-时间周期，churnCount-流失数量，churnRate-流失率，churnDate-流失日期' })
+  @ApiQuery({ name: 'sortField', required: false, enum: ['customerId', 'churnDate', 'lastServiceDate'], description: '排序字段：customerId-客户ID，churnDate-流失日期，lastServiceDate-最后服务日期' })
   @ApiQuery({ name: 'sortOrder', required: false, enum: ['ASC', 'DESC'], description: '排序类型：ASC-升序，DESC-降序' })
   @ApiResponse({ 
     status: 200, 

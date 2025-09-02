@@ -877,10 +877,17 @@ export class ReportsService {
         throw new Error('您没有权限查看客户流失统计报表');
       }
 
-      // 生成缓存键
+      // 获取用户权限信息
+      const userPermissions = await this.permissionService.getUserPermissions(userId);
+      const isAdmin = await this.permissionService.isAdmin(userId);
+      
+      // 生成包含权限信息和查询参数的缓存键，确保不同权限的用户和不同查询参数有不同的缓存
       const cacheKey = this.cacheService.generateCacheKey({
-        ...query,
-        userId: await this.permissionService.isAdmin(userId) ? 'admin' : userId
+        ...query, // 包含所有查询参数，包括 sortField 和 sortOrder
+        userId: userId, // 始终使用具体的用户ID
+        permissions: userPermissions.sort(), // 添加权限信息到缓存键
+        isAdmin: isAdmin, // 添加管理员标识
+        userRoles: (await this.permissionService.getUserInfo(userId))?.roles?.sort() || [] // 添加角色信息
       });
 
       // 尝试从缓存获取
@@ -984,31 +991,45 @@ export class ReportsService {
         };
       });
 
-      // 应用排序到时间周期统计
-      const validSortField = this.validateSortField('customerChurnStats', query.sortField);
-      const periodStats = this.applySortToArray(churnStatsList, validSortField, query.sortOrder);
+      // 时间周期统计不需要排序，保持原始顺序
+      const periodStats = churnStatsList;
 
-      // 客户详情列表
+      // 客户详情列表 - 保留原始日期对象用于排序
       const churnedCustomerList = statusResults.map(record => ({
         customerId: record.customerId,
         companyName: record.companyName,
         unifiedSocialCreditCode: record.unifiedSocialCreditCode,
-        churnDate: DateUtils.formatDateTime(new Date(record.churnDate)),
+        churnDate: new Date(record.churnDate), // 保留Date对象用于排序
+        churnDateFormatted: DateUtils.formatDateTime(new Date(record.churnDate)), // 格式化后的字符串
         churnReason: record.churnReason,
-        lastServiceDate: DateUtils.formatDateTime(new Date(record.churnDate)), // 简化处理，使用变更日期
+        lastServiceDate: record.lastServiceDate ? new Date(record.lastServiceDate) : new Date(record.churnDate), // 保留Date对象用于排序
+        lastServiceDateFormatted: record.lastServiceDate ? DateUtils.formatDateTime(new Date(record.lastServiceDate)) : DateUtils.formatDateTime(new Date(record.churnDate)), // 格式化后的字符串
         currentEnterpriseStatus: record.currentEnterpriseStatus,
         currentBusinessStatus: record.currentBusinessStatus,
       }));
 
-      // 应用排序到客户详情
+      // 应用排序到客户详情列表
+      const validSortField = this.validateSortField('customerChurnStats', query.sortField);
       const sortedChurnedCustomers = this.applySortToArray(churnedCustomerList, validSortField, query.sortOrder);
 
+      // 将排序后的结果转换为最终格式（将日期对象转换为字符串）
+      const formattedChurnedCustomers = sortedChurnedCustomers.map(record => ({
+        customerId: record.customerId,
+        companyName: record.companyName,
+        unifiedSocialCreditCode: record.unifiedSocialCreditCode,
+        churnDate: record.churnDateFormatted,
+        churnReason: record.churnReason,
+        lastServiceDate: record.lastServiceDateFormatted,
+        currentEnterpriseStatus: record.currentEnterpriseStatus,
+        currentBusinessStatus: record.currentBusinessStatus,
+      }));
+
       // 应用分页到客户详情
-      const total = sortedChurnedCustomers.length;
+      const total = formattedChurnedCustomers.length;
       const page = query.page || 1;
       const pageSize = query.pageSize || 10;
       const offset = (page - 1) * pageSize;
-      const paginatedChurnedCustomers = sortedChurnedCustomers.slice(offset, offset + pageSize);
+      const paginatedChurnedCustomers = formattedChurnedCustomers.slice(offset, offset + pageSize);
 
       // 计算唯一流失客户数（避免重复计数）
       const uniqueChurnedCustomers = new Set(statusResults.map(r => r.customerId));
@@ -1110,9 +1131,17 @@ export class ReportsService {
         throw new Error('您没有权限查看代理服务到期客户统计报表');
       }
 
-      // 生成缓存键
+      // 获取用户权限信息
+      const userPermissions = await this.permissionService.getUserPermissions(userId);
+      const isAdmin = await this.permissionService.isAdmin(userId);
+      
+      // 生成包含权限信息和查询参数的缓存键，确保不同权限的用户和不同查询参数有不同的缓存
       const cacheKey = this.cacheService.generateCacheKey({
-        userId: await this.permissionService.isAdmin(userId) ? 'admin' : userId
+        ...query, // 包含所有查询参数，包括 sortField 和 sortOrder
+        userId: userId, // 始终使用具体的用户ID
+        permissions: userPermissions.sort(), // 添加权限信息到缓存键
+        isAdmin: isAdmin, // 添加管理员标识
+        userRoles: (await this.permissionService.getUserInfo(userId))?.roles?.sort() || [] // 添加角色信息
       });
 
       // 尝试从缓存获取
@@ -1248,10 +1277,17 @@ export class ReportsService {
         throw new Error('您没有权限查看会计负责客户数量统计报表');
       }
 
-      // 生成缓存键
+      // 获取用户权限信息
+      const userPermissions = await this.permissionService.getUserPermissions(userId);
+      const isAdmin = await this.permissionService.isAdmin(userId);
+      
+      // 生成包含权限信息的缓存键，确保不同权限的用户有不同的缓存
       const cacheKey = this.cacheService.generateCacheKey({
         ...query,
-        userId: await this.permissionService.isAdmin(userId) ? 'admin' : userId
+        userId: userId, // 始终使用具体的用户ID
+        permissions: userPermissions.sort(), // 添加权限信息到缓存键
+        isAdmin: isAdmin, // 添加管理员标识
+        userRoles: (await this.permissionService.getUserInfo(userId))?.roles?.sort() || [] // 添加角色信息
       });
 
       // 尝试从缓存获取
@@ -1748,9 +1784,10 @@ export class ReportsService {
         .where('csh_sub.changeDate <= :targetDate', { targetDate })
         .groupBy('csh_sub.companyName');
 
-      // 主查询：获取每个公司的最新状态记录
+      // 主查询：获取每个公司的最新状态记录，并连接客户表获取lastServiceDate
       const queryBuilder = this.customerStatusHistoryRepository
         .createQueryBuilder('csh')
+        .leftJoin('customer', 'c', 'c.id = csh.customerId')
         .select([
           'csh.customerId as customerId',
           'csh.companyName as companyName', 
@@ -1758,7 +1795,8 @@ export class ReportsService {
           'csh.currentEnterpriseStatus as currentEnterpriseStatus',
           'csh.currentBusinessStatus as currentBusinessStatus',
           'csh.changeDate as churnDate',
-          'csh.changeReason as churnReason'
+          'csh.changeReason as churnReason',
+          'c.updateTime as lastServiceDate'
         ])
         .innerJoin(
           `(${subQuery.getQuery()})`,
@@ -1816,7 +1854,8 @@ export class ReportsService {
         churnDate: record.churnDate instanceof Date ? 
           DateUtils.formatDateTime(record.churnDate) : 
           DateUtils.formatDateTime(new Date(record.churnDate)),
-        churnReason: this.getChurnReasonText(record.currentEnterpriseStatus, record.currentBusinessStatus, record.churnReason)
+        churnReason: this.getChurnReasonText(record.currentEnterpriseStatus, record.currentBusinessStatus, record.churnReason),
+        lastServiceDate: record.lastServiceDate
       }));
 
     } catch (error) {
@@ -1855,7 +1894,8 @@ export class ReportsService {
       churnDate: customer.updateTime ? 
         DateUtils.formatDateTime(customer.updateTime) : 
         DateUtils.formatDateTime(targetDate),
-      churnReason: this.getChurnReasonText(customer.enterpriseStatus, customer.businessStatus)
+      churnReason: this.getChurnReasonText(customer.enterpriseStatus, customer.businessStatus),
+      lastServiceDate: customer.updateTime // 回退方案使用updateTime作为lastServiceDate
     }));
   }
 
@@ -2134,7 +2174,7 @@ export class ReportsService {
     newCustomerStats: ['customerId'],
     employeePerformance: ['totalRevenue', 'newCustomerRevenue', 'renewalRevenue', 'customerCount', 'otherRevenue'],
     customerLevelDistribution: ['level', 'contributionAmount'],
-    customerChurnStats: ['period', 'churnCount', 'churnRate', 'churnDate'],
+    customerChurnStats: ['customerId', 'churnDate', 'lastServiceDate'],
     serviceExpiryStats: ['customerId', 'agencyEndDate'],
     accountantClientStats: ['clientCount']
   };
