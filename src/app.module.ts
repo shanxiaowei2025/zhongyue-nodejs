@@ -27,6 +27,7 @@ import { FriendCirclePaymentModule } from './modules/salary/friend-circle-paymen
 import { AttendanceDeductionModule } from './modules/salary/attendance-deduction/attendance-deduction.module'; // 直接导入考勤扣款模块
 import { AttendanceModule } from './modules/attendance/attendance.module'; // 新增考勤模块
 import { ReportsModule } from './modules/reports/reports.module'; // 新增报表模块
+import { VoucherRecordModule } from './modules/voucher-record/voucher-record.module'; // 新增凭证存放记录模块
 import { Deposit } from './modules/salary/deposit/entities/deposit.entity'; // 新增保证金表实体
 
 // 导入各种配置文件
@@ -70,6 +71,8 @@ import { NotificationRecipient } from './modules/notifications/entities/notifica
 import { ReportCache } from './modules/reports/entities/report-cache.entity'; // 新增报表缓存实体
 import { CustomerLevelHistory } from './modules/reports/customer-level-history/entities/customer-level-history.entity'; // 新增客户等级历史实体
 import { CustomerStatusHistory } from './modules/reports/customer-status-history/entities/customer-status-history.entity'; // 新增客户状态历史实体
+import { VoucherRecordYear } from './modules/voucher-record/entities/voucher-record-year.entity'; // 新增凭证记录年度实体
+import { VoucherRecordMonth } from './modules/voucher-record/entities/voucher-record-month.entity'; // 新增凭证记录月度实体
 
 @Module({
   imports: [
@@ -151,6 +154,8 @@ import { CustomerStatusHistory } from './modules/reports/customer-status-history
           ReportCache, // 新增报表缓存实体
           CustomerLevelHistory, // 新增客户等级历史实体
           CustomerStatusHistory, // 新增客户状态历史实体
+          VoucherRecordYear, // 新增凭证记录年度实体
+          VoucherRecordMonth, // 新增凭证记录月度实体
         ],
         synchronize: configService.get('DB_SYNCHRONIZE', 'false') === 'true',
         logging: configService.get('DB_LOGGING', 'false') === 'true',
@@ -177,6 +182,7 @@ import { CustomerStatusHistory } from './modules/reports/customer-status-history
     AttendanceDeductionModule, // 考勤扣款模块：直接导入，避免路由冲突
     AttendanceModule, // 考勤模块：处理考勤同步相关的功能
     ReportsModule, // 报表模块：处理报表分析相关的功能
+    VoucherRecordModule, // 凭证存放记录模块
     NotificationsModule, // 通知模块
   ],
   controllers: [AppController], // 控制器：负责接收请求，像前台接待
