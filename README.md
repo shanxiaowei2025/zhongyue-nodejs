@@ -199,7 +199,22 @@ socket.on('new-notification', (data) => { console.log('收到新通知:', data);
 - **实现机制**：使用数据库级别的CASCADE删除确保数据一致性
 - **日志记录**：清理过程中记录详细的统计信息和错误日志
 
-### 10. 薪资管理模块 (salary)
+### 10. 凭证存放记录模块 (voucher-record)
+- 支持年度凭证记录和月度凭证记录的完整CRUD操作
+- 年度记录管理：创建、查询、更新、删除年度凭证记录
+- 月度记录管理：支持12个月的凭证状态跟踪和批量更新
+- 统计功能：提供年度记录的月度统计信息
+- 导出功能：支持导出凭证记录为Excel文件
+- **权限控制系统**：
+  - `voucher_record_action_view`：查看凭证存放记录权限
+  - `voucher_record_action_create`：创建凭证存放记录权限
+  - `voucher_record_action_edit`：编辑凭证存放记录权限
+  - `voucher_record_action_delete`：删除凭证存放记录权限
+  - `voucher_record_action_export`：导出凭证存放记录权限
+- **状态管理灵活性**：月度记录的状态字段为字符串类型，完全由前端定义状态内容
+- **客户关联查询**：支持根据客户ID查询其所有年度凭证记录
+
+### 11. 薪资管理模块 (salary)
 - 薪资信息的CRUD操作
 - 薪资基数历程管理（仅限管理员和超级管理员）
 - ~~薪资自动生成功能~~ **已取消定时任务**：原每月13号自动生成薪资的功能已禁用，保留手动生成功能
@@ -360,6 +375,13 @@ DELETE /api/reports/clear-role-change-cache/{userId}
   - `salary_date_view_all`：查看所有薪资记录权限
   - `salary_date_view_by_location`：按区域查看薪资记录权限
   - `salary_date_view_own`：查看自己薪资记录权限
+
+- 凭证存放记录管理模块：
+  - `voucher_record_action_view`：查看凭证存放记录权限
+  - `voucher_record_action_create`：创建凭证存放记录权限
+  - `voucher_record_action_edit`：编辑凭证存放记录权限
+  - `voucher_record_action_delete`：删除凭证存放记录权限
+  - `voucher_record_action_export`：导出凭证存放记录权限
   
 - 特殊模块权限：
   - 薪资基数历程：仅限`admin`和`super_admin`角色访问
@@ -972,6 +994,18 @@ POST /api/salary/auto-generate?month=2025-08-01
     - `POST /api/enterprise-service/financial-self-inspection`：支持problemImageDescription字段
     - `GET /api/enterprise-service/financial-self-inspection/my-*`：所有查询接口支持按问题图片描述筛选
     - 向后兼容：现有功能不受影响，新字段为可选字段
+
+### 2025-01-15
+- **凭证存放记录模块重要变更**：
+  - **状态字段类型变更**：将月度记录的 `status` 字段从枚举类型改为字符串类型
+  - **前端自定义状态**：状态内容现在完全由前端定义，不再受后端枚举限制
+  - **数据库结构调整**：`voucher_record_months` 表的 `status` 字段从 `enum` 改为 `varchar(50)`
+  - **API 响应变更**：统计接口返回结构调整，使用 `statusCounts` 对象代替固定的枚举计数
+  - **迁移脚本提供**：创建了 `migrate_voucher_status.sql` 脚本用于数据迁移
+  - **文档全面更新**：更新所有示例和说明，状态值从英文枚举改为中文字符串
+  - **权限配置修复**：修正权限服务中的权限名称与数据库中的权限名称匹配问题
+    - 数据库权限名称：`voucher_record_action_*`（如：`voucher_record_action_view`）
+    - 修正后代码正确查询对应的权限记录
 
 ### 2025-01-15
 - **通知系统功能增强**：
