@@ -1191,6 +1191,13 @@ export class ReportsService {
         .where('expense.agencyFee IS NOT NULL')
         .andWhere('expense.agencyEndDate IS NOT NULL');
 
+      // 添加企业名称筛选
+      if (query.companyName) {
+        queryBuilder.andWhere('customer.companyName LIKE :companyName', { 
+          companyName: `%${query.companyName}%` 
+        });
+      }
+
       // 应用权限过滤
       await expenseFilter(queryBuilder);
 
@@ -1213,9 +1220,14 @@ export class ReportsService {
         agencyEndDate: item.agencyEndDate,
       }));
 
+      // 去除重复数据，基于customerId去重
+      const uniqueCustomers = Array.from(
+        new Map(expiredCustomerList.map(item => [item.customerId, item])).values()
+      );
+
       // 应用排序
       const validSortField = this.validateSortField('serviceExpiryStats', query.sortField);
-      const expiredCustomers = this.applySortToArray(expiredCustomerList, validSortField, query.sortOrder);
+      const expiredCustomers = this.applySortToArray(uniqueCustomers, validSortField, query.sortOrder);
 
       // 应用分页
       const total = expiredCustomers.length;

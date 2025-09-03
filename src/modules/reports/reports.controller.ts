@@ -398,6 +398,7 @@ export class ReportsController {
   })
   @ApiQuery({ name: 'sortField', required: false, enum: ['customerId', 'agencyEndDate'], description: '排序字段：customerId-客户ID，agencyEndDate-代理结束日期' })
   @ApiQuery({ name: 'sortOrder', required: false, enum: ['ASC', 'DESC'], description: '排序类型：ASC-升序，DESC-降序' })
+  @ApiQuery({ name: 'companyName', required: false, description: '企业名称筛选' })
   @ApiResponse({ 
     status: 200, 
     description: '返回代理服务到期客户统计数据', 

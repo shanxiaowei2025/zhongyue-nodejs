@@ -153,6 +153,15 @@ export class CustomerChurnStatsDto extends PaginationDto {
  */
 export class ServiceExpiryStatsDto extends PaginationDto {
   // 新的逻辑不需要额外参数，基于年月比较判断到期
+  
+  @ApiProperty({ 
+    description: '企业名称', 
+    required: false,
+    example: '某某科技有限公司'
+  })
+  @IsOptional()
+  @IsString()
+  companyName?: string;
 }
 
 /**
