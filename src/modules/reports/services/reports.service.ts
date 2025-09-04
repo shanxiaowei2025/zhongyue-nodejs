@@ -227,6 +227,7 @@ export class ReportsService {
         .andWhere('expense.agencyFee > 0')
         .groupBy('customer.id, customer.companyName, customer.unifiedSocialCreditCode, customer.consultantAccountant, customer.bookkeepingAccountant')
         .having('previousYearFee > 0') // 必须去年有费用
+        .andHaving('currentYearFee > 0') // 修改：必须今年也有费用
         .andHaving('(previousYearFee - currentYearFee) >= :threshold', { threshold });
 
       // 应用费用权限过滤（基于 expense_data_view_all、expense_data_view_by_location、expense_data_view_own）
