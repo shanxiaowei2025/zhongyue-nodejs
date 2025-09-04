@@ -1190,7 +1190,10 @@ export class ReportsService {
           'latest.companyName = expense.companyName AND latest.maxAgencyEndDate = expense.agencyEndDate'
         )
         .where('expense.agencyFee IS NOT NULL')
-        .andWhere('expense.agencyEndDate IS NOT NULL');
+        .andWhere('expense.agencyEndDate IS NOT NULL')
+        // 排除流失户公司 - 企业状态不为已注销且业务状态不为已流失
+        .andWhere('customer.enterpriseStatus != :cancelledStatus', { cancelledStatus: 'cancelled' })
+        .andWhere('customer.businessStatus != :lostStatus', { lostStatus: 'lost' });
 
       // 添加企业名称筛选
       if (query.companyName) {
