@@ -48,4 +48,22 @@ export class QueryVoucherRecordDto {
   @IsOptional()
   @IsString({ message: '状态必须是字符串' })
   status?: string;
+
+  @ApiProperty({ 
+    description: '顾问会计关键词', 
+    example: '李四',
+    required: false 
+  })
+  @IsOptional()
+  @IsString({ message: '顾问会计必须是字符串' })
+  consultantAccountant?: string;
+
+  @ApiProperty({ 
+    description: '记账会计关键词', 
+    example: '王五',
+    required: false 
+  })
+  @IsOptional()
+  @IsString({ message: '记账会计必须是字符串' })
+  bookkeepingAccountant?: string;
 } 

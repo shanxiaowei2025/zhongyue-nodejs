@@ -53,7 +53,17 @@ export class VoucherRecordService {
   }
 
   async findAllYears(query: QueryVoucherRecordDto) {
-    const { page = 1, limit = 10, customerId, year, storageLocation, handler, status } = query;
+    const { 
+      page = 1, 
+      limit = 10, 
+      customerId, 
+      year, 
+      storageLocation, 
+      handler, 
+      status,
+      consultantAccountant,
+      bookkeepingAccountant 
+    } = query;
 
     const queryBuilder: SelectQueryBuilder<VoucherRecordYear> = this.yearRepository
       .createQueryBuilder('year')
@@ -84,6 +94,20 @@ export class VoucherRecordService {
     // 处理月度状态筛选
     if (status) {
       queryBuilder.andWhere('months.status = :status', { status });
+    }
+
+    // 添加顾问会计筛选
+    if (consultantAccountant) {
+      queryBuilder.andWhere('customer.consultantAccountant LIKE :consultantAccountant', {
+        consultantAccountant: `%${consultantAccountant}%`,
+      });
+    }
+
+    // 添加记账会计筛选
+    if (bookkeepingAccountant) {
+      queryBuilder.andWhere('customer.bookkeepingAccountant LIKE :bookkeepingAccountant', {
+        bookkeepingAccountant: `%${bookkeepingAccountant}%`,
+      });
     }
 
     // 排序

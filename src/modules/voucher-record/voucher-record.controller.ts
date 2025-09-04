@@ -57,6 +57,15 @@ export class VoucherRecordController {
   @VoucherRecordPermission('view')
   @ApiOperation({ summary: '获取年度凭证记录列表' })
   @ApiResponse({ status: 200, description: '获取成功' })
+  @ApiQuery({ name: 'page', description: '页码', required: false, type: Number })
+  @ApiQuery({ name: 'limit', description: '每页数量', required: false, type: Number })
+  @ApiQuery({ name: 'customerId', description: '客户ID', required: false, type: Number })
+  @ApiQuery({ name: 'year', description: '年度', required: false, type: Number })
+  @ApiQuery({ name: 'storageLocation', description: '存放位置关键词', required: false, type: String })
+  @ApiQuery({ name: 'handler', description: '经手人关键词', required: false, type: String })
+  @ApiQuery({ name: 'status', description: '月度状态筛选', required: false, type: String })
+  @ApiQuery({ name: 'consultantAccountant', description: '顾问会计关键词', required: false, type: String })
+  @ApiQuery({ name: 'bookkeepingAccountant', description: '记账会计关键词', required: false, type: String })
   async findAllYears(@Query() query: QueryVoucherRecordDto) {
     return await this.voucherRecordService.findAllYears(query);
   }
