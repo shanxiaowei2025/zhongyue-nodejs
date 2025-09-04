@@ -453,8 +453,41 @@ export class SalaryAutoUpdateService {
               Number(expense.invoiceSoftwareFee || 0) +
               Number(expense.otherBusinessOutsourcingFee || 0);
 
-            // 计算基础业务提成 - 使用统一的提成比率
-            const basicBusinessCommission = basicFee * commissionRate;
+            // 计算基础业务提成
+            let basicBusinessCommission = 0;
+            
+            // 检查是否有"两年赠一年"的特殊情况
+            if (expense.giftAgencyDuration === '两年赠一年' && Number(expense.agencyFee || 0) > 0) {
+              // 对代理费部分特殊处理：agencyFee除以2乘以(commissionRate+0.05)
+              const agencyFee = Number(expense.agencyFee || 0);
+              const specialAgencyCommission = (agencyFee / 2) * (commissionRate + 0.05);
+              
+              // 计算其他基础业务费用的提成(不包括agencyFee)
+              const socialInsuranceAgencyFee = expense.socialInsuranceBusinessType === '新增' 
+                ? Number(expense.socialInsuranceAgencyFee || 0) 
+                : 0;
+              
+              const otherBasicFee =
+                Number(expense.licenseFee || 0) +
+                socialInsuranceAgencyFee +
+                Number(expense.housingFundAgencyFee || 0) +
+                Number(expense.statisticalReportFee || 0) +
+                Number(expense.changeFee || 0) +
+                Number(expense.administrativeLicenseFee || 0) +
+                Number(expense.otherBusinessFee || 0);
+                
+              const otherBasicCommission = otherBasicFee * commissionRate;
+              
+              // 合并特殊处理的代理费提成和其他基础业务提成
+              basicBusinessCommission = specialAgencyCommission + otherBasicCommission;
+              
+              this.logger.debug(
+                `费用记录 ID:${expense.id} 特殊处理"两年赠一年": 代理费=${agencyFee}, 特殊提成率=${commissionRate + 0.05}, 特殊代理费提成=${specialAgencyCommission}`
+              );
+            } else {
+              // 常规计算基础业务提成 - 使用统一的提成比率
+              basicBusinessCommission = basicFee * commissionRate;
+            }
 
             // 计算外包业务提成 (固定10%)
             const outsourceBusinessCommission = outsourceFee * 0.1;
@@ -485,8 +518,9 @@ export class SalaryAutoUpdateService {
         } else {
           this.logger.debug(`未找到适用于总额 ${totalBasicFee} 的提成比率`);
 
-          // 只计算外包业务提成
+          // 计算业务提成（可能包括特殊处理的代理费提成和外包业务提成）
           for (const expense of expenseResults) {
+            // 计算外包业务提成
             const outsourceFee =
               Number(expense.brandFee || 0) +
               Number(expense.generalSealFee || 0) +
@@ -497,29 +531,46 @@ export class SalaryAutoUpdateService {
 
             // 外包业务按10%计算
             const outsourceBusinessCommission = outsourceFee * 0.1;
+            
+            // 初始化基础业务提成为0
+            let basicBusinessCommission = 0;
+            
+            // 检查是否有"两年赠一年"的特殊情况
+            if (expense.giftAgencyDuration === '两年赠一年' && Number(expense.agencyFee || 0) > 0) {
+              // 虽然没找到适合的提成比率，但对于"两年赠一年"的情况，我们用5%作为基础提成率
+              const agencyFee = Number(expense.agencyFee || 0);
+              basicBusinessCommission = (agencyFee / 2) * 0.05;
+              
+              this.logger.debug(
+                `费用记录 ID:${expense.id} 特殊处理"两年赠一年"(无匹配比率): 代理费=${agencyFee}, 特殊提成率=5%, 特殊代理费提成=${basicBusinessCommission}`
+              );
+            }
+            
+            // 计算总业务提成
+            const totalBusinessCommission = basicBusinessCommission + outsourceBusinessCommission;
 
-            // 更新费用表中的业务提成字段（基础业务提成为0，只有外包业务提成）
+            // 更新费用表中的业务提成字段
             await this.dataSource.query(
               `
               UPDATE sys_expense SET 
                 business_commission = ?, 
-                business_commission_own = 0, 
+                business_commission_own = ?, 
                 business_commission_outsource = ?
               WHERE id = ?
             `,
-              [outsourceBusinessCommission, outsourceBusinessCommission, expense.id],
+              [totalBusinessCommission, basicBusinessCommission, outsourceBusinessCommission, expense.id],
             );
 
             // 累计每个员工每条记录的业务提成
-            totalExpenseBusinessCommission += outsourceBusinessCommission;
+            totalExpenseBusinessCommission += totalBusinessCommission;
 
             this.logger.debug(
-              `费用记录 ID:${expense.id} 计算业务提成(仅外包): ${outsourceBusinessCommission}`,
+              `费用记录 ID:${expense.id} 计算业务提成: 基础业务=${basicBusinessCommission}, 外包业务=${outsourceBusinessCommission}, 总计=${totalBusinessCommission}`,
             );
           }
         }
       } else {
-        // 如果没有提成比率职位，则只计算外包业务提成
+        // 如果没有提成比率职位，主要计算外包业务提成，但特殊情况下也处理代理费
         for (const expense of expenseResults) {
           const outsourceFee =
             Number(expense.brandFee || 0) +
@@ -531,24 +582,41 @@ export class SalaryAutoUpdateService {
 
           // 外包业务按10%计算
           const outsourceBusinessCommission = outsourceFee * 0.1;
+          
+          // 初始化基础业务提成为0
+          let basicBusinessCommission = 0;
+          
+          // 检查是否有"两年赠一年"的特殊情况
+          if (expense.giftAgencyDuration === '两年赠一年' && Number(expense.agencyFee || 0) > 0) {
+            // 虽然没有提成比率职位，但对于"两年赠一年"的情况，我们用5%作为基础提成率
+            const agencyFee = Number(expense.agencyFee || 0);
+            basicBusinessCommission = (agencyFee / 2) * 0.05;
+            
+            this.logger.debug(
+              `费用记录 ID:${expense.id} 特殊处理"两年赠一年"(无提成比率职位): 代理费=${agencyFee}, 特殊提成率=5%, 特殊代理费提成=${basicBusinessCommission}`
+            );
+          }
+          
+          // 计算总业务提成
+          const totalBusinessCommission = basicBusinessCommission + outsourceBusinessCommission;
 
-          // 更新费用表中的业务提成字段（没有提成比率职位，基础业务提成为0）
+          // 更新费用表中的业务提成字段
           await this.dataSource.query(
             `
             UPDATE sys_expense SET 
               business_commission = ?, 
-              business_commission_own = 0, 
+              business_commission_own = ?, 
               business_commission_outsource = ?
             WHERE id = ?
           `,
-            [outsourceBusinessCommission, outsourceBusinessCommission, expense.id],
+            [totalBusinessCommission, basicBusinessCommission, outsourceBusinessCommission, expense.id],
           );
 
           // 累计每个员工每条记录的业务提成
-          totalExpenseBusinessCommission += outsourceBusinessCommission;
+          totalExpenseBusinessCommission += totalBusinessCommission;
 
           this.logger.debug(
-            `费用记录 ID:${expense.id} 计算业务提成(仅外包): ${outsourceBusinessCommission}`,
+            `费用记录 ID:${expense.id} 计算业务提成: 基础业务=${basicBusinessCommission}, 外包业务=${outsourceBusinessCommission}, 总计=${totalBusinessCommission}`,
           );
         }
       }
