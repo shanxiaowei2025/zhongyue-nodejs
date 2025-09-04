@@ -97,17 +97,29 @@ export class VoucherRecordService {
     }
 
     // 添加顾问会计筛选
-    if (consultantAccountant) {
-      queryBuilder.andWhere('customer.consultantAccountant LIKE :consultantAccountant', {
-        consultantAccountant: `%${consultantAccountant}%`,
-      });
+    if (consultantAccountant !== undefined) {
+      if (consultantAccountant === '') {
+        // 筛选顾问会计为空的数据
+        queryBuilder.andWhere('(customer.consultantAccountant IS NULL OR customer.consultantAccountant = \'\')');
+      } else {
+        // 筛选包含关键词的数据
+        queryBuilder.andWhere('customer.consultantAccountant LIKE :consultantAccountant', {
+          consultantAccountant: `%${consultantAccountant}%`,
+        });
+      }
     }
 
     // 添加记账会计筛选
-    if (bookkeepingAccountant) {
-      queryBuilder.andWhere('customer.bookkeepingAccountant LIKE :bookkeepingAccountant', {
-        bookkeepingAccountant: `%${bookkeepingAccountant}%`,
-      });
+    if (bookkeepingAccountant !== undefined) {
+      if (bookkeepingAccountant === '') {
+        // 筛选记账会计为空的数据
+        queryBuilder.andWhere('(customer.bookkeepingAccountant IS NULL OR customer.bookkeepingAccountant = \'\')');
+      } else {
+        // 筛选包含关键词的数据
+        queryBuilder.andWhere('customer.bookkeepingAccountant LIKE :bookkeepingAccountant', {
+          bookkeepingAccountant: `%${bookkeepingAccountant}%`,
+        });
+      }
     }
 
     // 排序

@@ -50,20 +50,20 @@ export class QueryVoucherRecordDto {
   status?: string;
 
   @ApiProperty({ 
-    description: '顾问会计关键词', 
+    description: '顾问会计关键词（传空字符串可筛选空值数据）', 
     example: '李四',
     required: false 
   })
   @IsOptional()
-  @IsString({ message: '顾问会计必须是字符串' })
+  @IsString({ message: '顾问会计可以是字符串或空字符串' })
   consultantAccountant?: string;
 
   @ApiProperty({ 
-    description: '记账会计关键词', 
+    description: '记账会计关键词（传空字符串可筛选空值数据）', 
     example: '王五',
     required: false 
   })
   @IsOptional()
-  @IsString({ message: '记账会计必须是字符串' })
+  @IsString({ message: '记账会计可以是字符串或空字符串' })
   bookkeepingAccountant?: string;
 } 

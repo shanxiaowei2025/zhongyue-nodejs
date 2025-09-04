@@ -64,8 +64,8 @@ export class VoucherRecordController {
   @ApiQuery({ name: 'storageLocation', description: '存放位置关键词', required: false, type: String })
   @ApiQuery({ name: 'handler', description: '经手人关键词', required: false, type: String })
   @ApiQuery({ name: 'status', description: '月度状态筛选', required: false, type: String })
-  @ApiQuery({ name: 'consultantAccountant', description: '顾问会计关键词', required: false, type: String })
-  @ApiQuery({ name: 'bookkeepingAccountant', description: '记账会计关键词', required: false, type: String })
+  @ApiQuery({ name: 'consultantAccountant', description: '顾问会计关键词（传空字符串可筛选空值数据）', required: false, type: String })
+  @ApiQuery({ name: 'bookkeepingAccountant', description: '记账会计关键词（传空字符串可筛选空值数据）', required: false, type: String })
   async findAllYears(@Query() query: QueryVoucherRecordDto) {
     return await this.voucherRecordService.findAllYears(query);
   }
