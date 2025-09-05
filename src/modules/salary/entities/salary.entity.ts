@@ -78,13 +78,40 @@ export class Salary {
   fullAttendance: number;
 
   @Column({
-    comment: '补贴合计',
+    comment: '部门负责人补贴',
     type: 'decimal',
     precision: 10,
     scale: 2,
     default: 0,
   })
-  totalSubsidy: number;
+  departmentHeadSubsidy: number;
+
+  @Column({
+    comment: '岗位津贴',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  positionAllowance: number;
+
+  @Column({
+    comment: '油补',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  oilSubsidy: number;
+
+  @Column({
+    comment: '餐补',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  mealSubsidy: number;
 
   @Column({
     comment: '工龄',

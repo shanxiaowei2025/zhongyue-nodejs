@@ -84,8 +84,17 @@ class SalaryCreateExample {
   @ApiProperty({ example: 500, description: '全勤' })
   fullAttendance: number;
 
-  @ApiProperty({ example: 1000, description: '补贴合计' })
-  totalSubsidy: number;
+  @ApiProperty({ example: 300, description: '部门负责人补贴' })
+  departmentHeadSubsidy: number;
+
+  @ApiProperty({ example: 300, description: '岗位津贴' })
+  positionAllowance: number;
+
+  @ApiProperty({ example: 200, description: '油补' })
+  oilSubsidy: number;
+
+  @ApiProperty({ example: 200, description: '餐补' })
+  mealSubsidy: number;
 
   @ApiProperty({ example: 300, description: '工龄' })
   seniority: number;

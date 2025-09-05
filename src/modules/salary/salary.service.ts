@@ -89,7 +89,10 @@ export class SalaryService {
     const temporaryIncrease = Number(result.temporaryIncrease || 0);
     const attendanceDeduction = Number(result.attendanceDeduction || 0);
     const fullAttendance = Number(result.fullAttendance || 0);
-    const totalSubsidy = Number(result.totalSubsidy || 0);
+    const departmentHeadSubsidy = Number(result.departmentHeadSubsidy || 0);
+    const positionAllowance = Number(result.positionAllowance || 0);
+    const oilSubsidy = Number(result.oilSubsidy || 0);
+    const mealSubsidy = Number(result.mealSubsidy || 0);
     const seniority = Number(result.seniority || 0);
     const agencyFeeCommission = Number(result.agencyFeeCommission || 0);
     const businessCommission = Number(result.businessCommission || 0);
@@ -137,7 +140,10 @@ export class SalaryService {
     const totalPayable =
       basicSalaryPayable +
       fullAttendance +
-      totalSubsidy +
+      departmentHeadSubsidy +
+      positionAllowance +
+      oilSubsidy +
+      mealSubsidy +
       seniority +
       agencyFeeCommission +
       Number(result.performanceCommission || 0) +
@@ -1130,7 +1136,10 @@ export class SalaryService {
       attendanceDeduction: '考勤扣款',
       basicSalaryPayable: '应发基本工资',
       fullAttendance: '全勤',
-      totalSubsidy: '补贴合计',
+      departmentHeadSubsidy: '部门负责人补贴',
+      positionAllowance: '岗位津贴',
+      oilSubsidy: '油补',
+      mealSubsidy: '餐补',
       seniority: '工龄',
       agencyFeeCommission: '代理费提成',
       performanceCommission: '绩效提成',

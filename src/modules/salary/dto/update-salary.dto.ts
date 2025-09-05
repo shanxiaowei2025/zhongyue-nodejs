@@ -54,14 +54,44 @@ export class UpdateSalaryDto {
   fullAttendance?: number;
 
   @ApiProperty({
-    description: '补贴合计',
+    description: '部门负责人补贴',
     type: 'number',
     required: false,
-    example: 500,
+    example: 200,
   })
   @IsNumber()
   @IsOptional()
-  totalSubsidy?: number;
+  departmentHeadSubsidy?: number;
+
+  @ApiProperty({
+    description: '岗位津贴',
+    type: 'number',
+    required: false,
+    example: 150,
+  })
+  @IsNumber()
+  @IsOptional()
+  positionAllowance?: number;
+
+  @ApiProperty({
+    description: '油补',
+    type: 'number',
+    required: false,
+    example: 100,
+  })
+  @IsNumber()
+  @IsOptional()
+  oilSubsidy?: number;
+
+  @ApiProperty({
+    description: '餐补',
+    type: 'number',
+    required: false,
+    example: 50,
+  })
+  @IsNumber()
+  @IsOptional()
+  mealSubsidy?: number;
 
   @ApiProperty({
     description: '工龄',

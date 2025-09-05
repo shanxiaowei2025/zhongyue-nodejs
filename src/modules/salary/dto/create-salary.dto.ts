@@ -51,7 +51,19 @@ export class CreateSalaryDto {
 
   @IsNumber()
   @IsOptional()
-  totalSubsidy: number;
+  departmentHeadSubsidy: number;
+
+  @IsNumber()
+  @IsOptional()
+  positionAllowance: number;
+
+  @IsNumber()
+  @IsOptional()
+  oilSubsidy: number;
+
+  @IsNumber()
+  @IsOptional()
+  mealSubsidy: number;
 
   @IsNumber()
   @IsOptional()
