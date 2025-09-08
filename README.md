@@ -910,6 +910,14 @@ POST /api/salary/auto-generate?month=2025-08-01
 ## 更新历史
 
 ### 2025-01-17
+- **凭证存放记录年度查询功能增强**：
+  - 为 `/api/voucher-record/years` 接口添加 `companyName` 参数支持
+  - 支持按企业名称进行模糊查询，通过关联的客户表 `customer.companyName` 字段实现
+  - 查询参数说明：`companyName` - 企业名称关键词，支持模糊匹配
+  - 使用示例：`GET /api/voucher-record/years?companyName=阿里巴巴&page=1&limit=10`
+  - 注意：虽然 `voucher_record_years` 表中没有 `companyName` 字段，但通过 `customer_id` 关联客户表实现企业名称查询
+
+### 2025-01-17
 - **员工删除级联删除薪资数据功能**：
   - **功能概述**：实现员工删除时自动删除该员工所有相关薪资数据的功能，确保数据一致性
   - **涉及数据表**：删除员工时会自动清理7个薪资相关数据表（薪资记录、社保信息、补贴合计、考勤扣款、朋友圈扣款、保证金记录、薪资基数历史）

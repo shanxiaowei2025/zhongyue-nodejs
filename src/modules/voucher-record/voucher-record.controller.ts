@@ -60,6 +60,7 @@ export class VoucherRecordController {
   @ApiQuery({ name: 'page', description: '页码', required: false, type: Number })
   @ApiQuery({ name: 'limit', description: '每页数量', required: false, type: Number })
   @ApiQuery({ name: 'customerId', description: '客户ID', required: false, type: Number })
+  @ApiQuery({ name: 'companyName', description: '企业名称关键词', required: false, type: String })
   @ApiQuery({ name: 'year', description: '年度', required: false, type: Number })
   @ApiQuery({ name: 'storageLocation', description: '存放位置关键词', required: false, type: String })
   @ApiQuery({ name: 'handler', description: '经手人关键词', required: false, type: String })

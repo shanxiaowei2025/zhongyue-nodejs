@@ -24,6 +24,11 @@ export class QueryVoucherRecordDto {
   @IsNumber({}, { message: '客户ID必须是数字' })
   customerId?: number;
 
+  @ApiProperty({ description: '企业名称关键词', example: '阿里巴巴', required: false })
+  @IsOptional()
+  @IsString({ message: '企业名称必须是字符串' })
+  companyName?: string;
+
   @ApiProperty({ description: '年度', example: 2024, required: false })
   @IsOptional()
   @Type(() => Number)

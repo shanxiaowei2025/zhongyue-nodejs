@@ -57,6 +57,7 @@ export class VoucherRecordService {
       page = 1, 
       limit = 10, 
       customerId, 
+      companyName,
       year, 
       storageLocation, 
       handler, 
@@ -73,6 +74,12 @@ export class VoucherRecordService {
     // 添加筛选条件
     if (customerId) {
       queryBuilder.andWhere('year.customerId = :customerId', { customerId });
+    }
+
+    if (companyName) {
+      queryBuilder.andWhere('customer.companyName LIKE :companyName', {
+        companyName: `%${companyName}%`,
+      });
     }
 
     if (year) {

@@ -132,7 +132,7 @@ export class SalaryAutoUpdateService {
     lastDayOfLastMonth: string,
   ): Promise<number> {
     try {
-      // 1. 筛选sys_expense表中auditDate为上个月的记录（不限制businessType，因为所有类型的费用都可能产生提成）
+      // 1. 筛选sys_expense表中createdAt为上个月的记录（不限制businessType，因为所有类型的费用都可能产生提成）
       // socialInsuranceAgencyFee 只有在 socialInsuranceBusinessType = '续费' 时才参与计算
       const expenseQuery = `
         SELECT 
@@ -144,7 +144,7 @@ export class SalaryAutoUpdateService {
         FROM sys_expense 
         WHERE 
           salesperson = ? AND 
-          auditDate BETWEEN ? AND ? AND
+          createdAt BETWEEN ? AND ? AND
           status = 1
       `;
 
@@ -241,7 +241,7 @@ export class SalaryAutoUpdateService {
         FROM sys_expense 
         WHERE 
           salesperson = ? AND 
-          auditDate BETWEEN ? AND ? AND
+          createdAt BETWEEN ? AND ? AND
           status = 1
       `;
 
@@ -304,7 +304,7 @@ export class SalaryAutoUpdateService {
 
   /**
    * 计算业务提成
-   * 1. 筛选sys_expense表中businessType是新增和值为空的，并且auditDate是上个月1号到最后一天的记录
+   * 1. 筛选sys_expense表中businessType是新增和值为空的，并且createdAt是上个月1号到最后一天的记录
    * 2. 根据员工的sys_employees表中的commissionRatePosition区分每个人的提成比率
    * 3. 根据不同提成比率职位计算提成
    * @param employeeName 员工姓名
@@ -343,7 +343,7 @@ export class SalaryAutoUpdateService {
           salesperson = ? AND 
           (businessType = '新增' OR businessType IS NULL OR businessType = '') AND 
           status = 1 AND
-          auditDate BETWEEN ? AND ?
+          createdAt BETWEEN ? AND ?
       `;
 
       const expenseResults = await this.dataSource.query(expenseQuery, [
