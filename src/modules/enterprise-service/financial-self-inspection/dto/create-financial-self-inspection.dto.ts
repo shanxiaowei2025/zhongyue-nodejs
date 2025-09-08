@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDateString, IsOptional, IsString } from 'class-validator';
+import { IsDateString, IsOptional, IsString, IsInt, Min, Max } from 'class-validator';
 
 export class CreateFinancialSelfInspectionDto {
   @ApiProperty({
@@ -70,6 +70,18 @@ export class CreateFinancialSelfInspectionDto {
   @IsOptional()
   @IsString()
   solution?: string;
+
+  @ApiProperty({
+    description: '是否需要会计沟通(0:不需要 1:需要)',
+    required: false,
+    example: 0,
+    default: 0,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1)
+  needAccountantCommunication?: number;
 
   @ApiProperty({
     description: '整改完成日期',

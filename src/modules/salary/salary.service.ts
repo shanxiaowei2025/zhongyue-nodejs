@@ -16,6 +16,11 @@ import { SalaryPermissionService } from './services/salary-permission.service';
 import { User } from '../users/entities/user.entity';
 import { Employee } from '../employee/entities/employee.entity';
 import { AttendanceDeduction } from './attendance-deduction/entities/attendance-deduction.entity';
+import { SocialInsurance } from './social-insurance/entities/social-insurance.entity';
+import { SubsidySummary } from './subsidy-summary/entities/subsidy-summary.entity';
+import { FriendCirclePayment } from './friend-circle-payment/entities/friend-circle-payment.entity';
+import { Deposit } from './deposit/entities/deposit.entity';
+import { SalaryBaseHistory } from './salary-base-history/entities/salary-base-history.entity';
 import { Parser } from 'json2csv';
 
 @Injectable()
@@ -29,6 +34,16 @@ export class SalaryService {
     private readonly employeeRepository: Repository<Employee>,
     @InjectRepository(AttendanceDeduction)
     private readonly attendanceDeductionRepository: Repository<AttendanceDeduction>,
+    @InjectRepository(SocialInsurance)
+    private readonly socialInsuranceRepository: Repository<SocialInsurance>,
+    @InjectRepository(SubsidySummary)
+    private readonly subsidySummaryRepository: Repository<SubsidySummary>,
+    @InjectRepository(FriendCirclePayment)
+    private readonly friendCirclePaymentRepository: Repository<FriendCirclePayment>,
+    @InjectRepository(Deposit)
+    private readonly depositRepository: Repository<Deposit>,
+    @InjectRepository(SalaryBaseHistory)
+    private readonly salaryBaseHistoryRepository: Repository<SalaryBaseHistory>,
     private readonly salaryPermissionService: SalaryPermissionService,
     private readonly dataSource: DataSource,
   ) {}
@@ -781,6 +796,145 @@ export class SalaryService {
     }
 
     await this.salaryRepository.delete(safeId);
+  }
+
+  /**
+   * 根据员工姓名删除所有薪资记录
+   * @param employeeName 员工姓名
+   * @returns 删除的记录数量
+   */
+  async removeByEmployeeName(employeeName: string): Promise<number> {
+    if (!employeeName) {
+      throw new Error('员工姓名不能为空');
+    }
+
+    // 查找该员工的所有薪资记录
+    const salaryRecords = await this.salaryRepository.find({
+      where: { name: employeeName },
+    });
+
+    if (salaryRecords.length === 0) {
+      return 0;
+    }
+
+    // 删除所有薪资记录
+    await this.salaryRepository.remove(salaryRecords);
+    
+    return salaryRecords.length;
+  }
+
+  /**
+   * 根据员工姓名删除该员工的所有相关薪资数据
+   * 包括：主薪资记录、社保信息、补贴合计、考勤扣款、朋友圈扣款、保证金记录、薪资基数历史
+   * @param employeeName 员工姓名
+   * @returns 删除的各类记录数量统计
+   */
+  async removeAllSalaryDataByEmployeeName(employeeName: string): Promise<{
+    totalDeleted: number;
+    details: {
+      salaryRecords: number;
+      socialInsurance: number;
+      subsidySummary: number;
+      attendanceDeduction: number;
+      friendCirclePayment: number;
+      deposit: number;
+      salaryBaseHistory: number;
+    };
+  }> {
+    if (!employeeName) {
+      throw new Error('员工姓名不能为空');
+    }
+
+    const deletionResults = {
+      totalDeleted: 0,
+      details: {
+        salaryRecords: 0,
+        socialInsurance: 0,
+        subsidySummary: 0,
+        attendanceDeduction: 0,
+        friendCirclePayment: 0,
+        deposit: 0,
+        salaryBaseHistory: 0,
+      },
+    };
+
+    try {
+      // 使用事务确保数据一致性
+      await this.dataSource.transaction(async (manager) => {
+        // 1. 删除主薪资记录
+        const salaryRecords = await manager.find(Salary, {
+          where: { name: employeeName },
+        });
+        if (salaryRecords.length > 0) {
+          await manager.remove(Salary, salaryRecords);
+          deletionResults.details.salaryRecords = salaryRecords.length;
+        }
+
+        // 2. 删除社保信息
+        const socialInsuranceRecords = await manager.find(SocialInsurance, {
+          where: { name: employeeName },
+        });
+        if (socialInsuranceRecords.length > 0) {
+          await manager.remove(SocialInsurance, socialInsuranceRecords);
+          deletionResults.details.socialInsurance = socialInsuranceRecords.length;
+        }
+
+        // 3. 删除补贴合计
+        const subsidySummaryRecords = await manager.find(SubsidySummary, {
+          where: { name: employeeName },
+        });
+        if (subsidySummaryRecords.length > 0) {
+          await manager.remove(SubsidySummary, subsidySummaryRecords);
+          deletionResults.details.subsidySummary = subsidySummaryRecords.length;
+        }
+
+        // 4. 删除考勤扣款
+        const attendanceDeductionRecords = await manager.find(AttendanceDeduction, {
+          where: { name: employeeName },
+        });
+        if (attendanceDeductionRecords.length > 0) {
+          await manager.remove(AttendanceDeduction, attendanceDeductionRecords);
+          deletionResults.details.attendanceDeduction = attendanceDeductionRecords.length;
+        }
+
+        // 5. 删除朋友圈扣款
+        const friendCirclePaymentRecords = await manager.find(FriendCirclePayment, {
+          where: { name: employeeName },
+        });
+        if (friendCirclePaymentRecords.length > 0) {
+          await manager.remove(FriendCirclePayment, friendCirclePaymentRecords);
+          deletionResults.details.friendCirclePayment = friendCirclePaymentRecords.length;
+        }
+
+        // 6. 删除保证金记录
+        const depositRecords = await manager.find(Deposit, {
+          where: { name: employeeName },
+        });
+        if (depositRecords.length > 0) {
+          await manager.remove(Deposit, depositRecords);
+          deletionResults.details.deposit = depositRecords.length;
+        }
+
+        // 7. 删除薪资基数历史（使用employeeName字段）
+        const salaryBaseHistoryRecords = await manager.find(SalaryBaseHistory, {
+          where: { employeeName: employeeName },
+        });
+        if (salaryBaseHistoryRecords.length > 0) {
+          await manager.remove(SalaryBaseHistory, salaryBaseHistoryRecords);
+          deletionResults.details.salaryBaseHistory = salaryBaseHistoryRecords.length;
+        }
+      });
+
+      // 计算总删除数量
+      deletionResults.totalDeleted = Object.values(deletionResults.details).reduce(
+        (sum, count) => sum + count,
+        0,
+      );
+
+      return deletionResults;
+    } catch (error) {
+      throw new Error(`删除员工薪资数据时发生错误: ${error.message}`);
+    }
   }
 
   /**

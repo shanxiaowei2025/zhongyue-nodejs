@@ -24,6 +24,9 @@ import { Permission } from '../permissions/entities/permission.entity';
 import { Department } from '../department/entities/department.entity';
 import { Employee } from '../employee/entities/employee.entity';
 import { AttendanceDeduction } from './attendance-deduction/entities/attendance-deduction.entity';
+import { SocialInsurance } from './social-insurance/entities/social-insurance.entity';
+import { SubsidySummary } from './subsidy-summary/entities/subsidy-summary.entity';
+import { FriendCirclePayment } from './friend-circle-payment/entities/friend-circle-payment.entity';
 
 // 提成表实体
 import {
@@ -52,6 +55,9 @@ import {
       SalaryBaseHistory,
       Deposit,
       AttendanceDeduction,
+      SocialInsurance,
+      SubsidySummary,
+      FriendCirclePayment,
       BusinessSalesCommission,
       BusinessConsultantCommission,
       BusinessOtherCommission,

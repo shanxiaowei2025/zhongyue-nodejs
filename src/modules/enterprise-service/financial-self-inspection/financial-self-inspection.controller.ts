@@ -27,6 +27,7 @@ import { ApprovalDto } from './dto/approval.dto';
 import { ReviewerApprovalDto } from './dto/reviewer-approval.dto';
 import { RejectDto } from './dto/reject.dto';
 import { ReviewerRejectDto } from './dto/reviewer-reject.dto';
+import { CommunicationRecordDto, AddCommunicationRecordDto } from './dto/communication-record.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
@@ -276,6 +277,47 @@ export class FinancialSelfInspectionController {
       +id,
       dto,
       username,
+    );
+  }
+
+  // 添加更新沟通记录的方法
+  @Patch(':id/communication-records')
+  @ApiOperation({ summary: '更新沟通记录' })
+  @ApiParam({ name: 'id', description: '记录ID' })
+  async updateCommunicationRecords(
+    @Param('id') id: string,
+    @Body() dto: CommunicationRecordDto,
+  ) {
+    this.logger.debug(
+      `接收到沟通记录: ${JSON.stringify(dto.communicationRecords)}`,
+    );
+
+    // 确保DTO中的数据结构正确
+    if (!dto.communicationRecords || !Array.isArray(dto.communicationRecords)) {
+      throw new BadRequestException('沟通记录必须是数组');
+    }
+
+    return this.financialSelfInspectionService.updateCommunicationRecords(
+      +id,
+      dto,
+    );
+  }
+
+  // 添加单条沟通记录的方法
+  @Patch(':id/add-communication-record')
+  @ApiOperation({ summary: '添加单条沟通记录' })
+  @ApiParam({ name: 'id', description: '记录ID' })
+  async addCommunicationRecord(
+    @Param('id') id: string,
+    @Body() dto: AddCommunicationRecordDto,
+  ) {
+    this.logger.debug(
+      `接收到单条沟通记录: ${JSON.stringify(dto)}`,
+    );
+
+    return this.financialSelfInspectionService.addCommunicationRecord(
+      +id,
+      dto,
     );
   }
 

@@ -16,6 +16,7 @@ import { SalaryBaseHistoryService } from '../salary/salary-base-history/salary-b
 import { Request } from 'express';
 import { PerformanceCommission } from '../salary/commission/entities/performance-commission.entity';
 import { UsersService } from '../users/users.service';
+import { SalaryService } from '../salary/salary.service';
 
 @Injectable()
 export class EmployeeService {
@@ -38,6 +39,7 @@ export class EmployeeService {
     private performanceCommissionRepository: Repository<PerformanceCommission>,
     private salaryBaseHistoryService: SalaryBaseHistoryService,
     private usersService: UsersService,
+    private salaryService: SalaryService,
   ) {
     // 启动时执行一次工龄修复
     this.fixWorkYearsForAllEmployees();
@@ -646,8 +648,34 @@ export class EmployeeService {
   async remove(id: number) {
     const employee = await this.findOne(id);
 
-    this.logger.log(`删除员工: ${id}`);
+    this.logger.log(`开始删除员工: ${id} (${employee.name})`);
+    
+    try {
+      // 删除该员工的所有薪资相关数据
+      const deletionResults = await this.salaryService.removeAllSalaryDataByEmployeeName(employee.name);
+      
+      if (deletionResults.totalDeleted > 0) {
+        this.logger.log(`已删除员工 "${employee.name}" 的薪资相关数据，总计 ${deletionResults.totalDeleted} 条记录:`);
+        this.logger.log(`  - 薪资记录: ${deletionResults.details.salaryRecords} 条`);
+        this.logger.log(`  - 社保信息: ${deletionResults.details.socialInsurance} 条`);
+        this.logger.log(`  - 补贴合计: ${deletionResults.details.subsidySummary} 条`);
+        this.logger.log(`  - 考勤扣款: ${deletionResults.details.attendanceDeduction} 条`);
+        this.logger.log(`  - 朋友圈扣款: ${deletionResults.details.friendCirclePayment} 条`);
+        this.logger.log(`  - 保证金记录: ${deletionResults.details.deposit} 条`);
+        this.logger.log(`  - 薪资基数历史: ${deletionResults.details.salaryBaseHistory} 条`);
+      } else {
+        this.logger.log(`员工 "${employee.name}" 没有相关薪资数据需要删除`);
+      }
+    } catch (error) {
+      this.logger.error(`删除员工 "${employee.name}" 的薪资数据时出错: ${error.message}`);
+      // 可以选择继续删除员工记录，或者抛出错误中断操作
+      // 这里选择记录错误但继续删除员工，也可以改为抛出错误中断整个删除流程
+      // throw error; // 如果希望薪资数据删除失败时中断整个删除流程，取消注释这行
+    }
+
+    // 删除员工记录
     await this.employeeRepository.remove(employee);
+    this.logger.log(`员工记录删除完成: ${id} (${employee.name})`);
 
     return { id, deleted: true };
   }

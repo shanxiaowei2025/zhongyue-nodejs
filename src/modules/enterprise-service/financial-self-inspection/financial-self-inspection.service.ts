@@ -19,6 +19,7 @@ import { RejectDto } from './dto/reject.dto';
 import { ReviewerRejectDto } from './dto/reviewer-reject.dto';
 import { EmployeeService } from '../../employee/employee.service';
 import { safeConvertToDate } from '../../../common/utils';
+import { CommunicationRecordDto, AddCommunicationRecordDto } from './dto/communication-record.dto';
 
 @Injectable()
 export class FinancialSelfInspectionService {
@@ -1176,5 +1177,68 @@ export class FinancialSelfInspectionService {
       pageSize,
       totalPages: Math.ceil(total / pageSize),
     };
+  }
+
+  /**
+   * 更新沟通记录
+   */
+  async updateCommunicationRecords(
+    id: number,
+    dto: CommunicationRecordDto,
+  ): Promise<FinancialSelfInspection> {
+    const record = await this.financialSelfInspectionRepository.findOne({
+      where: { id },
+    });
+    if (!record) {
+      throw new NotFoundException(`ID为${id}的账务自查记录不存在`);
+    }
+
+    // 更新沟通记录
+    record.communicationRecords = dto.communicationRecords;
+
+    return this.financialSelfInspectionRepository.save(record);
+  }
+
+  /**
+   * 添加单条沟通记录
+   */
+  async addCommunicationRecord(
+    id: number,
+    dto: AddCommunicationRecordDto,
+  ): Promise<FinancialSelfInspection> {
+    const record = await this.financialSelfInspectionRepository.findOne({
+      where: { id },
+    });
+    if (!record) {
+      throw new NotFoundException(`ID为${id}的账务自查记录不存在`);
+    }
+
+    // 初始化沟通记录数组（如果不存在）
+    if (!record.communicationRecords) {
+      record.communicationRecords = [];
+    }
+
+    // 获取当前时间，格式化为 YYYY-MM-DD HH:mm:ss
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const currentTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
+    // 添加新的沟通记录，自动添加当前时间
+    record.communicationRecords.push({
+      result: dto.result,
+      communicationTime: currentTime,
+    });
+
+    this.logger.debug(`添加沟通记录: ${JSON.stringify({
+      result: dto.result,
+      communicationTime: currentTime,
+    })}`);
+
+    return this.financialSelfInspectionRepository.save(record);
   }
 }

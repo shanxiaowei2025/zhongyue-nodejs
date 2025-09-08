@@ -51,6 +51,9 @@ export class FinancialSelfInspection {
   @Column({ type: 'text', nullable: true, comment: '解决方案' })
   solution: string;
 
+  @Column({ type: 'tinyint', name: 'need_accountant_communication', default: 0, comment: '是否需要会计沟通(0:不需要 1:需要)' })
+  needAccountantCommunication: number;
+
   @Column({ type: 'simple-json', nullable: true, comment: '整改记录' })
   rectificationRecords: Record<string, any>[];
 
@@ -68,6 +71,12 @@ export class FinancialSelfInspection {
 
   @Column({ type: 'simple-json', nullable: true, comment: '复查审核退回记录' })
   reviewerRejectRecords: Record<string, any>[];
+
+  @Column({ type: 'simple-json', name: 'communication_records', nullable: true, comment: '沟通记录' })
+  communicationRecords: Array<{
+    result: string;
+    communicationTime: string;
+  }>;
 
   @CreateDateColumn({ comment: '创建时间' })
   createdAt: Date;
