@@ -1146,16 +1146,17 @@ export class SalaryAutoUpdateService {
       SELECT * FROM sys_employees
     `);
 
-    // 获取所有保证金数据，以便后续匹配
+    // 获取所有保证金数据，以便后续匹配 - 使用月份匹配
+    const targetYearMonth = lastMonth.format('YYYY-MM');
     this.logger.log(
-      `获取${commissionStartDate}至${commissionEndDate}期间的保证金数据`,
+      `获取${targetYearMonth}月份的保证金数据`,
     );
     const depositRecords = await this.dataSource.query(
       `
       SELECT * FROM sys_deposit
-      WHERE deductionDate BETWEEN ? AND ?
+      WHERE DATE_FORMAT(deductionDate, '%Y-%m') = ?
     `,
-      [commissionStartDate, commissionEndDate],
+      [targetYearMonth],
     );
 
     // 创建员工姓名到保证金金额的映射表
@@ -1190,54 +1191,55 @@ export class SalaryAutoUpdateService {
         );
         const department = departments.length > 0 ? departments[0] : null;
 
-        // 获取考勤扣款信息
+        // 获取考勤扣款信息 - 使用月份匹配而非日期范围
+        const targetYearMonth = lastMonth.format('YYYY-MM');
         const attendanceDeductions = await this.dataSource.query(
           `
           SELECT * FROM sys_attendance_deduction 
           WHERE name = ? 
-          AND yearMonth BETWEEN ? AND ?
+          AND DATE_FORMAT(yearMonth, '%Y-%m') = ?
           LIMIT 1
         `,
-          [employee.name, commissionStartDate, commissionEndDate],
+          [employee.name, targetYearMonth],
         );
         const attendanceDeduction =
           attendanceDeductions.length > 0 ? attendanceDeductions[0] : null;
 
-        // 获取补贴汇总信息
+        // 获取补贴汇总信息 - 使用月份匹配而非日期范围
         const subsidySummaries = await this.dataSource.query(
           `
           SELECT * FROM sys_subsidy_summary 
           WHERE name = ? 
-          AND yearMonth BETWEEN ? AND ?
+          AND DATE_FORMAT(yearMonth, '%Y-%m') = ?
           LIMIT 1
         `,
-          [employee.name, commissionStartDate, commissionEndDate],
+          [employee.name, targetYearMonth],
         );
         const subsidySummary =
           subsidySummaries.length > 0 ? subsidySummaries[0] : null;
 
-        // 获取朋友圈奖励信息
+        // 获取朋友圈奖励信息 - 使用月份匹配而非日期范围
         const friendCirclePayments = await this.dataSource.query(
           `
           SELECT * FROM sys_friend_circle_payment 
           WHERE name = ? 
-          AND yearMonth BETWEEN ? AND ?
+          AND DATE_FORMAT(yearMonth, '%Y-%m') = ?
           LIMIT 1
         `,
-          [employee.name, commissionStartDate, commissionEndDate],
+          [employee.name, targetYearMonth],
         );
         const friendCirclePayment =
           friendCirclePayments.length > 0 ? friendCirclePayments[0] : null;
 
-        // 获取社保信息
+        // 获取社保信息 - 使用月份匹配而非日期范围
         const socialInsurances = await this.dataSource.query(
           `
           SELECT * FROM sys_social_insurance 
           WHERE name = ? 
-          AND yearMonth BETWEEN ? AND ?
+          AND DATE_FORMAT(yearMonth, '%Y-%m') = ?
           LIMIT 1
         `,
-          [employee.name, commissionStartDate, commissionEndDate],
+          [employee.name, targetYearMonth],
         );
         const socialInsurance =
           socialInsurances.length > 0 ? socialInsurances[0] : null;
@@ -1326,24 +1328,24 @@ export class SalaryAutoUpdateService {
               : employee.baseSalary || 0,
           temporaryIncrease: existingSalary?.temporaryIncrease || 0,
           temporaryIncreaseItem: existingSalary?.temporaryIncreaseItem || '',
-          attendanceDeduction: attendanceDeduction?.attendanceDeduction || 0,
-          fullAttendance: attendanceDeduction?.fullAttendanceBonus || 0,
-          departmentHeadSubsidy: subsidySummary?.departmentHeadSubsidy || 0,
-          positionAllowance: subsidySummary?.positionAllowance || 0,
-          oilSubsidy: subsidySummary?.oilSubsidy || 0,
-          mealSubsidy: subsidySummary?.mealSubsidy || 0,
+          attendanceDeduction: attendanceDeduction?.attendanceDeduction || existingSalary?.attendanceDeduction || 0,
+          fullAttendance: attendanceDeduction?.fullAttendanceBonus || existingSalary?.fullAttendance || 0,
+          departmentHeadSubsidy: subsidySummary?.departmentHeadSubsidy || existingSalary?.departmentHeadSubsidy || 0,
+          positionAllowance: subsidySummary?.positionAllowance || existingSalary?.positionAllowance || 0,
+          oilSubsidy: subsidySummary?.oilSubsidy || existingSalary?.oilSubsidy || 0,
+          mealSubsidy: subsidySummary?.mealSubsidy || existingSalary?.mealSubsidy || 0,
           seniority: (employee.workYears || 0) * 100,
           agencyFeeCommission: agencyFeeCommission,
           performanceCommission: performanceCommission,
           performanceDeductions: existingSalary?.performanceDeductions || [],
           businessCommission: businessCommissionResult.businessCommission,
-          otherDeductions: friendCirclePayment?.payment || 0,
-          personalMedical: socialInsurance?.personalMedical || 0,
-          personalPension: socialInsurance?.personalPension || 0,
-          personalUnemployment: socialInsurance?.personalUnemployment || 0,
-          personalInsuranceTotal: socialInsurance?.personalTotal || 0,
-          companyInsuranceTotal: socialInsurance?.companyTotal || 0,
-          depositDeduction: depositDeduction, // 设置为从保证金表获取的金额
+          otherDeductions: friendCirclePayment?.payment || existingSalary?.otherDeductions || 0,
+          personalMedical: socialInsurance?.personalMedical || existingSalary?.personalMedical || 0,
+          personalPension: socialInsurance?.personalPension || existingSalary?.personalPension || 0,
+          personalUnemployment: socialInsurance?.personalUnemployment || existingSalary?.personalUnemployment || 0,
+          personalInsuranceTotal: socialInsurance?.personalTotal || existingSalary?.personalInsuranceTotal || 0,
+          companyInsuranceTotal: socialInsurance?.companyTotal || existingSalary?.companyInsuranceTotal || 0,
+          depositDeduction: depositDeduction || existingSalary?.depositDeduction || 0,
           personalIncomeTax: existingSalary?.personalIncomeTax || 0,
           other: existingSalary?.other || 0,
           bankCardNumber: employee.bankCardNumber || '',
