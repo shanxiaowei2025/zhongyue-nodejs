@@ -137,7 +137,7 @@ export class SalaryAutoUpdateService {
       // socialInsuranceAgencyFee 只有在 socialInsuranceBusinessType = '续费' 时才参与计算
       const expenseQuery = `
         SELECT 
-          SUM(agencyFee) as totalAgencyFee, 
+          SUM(CASE WHEN businessType = '续费' THEN agencyFee ELSE 0 END) as totalAgencyFee, 
           SUM(CASE WHEN socialInsuranceBusinessType = '续费' THEN socialInsuranceAgencyFee ELSE 0 END) as totalSocialInsuranceAgencyFee,
           SUM(accountingSoftwareFee) as totalAccountingSoftwareFee,
           SUM(invoiceSoftwareFee) as totalInvoiceSoftwareFee,
@@ -1172,10 +1172,12 @@ export class SalaryAutoUpdateService {
     for (const employee of employees) {
       try {
         // 查询是否已存在当月薪资记录
+        // 使用lastMonth的第一天作为yearMonth，而不是commissionStartDate
+        const salaryYearMonth = lastMonth.clone().startOf('month').toDate();
         const existingSalary = await this.salaryRepository.findOne({
           where: {
             name: employee.name,
-            yearMonth: new Date(commissionStartDate),
+            yearMonth: salaryYearMonth,
           },
         });
 
@@ -1348,7 +1350,7 @@ export class SalaryAutoUpdateService {
           // company: existingSalary?.company || '', // 注意：company字段已从数据库中删除，改用员工表中的payrollCompany字段
           bankCardOrWechat: existingSalary?.bankCardOrWechat || 0,
           cashPaid: existingSalary?.cashPaid || 0,
-          yearMonth: new Date(commissionStartDate),
+          yearMonth: salaryYearMonth, // 使用统一的薪资年月
         };
 
         // 使用calculateDerivedFields方法计算所有衍生字段，包括绩效佣金
