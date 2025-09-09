@@ -954,6 +954,60 @@ Body: {
 ## 更新历史
 
 ### 2025-01-17
+- **薪资管理接口数值字段范围筛选功能**：
+  - 为薪资管理接口添加所有数值字段的范围筛选参数支持
+  - 影响接口：
+    - `GET /api/salary/admin` - 管理员获取薪资列表接口
+    - `GET /api/salary/export/csv` - 导出薪资数据为CSV接口
+  - 新增筛选字段（每个字段支持最小值和最大值范围筛选）：
+    - `baseSalary` - 基本工资
+    - `attendanceDeduction` - 考勤扣款
+    - `temporaryIncrease` - 临时增加
+    - `fullAttendance` - 全勤奖
+    - `departmentHeadSubsidy` - 部门主管补贴
+    - `positionAllowance` - 职务津贴
+    - `oilSubsidy` - 油费补贴
+    - `mealSubsidy` - 餐费补贴
+    - `seniority` - 工龄工资
+    - `agencyFeeCommission` - 代理费提成
+    - `performanceCommission` - 绩效提成
+    - `businessCommission` - 业务提成
+    - `otherDeductions` - 其他扣款
+    - `personalInsuranceTotal` - 个人保险合计
+    - `companyInsuranceTotal` - 公司保险合计
+    - `depositDeduction` - 押金扣款
+    - `personalIncomeTax` - 个人所得税
+    - `totalPayable` - 应付合计
+    - `bankCardOrWechat` - 银行卡/微信
+    - `cashPaid` - 现金发放
+    - `corporatePayment` - 企业代付
+    - `taxDeclaration` - 税务申报
+  - 参数格式：每个字段支持 `字段名Min` 和 `字段名Max` 两个参数
+  - 更新相关DTO：
+    - `QuerySalaryDto`：添加所有数值字段的最小值和最大值参数定义
+    - `ExportSalaryDto`：添加所有数值字段的最小值和最大值参数定义
+  - 更新后端查询逻辑：
+    - `SalaryService.findAll()` 方法：添加数值字段范围查询条件
+    - `SalaryService.exportToCsv()` 方法：添加数值字段范围查询条件
+  - 完整的Swagger API文档：为每个范围筛选参数添加详细的 `@ApiQuery` 说明
+  - 支持灵活的数值范围查询，提升薪资数据筛选和分析能力
+
+### 2025-01-17
+- **薪资管理接口筛选参数优化**：
+  - 删除薪资管理接口中的 `idCard`（身份证号）和 `company`（公司）筛选参数
+  - 影响接口：
+    - `GET /api/salary/admin` - 管理员获取薪资列表接口
+    - `GET /api/salary/export/csv` - 导出薪资数据为CSV接口
+  - 更新相关DTO：
+    - `QuerySalaryDto`：删除 `idCard` 字段定义和验证器
+    - `ExportSalaryDto`：删除 `idCard` 和 `company` 字段定义和验证器
+  - 更新后端查询逻辑：
+    - `SalaryService.findAll()` 方法：删除对 `idCard` 字段的查询条件
+    - `SalaryService.exportToCsv()` 方法：删除对 `idCard` 和 `company` 字段的查询条件
+  - 同步更新Swagger API文档：删除对应的 `@ApiQuery` 参数说明
+  - 简化筛选条件，提升接口性能和用户体验
+
+### 2025-01-17
 - **薪资密码重置功能**：
   - 新增管理员薪资密码重置接口 `PATCH /api/auth/salary/reset-password/{userId}`
   - 支持清空用户的薪资密码和更新时间字段，实现完全重置

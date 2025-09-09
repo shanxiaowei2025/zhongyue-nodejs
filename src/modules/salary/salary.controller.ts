@@ -215,25 +215,11 @@ export class SalaryController {
     example: '张',
   })
   @ApiQuery({
-    name: 'idCard',
-    required: false,
-    type: String,
-    description: '身份证号（模糊查询）',
-    example: '11010119',
-  })
-  @ApiQuery({
     name: 'type',
     required: false,
     type: String,
     description: '类型（模糊查询）',
     example: '正式',
-  })
-  @ApiQuery({
-    name: 'company',
-    required: false,
-    type: String,
-    description: '公司（模糊查询）',
-    example: '中岳',
   })
   @ApiQuery({
     name: 'yearMonth',
@@ -256,6 +242,51 @@ export class SalaryController {
     description: '结束日期',
     example: '2023-12-31',
   })
+  // 数值字段范围筛选参数
+  @ApiQuery({ name: 'baseSalaryMin', required: false, type: Number, description: '基本工资最小值' })
+  @ApiQuery({ name: 'baseSalaryMax', required: false, type: Number, description: '基本工资最大值' })
+  @ApiQuery({ name: 'attendanceDeductionMin', required: false, type: Number, description: '考勤扣款最小值' })
+  @ApiQuery({ name: 'attendanceDeductionMax', required: false, type: Number, description: '考勤扣款最大值' })
+  @ApiQuery({ name: 'temporaryIncreaseMin', required: false, type: Number, description: '临时增加最小值' })
+  @ApiQuery({ name: 'temporaryIncreaseMax', required: false, type: Number, description: '临时增加最大值' })
+  @ApiQuery({ name: 'fullAttendanceMin', required: false, type: Number, description: '全勤奖最小值' })
+  @ApiQuery({ name: 'fullAttendanceMax', required: false, type: Number, description: '全勤奖最大值' })
+  @ApiQuery({ name: 'departmentHeadSubsidyMin', required: false, type: Number, description: '部门主管补贴最小值' })
+  @ApiQuery({ name: 'departmentHeadSubsidyMax', required: false, type: Number, description: '部门主管补贴最大值' })
+  @ApiQuery({ name: 'positionAllowanceMin', required: false, type: Number, description: '职务津贴最小值' })
+  @ApiQuery({ name: 'positionAllowanceMax', required: false, type: Number, description: '职务津贴最大值' })
+  @ApiQuery({ name: 'oilSubsidyMin', required: false, type: Number, description: '油费补贴最小值' })
+  @ApiQuery({ name: 'oilSubsidyMax', required: false, type: Number, description: '油费补贴最大值' })
+  @ApiQuery({ name: 'mealSubsidyMin', required: false, type: Number, description: '餐费补贴最小值' })
+  @ApiQuery({ name: 'mealSubsidyMax', required: false, type: Number, description: '餐费补贴最大值' })
+  @ApiQuery({ name: 'seniorityMin', required: false, type: Number, description: '工龄工资最小值' })
+  @ApiQuery({ name: 'seniorityMax', required: false, type: Number, description: '工龄工资最大值' })
+  @ApiQuery({ name: 'agencyFeeCommissionMin', required: false, type: Number, description: '代理费提成最小值' })
+  @ApiQuery({ name: 'agencyFeeCommissionMax', required: false, type: Number, description: '代理费提成最大值' })
+  @ApiQuery({ name: 'performanceCommissionMin', required: false, type: Number, description: '绩效提成最小值' })
+  @ApiQuery({ name: 'performanceCommissionMax', required: false, type: Number, description: '绩效提成最大值' })
+  @ApiQuery({ name: 'businessCommissionMin', required: false, type: Number, description: '业务提成最小值' })
+  @ApiQuery({ name: 'businessCommissionMax', required: false, type: Number, description: '业务提成最大值' })
+  @ApiQuery({ name: 'otherDeductionsMin', required: false, type: Number, description: '其他扣款最小值' })
+  @ApiQuery({ name: 'otherDeductionsMax', required: false, type: Number, description: '其他扣款最大值' })
+  @ApiQuery({ name: 'personalInsuranceTotalMin', required: false, type: Number, description: '个人保险合计最小值' })
+  @ApiQuery({ name: 'personalInsuranceTotalMax', required: false, type: Number, description: '个人保险合计最大值' })
+  @ApiQuery({ name: 'companyInsuranceTotalMin', required: false, type: Number, description: '公司保险合计最小值' })
+  @ApiQuery({ name: 'companyInsuranceTotalMax', required: false, type: Number, description: '公司保险合计最大值' })
+  @ApiQuery({ name: 'depositDeductionMin', required: false, type: Number, description: '押金扣款最小值' })
+  @ApiQuery({ name: 'depositDeductionMax', required: false, type: Number, description: '押金扣款最大值' })
+  @ApiQuery({ name: 'personalIncomeTaxMin', required: false, type: Number, description: '个人所得税最小值' })
+  @ApiQuery({ name: 'personalIncomeTaxMax', required: false, type: Number, description: '个人所得税最大值' })
+  @ApiQuery({ name: 'totalPayableMin', required: false, type: Number, description: '应付合计最小值' })
+  @ApiQuery({ name: 'totalPayableMax', required: false, type: Number, description: '应付合计最大值' })
+  @ApiQuery({ name: 'bankCardOrWechatMin', required: false, type: Number, description: '银行卡/微信最小值' })
+  @ApiQuery({ name: 'bankCardOrWechatMax', required: false, type: Number, description: '银行卡/微信最大值' })
+  @ApiQuery({ name: 'cashPaidMin', required: false, type: Number, description: '现金发放最小值' })
+  @ApiQuery({ name: 'cashPaidMax', required: false, type: Number, description: '现金发放最大值' })
+  @ApiQuery({ name: 'corporatePaymentMin', required: false, type: Number, description: '企业代付最小值' })
+  @ApiQuery({ name: 'corporatePaymentMax', required: false, type: Number, description: '企业代付最大值' })
+  @ApiQuery({ name: 'taxDeclarationMin', required: false, type: Number, description: '税务申报最小值' })
+  @ApiQuery({ name: 'taxDeclarationMax', required: false, type: Number, description: '税务申报最大值' })
   @ApiQuery({
     name: 'page',
     required: false,
@@ -577,25 +608,11 @@ export class SalaryController {
     example: '张',
   })
   @ApiQuery({
-    name: 'idCard',
-    required: false,
-    type: String,
-    description: '身份证号（模糊查询）',
-    example: '11010119',
-  })
-  @ApiQuery({
     name: 'type',
     required: false,
     type: String,
     description: '类型（模糊查询）',
     example: '正式',
-  })
-  @ApiQuery({
-    name: 'company',
-    required: false,
-    type: String,
-    description: '发薪公司（模糊查询）',
-    example: '中岳',
   })
   @ApiQuery({
     name: 'yearMonth',
@@ -632,6 +649,51 @@ export class SalaryController {
     description: '是否已确认',
     example: true,
   })
+  // 数值字段范围筛选参数
+  @ApiQuery({ name: 'baseSalaryMin', required: false, type: Number, description: '基本工资最小值' })
+  @ApiQuery({ name: 'baseSalaryMax', required: false, type: Number, description: '基本工资最大值' })
+  @ApiQuery({ name: 'attendanceDeductionMin', required: false, type: Number, description: '考勤扣款最小值' })
+  @ApiQuery({ name: 'attendanceDeductionMax', required: false, type: Number, description: '考勤扣款最大值' })
+  @ApiQuery({ name: 'temporaryIncreaseMin', required: false, type: Number, description: '临时增加最小值' })
+  @ApiQuery({ name: 'temporaryIncreaseMax', required: false, type: Number, description: '临时增加最大值' })
+  @ApiQuery({ name: 'fullAttendanceMin', required: false, type: Number, description: '全勤奖最小值' })
+  @ApiQuery({ name: 'fullAttendanceMax', required: false, type: Number, description: '全勤奖最大值' })
+  @ApiQuery({ name: 'departmentHeadSubsidyMin', required: false, type: Number, description: '部门主管补贴最小值' })
+  @ApiQuery({ name: 'departmentHeadSubsidyMax', required: false, type: Number, description: '部门主管补贴最大值' })
+  @ApiQuery({ name: 'positionAllowanceMin', required: false, type: Number, description: '职务津贴最小值' })
+  @ApiQuery({ name: 'positionAllowanceMax', required: false, type: Number, description: '职务津贴最大值' })
+  @ApiQuery({ name: 'oilSubsidyMin', required: false, type: Number, description: '油费补贴最小值' })
+  @ApiQuery({ name: 'oilSubsidyMax', required: false, type: Number, description: '油费补贴最大值' })
+  @ApiQuery({ name: 'mealSubsidyMin', required: false, type: Number, description: '餐费补贴最小值' })
+  @ApiQuery({ name: 'mealSubsidyMax', required: false, type: Number, description: '餐费补贴最大值' })
+  @ApiQuery({ name: 'seniorityMin', required: false, type: Number, description: '工龄工资最小值' })
+  @ApiQuery({ name: 'seniorityMax', required: false, type: Number, description: '工龄工资最大值' })
+  @ApiQuery({ name: 'agencyFeeCommissionMin', required: false, type: Number, description: '代理费提成最小值' })
+  @ApiQuery({ name: 'agencyFeeCommissionMax', required: false, type: Number, description: '代理费提成最大值' })
+  @ApiQuery({ name: 'performanceCommissionMin', required: false, type: Number, description: '绩效提成最小值' })
+  @ApiQuery({ name: 'performanceCommissionMax', required: false, type: Number, description: '绩效提成最大值' })
+  @ApiQuery({ name: 'businessCommissionMin', required: false, type: Number, description: '业务提成最小值' })
+  @ApiQuery({ name: 'businessCommissionMax', required: false, type: Number, description: '业务提成最大值' })
+  @ApiQuery({ name: 'otherDeductionsMin', required: false, type: Number, description: '其他扣款最小值' })
+  @ApiQuery({ name: 'otherDeductionsMax', required: false, type: Number, description: '其他扣款最大值' })
+  @ApiQuery({ name: 'personalInsuranceTotalMin', required: false, type: Number, description: '个人保险合计最小值' })
+  @ApiQuery({ name: 'personalInsuranceTotalMax', required: false, type: Number, description: '个人保险合计最大值' })
+  @ApiQuery({ name: 'companyInsuranceTotalMin', required: false, type: Number, description: '公司保险合计最小值' })
+  @ApiQuery({ name: 'companyInsuranceTotalMax', required: false, type: Number, description: '公司保险合计最大值' })
+  @ApiQuery({ name: 'depositDeductionMin', required: false, type: Number, description: '押金扣款最小值' })
+  @ApiQuery({ name: 'depositDeductionMax', required: false, type: Number, description: '押金扣款最大值' })
+  @ApiQuery({ name: 'personalIncomeTaxMin', required: false, type: Number, description: '个人所得税最小值' })
+  @ApiQuery({ name: 'personalIncomeTaxMax', required: false, type: Number, description: '个人所得税最大值' })
+  @ApiQuery({ name: 'totalPayableMin', required: false, type: Number, description: '应付合计最小值' })
+  @ApiQuery({ name: 'totalPayableMax', required: false, type: Number, description: '应付合计最大值' })
+  @ApiQuery({ name: 'bankCardOrWechatMin', required: false, type: Number, description: '银行卡/微信最小值' })
+  @ApiQuery({ name: 'bankCardOrWechatMax', required: false, type: Number, description: '银行卡/微信最大值' })
+  @ApiQuery({ name: 'cashPaidMin', required: false, type: Number, description: '现金发放最小值' })
+  @ApiQuery({ name: 'cashPaidMax', required: false, type: Number, description: '现金发放最大值' })
+  @ApiQuery({ name: 'corporatePaymentMin', required: false, type: Number, description: '企业代付最小值' })
+  @ApiQuery({ name: 'corporatePaymentMax', required: false, type: Number, description: '企业代付最大值' })
+  @ApiQuery({ name: 'taxDeclarationMin', required: false, type: Number, description: '税务申报最小值' })
+  @ApiQuery({ name: 'taxDeclarationMax', required: false, type: Number, description: '税务申报最大值' })
   @ApiResponse({ status: HttpStatus.OK, description: '导出成功' })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权' })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: '权限不足' })

@@ -431,12 +431,56 @@ export class SalaryService {
       pageSize = 10,
       department,
       name,
-      idCard,
       type,
       isPaid,
       yearMonth,
       startDate,
       endDate,
+      // 数值字段范围筛选参数
+      baseSalaryMin,
+      baseSalaryMax,
+      attendanceDeductionMin,
+      attendanceDeductionMax,
+      temporaryIncreaseMin,
+      temporaryIncreaseMax,
+      fullAttendanceMin,
+      fullAttendanceMax,
+      departmentHeadSubsidyMin,
+      departmentHeadSubsidyMax,
+      positionAllowanceMin,
+      positionAllowanceMax,
+      oilSubsidyMin,
+      oilSubsidyMax,
+      mealSubsidyMin,
+      mealSubsidyMax,
+      seniorityMin,
+      seniorityMax,
+      agencyFeeCommissionMin,
+      agencyFeeCommissionMax,
+      performanceCommissionMin,
+      performanceCommissionMax,
+      businessCommissionMin,
+      businessCommissionMax,
+      otherDeductionsMin,
+      otherDeductionsMax,
+      personalInsuranceTotalMin,
+      personalInsuranceTotalMax,
+      companyInsuranceTotalMin,
+      companyInsuranceTotalMax,
+      depositDeductionMin,
+      depositDeductionMax,
+      personalIncomeTaxMin,
+      personalIncomeTaxMax,
+      totalPayableMin,
+      totalPayableMax,
+      bankCardOrWechatMin,
+      bankCardOrWechatMax,
+      cashPaidMin,
+      cashPaidMax,
+      corporatePaymentMin,
+      corporatePaymentMax,
+      taxDeclarationMin,
+      taxDeclarationMax,
     } = query;
 
     // 使用安全的分页参数处理函数
@@ -511,12 +555,6 @@ export class SalaryService {
       queryBuilder.andWhere('salary.name LIKE :name', { name: `%${name}%` });
     }
 
-    if (idCard) {
-      queryBuilder.andWhere('salary.idCard LIKE :idCard', {
-        idCard: `%${idCard}%`,
-      });
-    }
-
     if (type) {
       queryBuilder.andWhere('salary.type LIKE :type', { type: `%${type}%` });
     }
@@ -529,6 +567,183 @@ export class SalaryService {
     // 添加是否已发放的查询条件
     if (isPaid !== undefined) {
       queryBuilder.andWhere('salary.isPaid = :isPaid', { isPaid });
+    }
+
+    // 数值字段范围筛选
+    // 基本工资
+    if (baseSalaryMin !== undefined) {
+      queryBuilder.andWhere('salary.baseSalary >= :baseSalaryMin', { baseSalaryMin });
+    }
+    if (baseSalaryMax !== undefined) {
+      queryBuilder.andWhere('salary.baseSalary <= :baseSalaryMax', { baseSalaryMax });
+    }
+
+    // 考勤扣款
+    if (attendanceDeductionMin !== undefined) {
+      queryBuilder.andWhere('salary.attendanceDeduction >= :attendanceDeductionMin', { attendanceDeductionMin });
+    }
+    if (attendanceDeductionMax !== undefined) {
+      queryBuilder.andWhere('salary.attendanceDeduction <= :attendanceDeductionMax', { attendanceDeductionMax });
+    }
+
+    // 临时增加
+    if (temporaryIncreaseMin !== undefined) {
+      queryBuilder.andWhere('salary.temporaryIncrease >= :temporaryIncreaseMin', { temporaryIncreaseMin });
+    }
+    if (temporaryIncreaseMax !== undefined) {
+      queryBuilder.andWhere('salary.temporaryIncrease <= :temporaryIncreaseMax', { temporaryIncreaseMax });
+    }
+
+    // 全勤奖
+    if (fullAttendanceMin !== undefined) {
+      queryBuilder.andWhere('salary.fullAttendance >= :fullAttendanceMin', { fullAttendanceMin });
+    }
+    if (fullAttendanceMax !== undefined) {
+      queryBuilder.andWhere('salary.fullAttendance <= :fullAttendanceMax', { fullAttendanceMax });
+    }
+
+    // 部门主管补贴
+    if (departmentHeadSubsidyMin !== undefined) {
+      queryBuilder.andWhere('salary.departmentHeadSubsidy >= :departmentHeadSubsidyMin', { departmentHeadSubsidyMin });
+    }
+    if (departmentHeadSubsidyMax !== undefined) {
+      queryBuilder.andWhere('salary.departmentHeadSubsidy <= :departmentHeadSubsidyMax', { departmentHeadSubsidyMax });
+    }
+
+    // 职务津贴
+    if (positionAllowanceMin !== undefined) {
+      queryBuilder.andWhere('salary.positionAllowance >= :positionAllowanceMin', { positionAllowanceMin });
+    }
+    if (positionAllowanceMax !== undefined) {
+      queryBuilder.andWhere('salary.positionAllowance <= :positionAllowanceMax', { positionAllowanceMax });
+    }
+
+    // 油费补贴
+    if (oilSubsidyMin !== undefined) {
+      queryBuilder.andWhere('salary.oilSubsidy >= :oilSubsidyMin', { oilSubsidyMin });
+    }
+    if (oilSubsidyMax !== undefined) {
+      queryBuilder.andWhere('salary.oilSubsidy <= :oilSubsidyMax', { oilSubsidyMax });
+    }
+
+    // 餐费补贴
+    if (mealSubsidyMin !== undefined) {
+      queryBuilder.andWhere('salary.mealSubsidy >= :mealSubsidyMin', { mealSubsidyMin });
+    }
+    if (mealSubsidyMax !== undefined) {
+      queryBuilder.andWhere('salary.mealSubsidy <= :mealSubsidyMax', { mealSubsidyMax });
+    }
+
+    // 工龄工资
+    if (seniorityMin !== undefined) {
+      queryBuilder.andWhere('salary.seniority >= :seniorityMin', { seniorityMin });
+    }
+    if (seniorityMax !== undefined) {
+      queryBuilder.andWhere('salary.seniority <= :seniorityMax', { seniorityMax });
+    }
+
+    // 代理费提成
+    if (agencyFeeCommissionMin !== undefined) {
+      queryBuilder.andWhere('salary.agencyFeeCommission >= :agencyFeeCommissionMin', { agencyFeeCommissionMin });
+    }
+    if (agencyFeeCommissionMax !== undefined) {
+      queryBuilder.andWhere('salary.agencyFeeCommission <= :agencyFeeCommissionMax', { agencyFeeCommissionMax });
+    }
+
+    // 绩效提成
+    if (performanceCommissionMin !== undefined) {
+      queryBuilder.andWhere('salary.performanceCommission >= :performanceCommissionMin', { performanceCommissionMin });
+    }
+    if (performanceCommissionMax !== undefined) {
+      queryBuilder.andWhere('salary.performanceCommission <= :performanceCommissionMax', { performanceCommissionMax });
+    }
+
+    // 业务提成
+    if (businessCommissionMin !== undefined) {
+      queryBuilder.andWhere('salary.businessCommission >= :businessCommissionMin', { businessCommissionMin });
+    }
+    if (businessCommissionMax !== undefined) {
+      queryBuilder.andWhere('salary.businessCommission <= :businessCommissionMax', { businessCommissionMax });
+    }
+
+    // 其他扣款
+    if (otherDeductionsMin !== undefined) {
+      queryBuilder.andWhere('salary.otherDeductions >= :otherDeductionsMin', { otherDeductionsMin });
+    }
+    if (otherDeductionsMax !== undefined) {
+      queryBuilder.andWhere('salary.otherDeductions <= :otherDeductionsMax', { otherDeductionsMax });
+    }
+
+    // 个人保险合计
+    if (personalInsuranceTotalMin !== undefined) {
+      queryBuilder.andWhere('salary.personalInsuranceTotal >= :personalInsuranceTotalMin', { personalInsuranceTotalMin });
+    }
+    if (personalInsuranceTotalMax !== undefined) {
+      queryBuilder.andWhere('salary.personalInsuranceTotal <= :personalInsuranceTotalMax', { personalInsuranceTotalMax });
+    }
+
+    // 公司保险合计
+    if (companyInsuranceTotalMin !== undefined) {
+      queryBuilder.andWhere('salary.companyInsuranceTotal >= :companyInsuranceTotalMin', { companyInsuranceTotalMin });
+    }
+    if (companyInsuranceTotalMax !== undefined) {
+      queryBuilder.andWhere('salary.companyInsuranceTotal <= :companyInsuranceTotalMax', { companyInsuranceTotalMax });
+    }
+
+    // 押金扣款
+    if (depositDeductionMin !== undefined) {
+      queryBuilder.andWhere('salary.depositDeduction >= :depositDeductionMin', { depositDeductionMin });
+    }
+    if (depositDeductionMax !== undefined) {
+      queryBuilder.andWhere('salary.depositDeduction <= :depositDeductionMax', { depositDeductionMax });
+    }
+
+    // 个人所得税
+    if (personalIncomeTaxMin !== undefined) {
+      queryBuilder.andWhere('salary.personalIncomeTax >= :personalIncomeTaxMin', { personalIncomeTaxMin });
+    }
+    if (personalIncomeTaxMax !== undefined) {
+      queryBuilder.andWhere('salary.personalIncomeTax <= :personalIncomeTaxMax', { personalIncomeTaxMax });
+    }
+
+    // 应付合计
+    if (totalPayableMin !== undefined) {
+      queryBuilder.andWhere('salary.totalPayable >= :totalPayableMin', { totalPayableMin });
+    }
+    if (totalPayableMax !== undefined) {
+      queryBuilder.andWhere('salary.totalPayable <= :totalPayableMax', { totalPayableMax });
+    }
+
+    // 银行卡/微信
+    if (bankCardOrWechatMin !== undefined) {
+      queryBuilder.andWhere('salary.bankCardOrWechat >= :bankCardOrWechatMin', { bankCardOrWechatMin });
+    }
+    if (bankCardOrWechatMax !== undefined) {
+      queryBuilder.andWhere('salary.bankCardOrWechat <= :bankCardOrWechatMax', { bankCardOrWechatMax });
+    }
+
+    // 现金发放
+    if (cashPaidMin !== undefined) {
+      queryBuilder.andWhere('salary.cashPaid >= :cashPaidMin', { cashPaidMin });
+    }
+    if (cashPaidMax !== undefined) {
+      queryBuilder.andWhere('salary.cashPaid <= :cashPaidMax', { cashPaidMax });
+    }
+
+    // 企业代付
+    if (corporatePaymentMin !== undefined) {
+      queryBuilder.andWhere('salary.corporatePayment >= :corporatePaymentMin', { corporatePaymentMin });
+    }
+    if (corporatePaymentMax !== undefined) {
+      queryBuilder.andWhere('salary.corporatePayment <= :corporatePaymentMax', { corporatePaymentMax });
+    }
+
+    // 税务申报
+    if (taxDeclarationMin !== undefined) {
+      queryBuilder.andWhere('salary.taxDeclaration >= :taxDeclarationMin', { taxDeclarationMin });
+    }
+    if (taxDeclarationMax !== undefined) {
+      queryBuilder.andWhere('salary.taxDeclaration <= :taxDeclarationMax', { taxDeclarationMax });
     }
 
     // 处理日期参数，避免NaN值
@@ -1202,12 +1417,6 @@ export class SalaryService {
       });
     }
 
-    if (query.idCard) {
-      queryBuilder.andWhere('salary.idCard LIKE :idCard', {
-        idCard: `%${query.idCard}%`,
-      });
-    }
-
     if (query.type) {
       queryBuilder.andWhere('salary.type LIKE :type', {
         type: `%${query.type}%`,
@@ -1252,22 +1461,190 @@ export class SalaryService {
       });
     }
 
+    // 数值字段范围筛选
+    // 基本工资
+    if (query.baseSalaryMin !== undefined) {
+      queryBuilder.andWhere('salary.baseSalary >= :baseSalaryMin', { baseSalaryMin: query.baseSalaryMin });
+    }
+    if (query.baseSalaryMax !== undefined) {
+      queryBuilder.andWhere('salary.baseSalary <= :baseSalaryMax', { baseSalaryMax: query.baseSalaryMax });
+    }
+
+    // 考勤扣款
+    if (query.attendanceDeductionMin !== undefined) {
+      queryBuilder.andWhere('salary.attendanceDeduction >= :attendanceDeductionMin', { attendanceDeductionMin: query.attendanceDeductionMin });
+    }
+    if (query.attendanceDeductionMax !== undefined) {
+      queryBuilder.andWhere('salary.attendanceDeduction <= :attendanceDeductionMax', { attendanceDeductionMax: query.attendanceDeductionMax });
+    }
+
+    // 临时增加
+    if (query.temporaryIncreaseMin !== undefined) {
+      queryBuilder.andWhere('salary.temporaryIncrease >= :temporaryIncreaseMin', { temporaryIncreaseMin: query.temporaryIncreaseMin });
+    }
+    if (query.temporaryIncreaseMax !== undefined) {
+      queryBuilder.andWhere('salary.temporaryIncrease <= :temporaryIncreaseMax', { temporaryIncreaseMax: query.temporaryIncreaseMax });
+    }
+
+    // 全勤奖
+    if (query.fullAttendanceMin !== undefined) {
+      queryBuilder.andWhere('salary.fullAttendance >= :fullAttendanceMin', { fullAttendanceMin: query.fullAttendanceMin });
+    }
+    if (query.fullAttendanceMax !== undefined) {
+      queryBuilder.andWhere('salary.fullAttendance <= :fullAttendanceMax', { fullAttendanceMax: query.fullAttendanceMax });
+    }
+
+    // 部门主管补贴
+    if (query.departmentHeadSubsidyMin !== undefined) {
+      queryBuilder.andWhere('salary.departmentHeadSubsidy >= :departmentHeadSubsidyMin', { departmentHeadSubsidyMin: query.departmentHeadSubsidyMin });
+    }
+    if (query.departmentHeadSubsidyMax !== undefined) {
+      queryBuilder.andWhere('salary.departmentHeadSubsidy <= :departmentHeadSubsidyMax', { departmentHeadSubsidyMax: query.departmentHeadSubsidyMax });
+    }
+
+    // 职务津贴
+    if (query.positionAllowanceMin !== undefined) {
+      queryBuilder.andWhere('salary.positionAllowance >= :positionAllowanceMin', { positionAllowanceMin: query.positionAllowanceMin });
+    }
+    if (query.positionAllowanceMax !== undefined) {
+      queryBuilder.andWhere('salary.positionAllowance <= :positionAllowanceMax', { positionAllowanceMax: query.positionAllowanceMax });
+    }
+
+    // 油费补贴
+    if (query.oilSubsidyMin !== undefined) {
+      queryBuilder.andWhere('salary.oilSubsidy >= :oilSubsidyMin', { oilSubsidyMin: query.oilSubsidyMin });
+    }
+    if (query.oilSubsidyMax !== undefined) {
+      queryBuilder.andWhere('salary.oilSubsidy <= :oilSubsidyMax', { oilSubsidyMax: query.oilSubsidyMax });
+    }
+
+    // 餐费补贴
+    if (query.mealSubsidyMin !== undefined) {
+      queryBuilder.andWhere('salary.mealSubsidy >= :mealSubsidyMin', { mealSubsidyMin: query.mealSubsidyMin });
+    }
+    if (query.mealSubsidyMax !== undefined) {
+      queryBuilder.andWhere('salary.mealSubsidy <= :mealSubsidyMax', { mealSubsidyMax: query.mealSubsidyMax });
+    }
+
+    // 工龄工资
+    if (query.seniorityMin !== undefined) {
+      queryBuilder.andWhere('salary.seniority >= :seniorityMin', { seniorityMin: query.seniorityMin });
+    }
+    if (query.seniorityMax !== undefined) {
+      queryBuilder.andWhere('salary.seniority <= :seniorityMax', { seniorityMax: query.seniorityMax });
+    }
+
+    // 代理费提成
+    if (query.agencyFeeCommissionMin !== undefined) {
+      queryBuilder.andWhere('salary.agencyFeeCommission >= :agencyFeeCommissionMin', { agencyFeeCommissionMin: query.agencyFeeCommissionMin });
+    }
+    if (query.agencyFeeCommissionMax !== undefined) {
+      queryBuilder.andWhere('salary.agencyFeeCommission <= :agencyFeeCommissionMax', { agencyFeeCommissionMax: query.agencyFeeCommissionMax });
+    }
+
+    // 绩效提成
+    if (query.performanceCommissionMin !== undefined) {
+      queryBuilder.andWhere('salary.performanceCommission >= :performanceCommissionMin', { performanceCommissionMin: query.performanceCommissionMin });
+    }
+    if (query.performanceCommissionMax !== undefined) {
+      queryBuilder.andWhere('salary.performanceCommission <= :performanceCommissionMax', { performanceCommissionMax: query.performanceCommissionMax });
+    }
+
+    // 业务提成
+    if (query.businessCommissionMin !== undefined) {
+      queryBuilder.andWhere('salary.businessCommission >= :businessCommissionMin', { businessCommissionMin: query.businessCommissionMin });
+    }
+    if (query.businessCommissionMax !== undefined) {
+      queryBuilder.andWhere('salary.businessCommission <= :businessCommissionMax', { businessCommissionMax: query.businessCommissionMax });
+    }
+
+    // 其他扣款
+    if (query.otherDeductionsMin !== undefined) {
+      queryBuilder.andWhere('salary.otherDeductions >= :otherDeductionsMin', { otherDeductionsMin: query.otherDeductionsMin });
+    }
+    if (query.otherDeductionsMax !== undefined) {
+      queryBuilder.andWhere('salary.otherDeductions <= :otherDeductionsMax', { otherDeductionsMax: query.otherDeductionsMax });
+    }
+
+    // 个人保险合计
+    if (query.personalInsuranceTotalMin !== undefined) {
+      queryBuilder.andWhere('salary.personalInsuranceTotal >= :personalInsuranceTotalMin', { personalInsuranceTotalMin: query.personalInsuranceTotalMin });
+    }
+    if (query.personalInsuranceTotalMax !== undefined) {
+      queryBuilder.andWhere('salary.personalInsuranceTotal <= :personalInsuranceTotalMax', { personalInsuranceTotalMax: query.personalInsuranceTotalMax });
+    }
+
+    // 公司保险合计
+    if (query.companyInsuranceTotalMin !== undefined) {
+      queryBuilder.andWhere('salary.companyInsuranceTotal >= :companyInsuranceTotalMin', { companyInsuranceTotalMin: query.companyInsuranceTotalMin });
+    }
+    if (query.companyInsuranceTotalMax !== undefined) {
+      queryBuilder.andWhere('salary.companyInsuranceTotal <= :companyInsuranceTotalMax', { companyInsuranceTotalMax: query.companyInsuranceTotalMax });
+    }
+
+    // 押金扣款
+    if (query.depositDeductionMin !== undefined) {
+      queryBuilder.andWhere('salary.depositDeduction >= :depositDeductionMin', { depositDeductionMin: query.depositDeductionMin });
+    }
+    if (query.depositDeductionMax !== undefined) {
+      queryBuilder.andWhere('salary.depositDeduction <= :depositDeductionMax', { depositDeductionMax: query.depositDeductionMax });
+    }
+
+    // 个人所得税
+    if (query.personalIncomeTaxMin !== undefined) {
+      queryBuilder.andWhere('salary.personalIncomeTax >= :personalIncomeTaxMin', { personalIncomeTaxMin: query.personalIncomeTaxMin });
+    }
+    if (query.personalIncomeTaxMax !== undefined) {
+      queryBuilder.andWhere('salary.personalIncomeTax <= :personalIncomeTaxMax', { personalIncomeTaxMax: query.personalIncomeTaxMax });
+    }
+
+    // 应付合计
+    if (query.totalPayableMin !== undefined) {
+      queryBuilder.andWhere('salary.totalPayable >= :totalPayableMin', { totalPayableMin: query.totalPayableMin });
+    }
+    if (query.totalPayableMax !== undefined) {
+      queryBuilder.andWhere('salary.totalPayable <= :totalPayableMax', { totalPayableMax: query.totalPayableMax });
+    }
+
+    // 银行卡/微信
+    if (query.bankCardOrWechatMin !== undefined) {
+      queryBuilder.andWhere('salary.bankCardOrWechat >= :bankCardOrWechatMin', { bankCardOrWechatMin: query.bankCardOrWechatMin });
+    }
+    if (query.bankCardOrWechatMax !== undefined) {
+      queryBuilder.andWhere('salary.bankCardOrWechat <= :bankCardOrWechatMax', { bankCardOrWechatMax: query.bankCardOrWechatMax });
+    }
+
+    // 现金发放
+    if (query.cashPaidMin !== undefined) {
+      queryBuilder.andWhere('salary.cashPaid >= :cashPaidMin', { cashPaidMin: query.cashPaidMin });
+    }
+    if (query.cashPaidMax !== undefined) {
+      queryBuilder.andWhere('salary.cashPaid <= :cashPaidMax', { cashPaidMax: query.cashPaidMax });
+    }
+
+    // 企业代付
+    if (query.corporatePaymentMin !== undefined) {
+      queryBuilder.andWhere('salary.corporatePayment >= :corporatePaymentMin', { corporatePaymentMin: query.corporatePaymentMin });
+    }
+    if (query.corporatePaymentMax !== undefined) {
+      queryBuilder.andWhere('salary.corporatePayment <= :corporatePaymentMax', { corporatePaymentMax: query.corporatePaymentMax });
+    }
+
+    // 税务申报
+    if (query.taxDeclarationMin !== undefined) {
+      queryBuilder.andWhere('salary.taxDeclaration >= :taxDeclarationMin', { taxDeclarationMin: query.taxDeclarationMin });
+    }
+    if (query.taxDeclarationMax !== undefined) {
+      queryBuilder.andWhere('salary.taxDeclaration <= :taxDeclarationMax', { taxDeclarationMax: query.taxDeclarationMax });
+    }
+
     // 查询数据
     let salaries = await queryBuilder
       .orderBy('salary.yearMonth', 'DESC')
       .addOrderBy('salary.id', 'DESC')
       .getMany();
 
-    // 如果有公司筛选条件，需要先添加发薪公司信息再筛选
-    if (query.company) {
-      const salariesWithCompany =
-        await this.addPayrollCompanyToSalaries(salaries);
-      salaries = salariesWithCompany.filter(
-        (salary) =>
-          salary.payrollCompany &&
-          salary.payrollCompany.includes(query.company),
-      );
-    }
+
 
     // 为薪资数据添加发薪公司信息
     const salariesWithCompany =
