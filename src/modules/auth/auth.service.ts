@@ -240,7 +240,7 @@ export class AuthService {
   }
 
   /**
-   * 设置薪资密码（首次设置）
+   * 设置薪资密码（首次设置或重置后重新设置）
    * @param userId 用户ID
    * @param salaryPassword 薪资密码
    * @returns 设置结果
@@ -334,6 +334,44 @@ export class AuthService {
     }
 
     return await this.usersService.getSalaryPasswordInfo(userId);
+  }
+
+  /**
+   * 重置用户薪资密码（管理员专用）
+   * @param userId 要重置的用户ID
+   * @param adminUser 操作的管理员用户信息
+   * @returns 重置结果
+   */
+  async resetSalaryPassword(userId: number, adminUser: any) {
+    // 检查目标用户是否存在
+    const user = await this.usersService.findById(userId);
+    if (!user) {
+      throw new BadRequestException('用户不存在');
+    }
+
+    // 检查管理员权限（双重保护，控制器已有@Roles装饰器）
+    if (!adminUser.roles || (!adminUser.roles.includes('admin') && !adminUser.roles.includes('super_admin'))) {
+      throw new UnauthorizedException('权限不足，仅管理员可操作');
+    }
+
+    // 清空薪资密码和更新时间
+    await this.usersService.updateSalaryPassword(userId, {
+      salaryPassword: null,
+      salaryPasswordUpdatedAt: null,
+    });
+
+    return {
+      message: '用户薪资密码重置成功，用户需要重新设置薪资密码',
+      timestamp: new Date(),
+      targetUser: {
+        id: user.id,
+        username: user.username,
+      },
+      operator: {
+        id: adminUser.id,
+        username: adminUser.username,
+      },
+    };
   }
 
   /**

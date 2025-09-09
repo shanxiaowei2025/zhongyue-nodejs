@@ -539,16 +539,16 @@ export class UsersService {
   }
 
   /**
-   * 设置用户薪资密码
+   * 设置或重置用户薪资密码
    * @param userId 用户ID
-   * @param salaryPassword 加密后的薪资密码
+   * @param salaryPasswordData 薪资密码数据（支持null值用于重置）
    * @returns 更新结果
    */
   async updateSalaryPassword(
     userId: number,
     salaryPasswordData: {
-      salaryPassword: string;
-      salaryPasswordUpdatedAt: Date;
+      salaryPassword: string | null;
+      salaryPasswordUpdatedAt: Date | null;
     },
   ): Promise<void> {
     const result = await this.userRepository.update(userId, salaryPasswordData);

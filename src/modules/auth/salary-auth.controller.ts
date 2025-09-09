@@ -8,15 +8,21 @@ import {
   UseGuards,
   Get,
   Request,
+  Patch,
+  Param,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
+import { Roles } from './decorators/roles.decorator';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBody,
   ApiBearerAuth,
+  ApiParam,
 } from '@nestjs/swagger';
 import {
   SalaryAuthDto,
@@ -60,7 +66,7 @@ export class SalaryAuthController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: '设置薪资密码',
-    description: '首次设置薪资查看密码',
+    description: '首次设置薪资查看密码，或在管理员重置后重新设置密码',
   })
   @ApiResponse({
     status: 200,
@@ -120,5 +126,36 @@ export class SalaryAuthController {
   })
   checkSalaryPasswordStatus(@Request() req) {
     return this.authService.checkSalaryPasswordStatus(req.user.id);
+  }
+
+  @Patch('reset-password/:userId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'admin')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: '重置用户薪资密码',
+    description: '管理员专用：重置指定用户的薪资密码，清空salaryPassword和salaryPasswordUpdatedAt字段',
+  })
+  @ApiParam({
+    name: 'userId',
+    description: '要重置薪资密码的用户ID',
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: '重置成功',
+    type: SalaryPasswordOperationResponseDto,
+    example: {
+      message: '用户薪资密码重置成功，用户需要重新设置薪资密码',
+      timestamp: '2025-01-17T10:30:00.000Z',
+    },
+  })
+  @ApiResponse({ status: 400, description: '用户不存在' })
+  @ApiResponse({ status: 403, description: '权限不足，仅管理员可操作' })
+  resetSalaryPassword(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Request() req,
+  ) {
+    return this.authService.resetSalaryPassword(userId, req.user);
   }
 }

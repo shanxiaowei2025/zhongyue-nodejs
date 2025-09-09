@@ -639,6 +639,7 @@ Headers:
 ### 其他管理接口
 - `GET /api/auth/salary/check-password` - 检查是否已设置薪资密码
 - `POST /api/auth/salary/change-password` - 修改薪资密码
+- `PATCH /api/auth/salary/reset-password/{userId}` - 重置用户薪资密码（管理员专用）
 
 ### 注意事项
 - 薪资访问令牌有效期为30分钟，过期后需要重新验证
@@ -907,7 +908,60 @@ POST /api/salary/auto-generate?month=2025-08-01
 
 详细文档请查看 [docs/README.md](docs/README.md)
 
+## 薪资密码重置功能
+
+### 功能概述
+为了帮助忘记薪资密码的员工重新获得访问权限，系统为管理员提供了薪资密码重置功能。
+
+### 重置流程
+1. **管理员操作**：管理员通过接口重置指定用户的薪资密码
+2. **数据清理**：系统清空目标用户的 `salaryPassword` 和 `salaryPasswordUpdatedAt` 字段
+3. **用户重设**：用户调用设置密码接口重新建立薪资密码
+
+### 接口说明
+```bash
+# 管理员重置用户薪资密码
+PATCH /api/auth/salary/reset-password/{userId}
+Headers: 
+  Authorization: Bearer <admin_jwt_token>
+
+# 用户重新设置薪资密码
+POST /api/auth/salary/set-password
+Headers: 
+  Authorization: Bearer <user_jwt_token>
+Body: {
+  "salaryPassword": "new_password"
+}
+```
+
+### 权限控制
+- **重置权限**：仅 `super_admin` 和 `admin` 角色可执行重置操作
+- **安全性**：双重权限验证（装饰器 + 服务层验证）
+- **审计追踪**：返回操作员和目标用户信息，便于审计
+
+### 技术特点
+- ✅ **数据一致性**：使用数据库事务确保操作原子性
+- ✅ **安全性**：不生成临时密码，避免安全隐患
+- ✅ **用户体验**：用户可自主设置符合个人习惯的密码
+- ✅ **代码复用**：重用现有的密码设置逻辑，减少代码冗余
+
+### 使用场景
+- 员工忘记薪资密码无法查看薪资
+- 新员工入职需要初始化薪资密码
+- 安全事件后需要强制重置薪资密码
+- 员工调岗后的权限重置
+
 ## 更新历史
+
+### 2025-01-17
+- **薪资密码重置功能**：
+  - 新增管理员薪资密码重置接口 `PATCH /api/auth/salary/reset-password/{userId}`
+  - 支持清空用户的薪资密码和更新时间字段，实现完全重置
+  - 用户可通过现有的 `/api/auth/salary/set-password` 接口重新设置薪资密码
+  - 严格的权限控制：仅 `super_admin` 和 `admin` 角色可执行重置操作
+  - 完整的操作审计：返回操作员和目标用户信息，便于追踪和审计
+  - 优化 `UsersService.updateSalaryPassword` 方法，支持null值用于重置操作
+  - 更新API文档，明确重置后重新设置密码的流程说明
 
 ### 2025-01-17
 - **凭证存放记录年度查询功能增强**：
