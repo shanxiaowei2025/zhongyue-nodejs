@@ -435,9 +435,14 @@ export class ExpenseService {
     const { page = 1, pageSize = 10 } = pagination;
     const skip = (page - 1) * pageSize;
 
+    console.log(`费用查询 - 用户ID: ${userId}, 查询参数:`, query);
+    console.log(`费用查询 - 分页参数: page=${page}, pageSize=${pageSize}`);
+
     // 获取权限过滤条件
     const permissionFilter =
       await this.expensePermissionService.buildExpenseQueryFilter(userId);
+
+    console.log(`费用查询 - 权限过滤条件:`, permissionFilter);
 
     // 记录原始权限过滤条件，稍后用于构建复合查询
     const originalPermissionFilter = permissionFilter;
@@ -457,37 +462,53 @@ export class ExpenseService {
         };
       }
 
-      // 处理多个OR条件的权限过滤
-      const permissionWhere = permissionFilter.map((filter, index) => {
+      // 检查是否包含查看所有权限的空对象
+      const hasViewAllPermission = permissionFilter.some(filter => 
+        Object.keys(filter).length === 0
+      );
+
+      if (!hasViewAllPermission) {
+        // 处理多个OR条件的权限过滤
+        const permissionConditions = [];
+        const permissionParams = {};
+
+        permissionFilter.forEach((filter, index) => {
+          const conditions = [];
+          Object.entries(filter).forEach(([key, value]) => {
+            const paramKey = `permission_${key}_${index}`;
+            conditions.push(`expense.${key} = :${paramKey}`);
+            permissionParams[paramKey] = value;
+          });
+          
+          if (conditions.length > 0) {
+            permissionConditions.push(`(${conditions.join(' AND ')})`);
+          }
+        });
+
+        if (permissionConditions.length > 0) {
+          queryBuilder.where(`(${permissionConditions.join(' OR ')})`, permissionParams);
+        }
+      }
+      // 如果有查看所有权限，不添加任何权限过滤条件
+    } else {
+      // 处理单一权限过滤条件
+      // 检查是否为查看所有权限的空对象
+      if (Object.keys(permissionFilter).length > 0) {
         const params = {};
         let whereClause = '';
 
-        Object.entries(filter).forEach(([key, value]) => {
+        Object.entries(permissionFilter).forEach(([key, value]) => {
           if (whereClause) whereClause += ' AND ';
-          const paramKey = `permission_${key}_${index}`;
+          const paramKey = `permission_${key}`;
           whereClause += `expense.${key} = :${paramKey}`;
           params[paramKey] = value;
         });
 
         if (whereClause) {
-          queryBuilder.orWhere(`(${whereClause})`, params);
+          queryBuilder.where(whereClause, params);
         }
-      });
-    } else {
-      // 处理单一权限过滤条件
-      const params = {};
-      let whereClause = '';
-
-      Object.entries(permissionFilter).forEach(([key, value]) => {
-        if (whereClause) whereClause += ' AND ';
-        const paramKey = `permission_${key}`;
-        whereClause += `expense.${key} = :${paramKey}`;
-        params[paramKey] = value;
-      });
-
-      if (whereClause) {
-        queryBuilder.where(whereClause, params);
       }
+      // 如果是空对象，表示有查看所有权限，不添加任何权限过滤条件
     }
 
     // 然后在权限过滤的基础上应用查询参数
@@ -710,8 +731,14 @@ export class ExpenseService {
     // 应用分页
     queryBuilder.skip(skip).take(pageSize);
 
+    // 打印最终的SQL查询和参数
+    console.log(`费用查询 - 最终SQL:`, queryBuilder.getQuery());
+    console.log(`费用查询 - 查询参数:`, queryBuilder.getParameters());
+
     // 执行查询
     const [expenses, total] = await queryBuilder.getManyAndCount();
+
+    console.log(`费用查询 - 返回结果数量: ${expenses.length}, 总数: ${total}`);
 
     // 返回结果
     return {

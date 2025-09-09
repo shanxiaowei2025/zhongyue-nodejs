@@ -10,6 +10,8 @@ import { hasSubscribers } from 'diagnostics_channel';
 
 @Injectable()
 export class ExpensePermissionService {
+  private readonly logger = new Logger(ExpensePermissionService.name);
+
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
@@ -96,10 +98,12 @@ export class ExpensePermissionService {
     });
 
     if (!user) {
+      this.logger.warn(`用户 ${userId} 不存在`);
       return { id: -1 };
     }
 
     const permissions = await this.getUserPermissions(userId);
+    this.logger.log(`用户 ${userId} (${user.username}) 的费用权限: ${permissions.join(', ')}`);
 
     // 存储不同权限对应的查询条件
     const conditions: any[] = [];
@@ -107,6 +111,7 @@ export class ExpensePermissionService {
     // 处理查看所有权限
     if (permissions.includes('expense_data_view_all')) {
       conditions.push({});
+      this.logger.log(`用户 ${userId} 拥有查看所有费用数据权限，返回空条件`);
       return conditions;
     }
 
@@ -128,10 +133,12 @@ export class ExpensePermissionService {
         conditions.push({
           companyLocation: department.name,
         });
+        this.logger.log(`用户 ${userId} 拥有按区域查看权限，部门类型2，限制区域: ${department.name}`);
       } else if (department?.parent) {
         conditions.push({
           companyLocation: department.parent.name,
         });
+        this.logger.log(`用户 ${userId} 拥有按区域查看权限，父部门，限制区域: ${department.parent.name}`);
       }
     }
 
@@ -140,12 +147,16 @@ export class ExpensePermissionService {
       conditions.push({
         salesperson: user.username,
       });
+      this.logger.log(`用户 ${userId} 拥有查看自己数据权限，限制销售员: ${user.username}`);
     }
 
     // 如果没有任何权限条件，返回无权限
     if (conditions.length === 0) {
+      this.logger.warn(`用户 ${userId} 没有任何费用数据查看权限`);
       return { id: -1 };
     }
+
+    this.logger.log(`用户 ${userId} 最终权限过滤条件:`, conditions);
 
     // 如果只有一个条件，直接返回
     if (conditions.length === 1) {
