@@ -66,51 +66,60 @@ export class VoucherRecordService {
       bookkeepingAccountant 
     } = query;
 
-    const queryBuilder: SelectQueryBuilder<VoucherRecordYear> = this.yearRepository
+    // 第一步：构建查询获取符合条件的年度记录ID（用于分页）
+    const countQueryBuilder: SelectQueryBuilder<VoucherRecordYear> = this.yearRepository
       .createQueryBuilder('year')
-      .leftJoinAndSelect('year.customer', 'customer')
-      .leftJoinAndSelect('year.months', 'months');
+      .leftJoin('year.customer', 'customer');
 
-    // 添加筛选条件
+    // 根据是否有月度状态筛选来决定SELECT字段
+    if (status) {
+      // 有状态筛选时，需要JOIN months表并使用DISTINCT
+      countQueryBuilder.leftJoin('year.months', 'months')
+                      .select(['year.id', 'year.year', 'year.createdAt'])
+                      .distinct(true);
+    } else {
+      // 没有状态筛选时，只选择ID
+      countQueryBuilder.select('year.id');
+    }
+
+    // 添加筛选条件（与原来相同）
     if (customerId) {
-      queryBuilder.andWhere('year.customerId = :customerId', { customerId });
+      countQueryBuilder.andWhere('year.customerId = :customerId', { customerId });
     }
 
     if (companyName) {
-      queryBuilder.andWhere('customer.companyName LIKE :companyName', {
+      countQueryBuilder.andWhere('customer.companyName LIKE :companyName', {
         companyName: `%${companyName}%`,
       });
     }
 
     if (year) {
-      queryBuilder.andWhere('year.year = :year', { year });
+      countQueryBuilder.andWhere('year.year = :year', { year });
     }
 
     if (storageLocation) {
-      queryBuilder.andWhere('year.storageLocation LIKE :storageLocation', {
+      countQueryBuilder.andWhere('year.storageLocation LIKE :storageLocation', {
         storageLocation: `%${storageLocation}%`,
       });
     }
 
     if (handler) {
-      queryBuilder.andWhere('year.handler LIKE :handler', {
+      countQueryBuilder.andWhere('year.handler LIKE :handler', {
         handler: `%${handler}%`,
       });
     }
 
     // 处理月度状态筛选
     if (status) {
-      queryBuilder.andWhere('months.status = :status', { status });
+      countQueryBuilder.andWhere('months.status = :status', { status });
     }
 
     // 添加顾问会计筛选
     if (consultantAccountant !== undefined) {
       if (consultantAccountant === '') {
-        // 筛选顾问会计为空的数据
-        queryBuilder.andWhere('(customer.consultantAccountant IS NULL OR customer.consultantAccountant = \'\')');
+        countQueryBuilder.andWhere('(customer.consultantAccountant IS NULL OR customer.consultantAccountant = \'\')');
       } else {
-        // 筛选包含关键词的数据
-        queryBuilder.andWhere('customer.consultantAccountant LIKE :consultantAccountant', {
+        countQueryBuilder.andWhere('customer.consultantAccountant LIKE :consultantAccountant', {
           consultantAccountant: `%${consultantAccountant}%`,
         });
       }
@@ -119,29 +128,73 @@ export class VoucherRecordService {
     // 添加记账会计筛选
     if (bookkeepingAccountant !== undefined) {
       if (bookkeepingAccountant === '') {
-        // 筛选记账会计为空的数据
-        queryBuilder.andWhere('(customer.bookkeepingAccountant IS NULL OR customer.bookkeepingAccountant = \'\')');
+        countQueryBuilder.andWhere('(customer.bookkeepingAccountant IS NULL OR customer.bookkeepingAccountant = \'\')');
       } else {
-        // 筛选包含关键词的数据
-        queryBuilder.andWhere('customer.bookkeepingAccountant LIKE :bookkeepingAccountant', {
+        countQueryBuilder.andWhere('customer.bookkeepingAccountant LIKE :bookkeepingAccountant', {
           bookkeepingAccountant: `%${bookkeepingAccountant}%`,
         });
       }
     }
 
-    // 排序
-    queryBuilder.orderBy('year.year', 'DESC')
-                .addOrderBy('year.createdAt', 'DESC')
-                .addOrderBy('months.month', 'ASC');
+    // 对年度记录进行排序（不包含months排序）
+    countQueryBuilder.orderBy('year.year', 'DESC')
+                    .addOrderBy('year.createdAt', 'DESC');
 
-    // 分页
+    // 获取总数（在分页前）
+    // 注意：当使用DISTINCT时，需要先克隆查询器来获取准确的总数
+    let total: number;
+    if (status) {
+      // 有状态筛选时，需要特殊处理计数
+      const countQuery = countQueryBuilder.clone();
+      const countResult = await countQuery.getRawMany();
+      total = countResult.length;
+    } else {
+      total = await countQueryBuilder.getCount();
+    }
+
+    // 应用分页到年度记录
     const skip = (page - 1) * limit;
-    queryBuilder.skip(skip).take(limit);
+    countQueryBuilder.skip(skip).take(limit);
 
-    const [records, total] = await queryBuilder.getManyAndCount();
+    // 获取符合条件的年度记录ID列表
+    const yearIds = await countQueryBuilder.getRawMany();
+    const ids = yearIds.map(item => item.year_id || item.id);
+
+    if (ids.length === 0) {
+      return {
+        records: [],
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / limit),
+      };
+    }
+
+    // 第二步：根据ID获取完整的年度记录数据（包含关联数据）
+    const records = await this.yearRepository.find({
+      where: { id: In(ids) },
+      relations: ['customer', 'months'],
+      order: {
+        year: 'DESC',
+        createdAt: 'DESC',
+        months: {
+          month: 'ASC',
+        },
+      },
+    });
+
+    // 按照原有排序逻辑对结果进行排序（保持与第一步查询一致的顺序）
+    const sortedRecords = records.sort((a, b) => {
+      // 先按年份降序
+      if (a.year !== b.year) {
+        return b.year - a.year;
+      }
+      // 再按创建时间降序
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
 
     return {
-      records,
+      records: sortedRecords,
       total,
       page: Number(page),
       limit: Number(limit),
