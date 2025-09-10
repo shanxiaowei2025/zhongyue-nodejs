@@ -117,14 +117,14 @@ export class SalaryAutoUpdateService {
 
   /**
    * 计算代理费提成
-   * 1. 筛选sys_expense表中createdAt在指定时间范围内的记录
+   * 1. 筛选sys_expense表中chargeDate在指定时间范围内的记录
    * 2. 根据salesperson字段统计每个业务员的费用：
    *    - 代理费和社保代理费提成为1%
    *    - 记账软件费、开票软件费、地址费提成为10%
    * 3. 计算代理费提成
    * @param employeeName 员工姓名
-   * @param startDate 开始日期（上个月2号）
-   * @param endDate 结束日期（本月1号）
+   * @param startDate 开始日期（上个月1号）
+   * @param endDate 结束日期（上个月最后一天）
    * @returns 代理费提成金额
    */
   async calculateAgencyFeeCommission(
@@ -133,7 +133,7 @@ export class SalaryAutoUpdateService {
     endDate: string,
   ): Promise<number> {
     try {
-      // 1. 筛选sys_expense表中createdAt为上个月的记录（不限制businessType，因为所有类型的费用都可能产生提成）
+      // 1. 筛选sys_expense表中chargeDate为上个月的记录（不限制businessType，因为所有类型的费用都可能产生提成）
       // socialInsuranceAgencyFee 只有在 socialInsuranceBusinessType = '续费' 时才参与计算
       const expenseQuery = `
         SELECT 
@@ -145,7 +145,7 @@ export class SalaryAutoUpdateService {
         FROM sys_expense 
         WHERE 
           salesperson = ? AND 
-          createdAt BETWEEN ? AND ? AND
+          chargeDate BETWEEN ? AND ? AND
           status = 1
       `;
 
@@ -243,7 +243,7 @@ export class SalaryAutoUpdateService {
         FROM sys_expense 
         WHERE 
           salesperson = ? AND 
-          createdAt BETWEEN ? AND ? AND
+          chargeDate BETWEEN ? AND ? AND
           status = 1
       `;
 
@@ -327,7 +327,7 @@ export class SalaryAutoUpdateService {
           business_commission_outsource = 0,
           agency_commission = 0
         WHERE 
-          createdAt BETWEEN ? AND ? AND
+          chargeDate BETWEEN ? AND ? AND
           status = 1
       `;
 
@@ -350,12 +350,12 @@ export class SalaryAutoUpdateService {
 
   /**
    * 计算业务提成
-   * 1. 筛选sys_expense表中businessType是新增和值为空的，并且createdAt在指定时间范围内的记录
+   * 1. 筛选sys_expense表中businessType是新增和值为空的，并且chargeDate在指定时间范围内的记录
    * 2. 根据员工的sys_employees表中的commissionRatePosition区分每个人的提成比率
    * 3. 根据不同提成比率职位计算提成
    * @param employeeName 员工姓名
-   * @param startDate 开始日期（上个月2号）
-   * @param endDate 结束日期（本月1号）
+   * @param startDate 开始日期（上个月1号）
+   * @param endDate 结束日期（上个月最后一天）
    * @returns 业务提成金额和更新的baseSalary
    */
   async calculateBusinessCommission(
@@ -382,14 +382,14 @@ export class SalaryAutoUpdateService {
       const employee = employeeResults[0];
       const commissionRatePosition = employee.commissionRatePosition || '';
 
-      // 2. 筛选费用记录：新增和空的业务类型，指定时间范围内已审核的
+      // 2. 筛选费用记录：只筛选新增业务和空的业务类型，指定时间范围内已审核的
       const expenseQuery = `
         SELECT * FROM sys_expense 
         WHERE 
           salesperson = ? AND 
           (businessType = '新增' OR businessType IS NULL OR businessType = '') AND 
           status = 1 AND
-          createdAt BETWEEN ? AND ?
+          chargeDate BETWEEN ? AND ?
       `;
 
       const expenseResults = await this.dataSource.query(expenseQuery, [
@@ -543,10 +543,13 @@ export class SalaryAutoUpdateService {
 
             // 计算外包业务提成 (固定10%)
             const outsourceBusinessCommission = outsourceFee * 0.1;
+            
+            // 计算特殊业务提成（直接使用手工设置的金额）
+            const specialCommission = Number(expense.specialBusinessCommission || 0);
 
             // 计算总业务提成
             const totalBusinessCommission =
-              basicBusinessCommission + outsourceBusinessCommission;
+              basicBusinessCommission + outsourceBusinessCommission + specialCommission;
 
             // 更新费用表中的业务提成字段（保留原有字段，同时更新新字段）
             await this.dataSource.query(
@@ -564,7 +567,7 @@ export class SalaryAutoUpdateService {
             totalExpenseBusinessCommission += totalBusinessCommission;
 
             this.logger.debug(
-              `费用记录 ID:${expense.id} 计算业务提成: ${totalBusinessCommission}，基础业务: ${basicBusinessCommission}，外包业务: ${outsourceBusinessCommission}`,
+              `费用记录 ID:${expense.id} 计算业务提成: ${totalBusinessCommission}，基础业务: ${basicBusinessCommission}，外包业务: ${outsourceBusinessCommission}，特殊业务: ${specialCommission}`,
             );
           }
         } else {
@@ -598,8 +601,11 @@ export class SalaryAutoUpdateService {
               );
             }
             
+            // 计算特殊业务提成（直接使用手工设置的金额）
+            const specialCommission = Number(expense.specialBusinessCommission || 0);
+            
             // 计算总业务提成
-            const totalBusinessCommission = basicBusinessCommission + outsourceBusinessCommission;
+            const totalBusinessCommission = basicBusinessCommission + outsourceBusinessCommission + specialCommission;
 
             // 更新费用表中的业务提成字段
             await this.dataSource.query(
@@ -617,7 +623,7 @@ export class SalaryAutoUpdateService {
             totalExpenseBusinessCommission += totalBusinessCommission;
 
             this.logger.debug(
-              `费用记录 ID:${expense.id} 计算业务提成: 基础业务=${basicBusinessCommission}, 外包业务=${outsourceBusinessCommission}, 总计=${totalBusinessCommission}`,
+              `费用记录 ID:${expense.id} 计算业务提成: 基础业务=${basicBusinessCommission}, 外包业务=${outsourceBusinessCommission}, 特殊业务=${specialCommission}, 总计=${totalBusinessCommission}`,
             );
           }
         }
@@ -649,8 +655,11 @@ export class SalaryAutoUpdateService {
             );
           }
           
+          // 计算特殊业务提成（直接使用手工设置的金额）
+          const specialCommission = Number(expense.specialBusinessCommission || 0);
+          
           // 计算总业务提成
-          const totalBusinessCommission = basicBusinessCommission + outsourceBusinessCommission;
+          const totalBusinessCommission = basicBusinessCommission + outsourceBusinessCommission + specialCommission;
 
           // 更新费用表中的业务提成字段
           await this.dataSource.query(
@@ -668,7 +677,7 @@ export class SalaryAutoUpdateService {
           totalExpenseBusinessCommission += totalBusinessCommission;
 
           this.logger.debug(
-            `费用记录 ID:${expense.id} 计算业务提成: 基础业务=${basicBusinessCommission}, 外包业务=${outsourceBusinessCommission}, 总计=${totalBusinessCommission}`,
+            `费用记录 ID:${expense.id} 计算业务提成: 基础业务=${basicBusinessCommission}, 外包业务=${outsourceBusinessCommission}, 特殊业务=${specialCommission}, 总计=${totalBusinessCommission}`,
           );
         }
       }
@@ -716,6 +725,7 @@ export class SalaryAutoUpdateService {
   /**
    * 检查并更新记账会计的绩效扣除
    * 根据上个月账务自查数据，调整薪资表中记账会计的performanceDeductions字段
+   * 统计所有状态的账务自查记录，不限于已确认的记录
    * @param lastMonth 上个月对象
    */
   async checkAndUpdateAccountantPerformance(
@@ -753,11 +763,10 @@ export class SalaryAutoUpdateService {
 
       this.logger.warn(`找到${accountants.length}名记账会计`);
 
-      // 2. 筛选账务自查表，上个月，status字段为2或4的记录
+      // 2. 筛选账务自查表，上个月的所有记录，不再限制状态
       const inspectionSQL = `
         SELECT * FROM sys_financial_self_inspection 
-        WHERE inspectionDate BETWEEN ? AND ? 
-        AND status IN (2, 4)
+        WHERE inspectionDate BETWEEN ? AND ?
       `;
       this.logger.warn(
         `执行SQL: ${inspectionSQL.replace(/\n\s+/g, ' ')} [参数: ${firstDayOfLastMonth}, ${lastDayOfLastMonth}]`,
@@ -774,11 +783,11 @@ export class SalaryAutoUpdateService {
 
       if (!inspectionRecords || inspectionRecords.length === 0) {
         this.logger.warn(
-          '⚠️⚠️⚠️ 上月没有已确认的账务自查记录，但将继续统计并显示结果 ⚠️⚠️⚠️',
+          '⚠️⚠️⚠️ 上月没有账务自查记录，但将继续统计并显示结果 ⚠️⚠️⚠️',
         );
       } else {
         this.logger.warn(
-          `找到${inspectionRecords.length}条已确认的账务自查记录`,
+          `找到${inspectionRecords.length}条账务自查记录`,
         );
       }
 
@@ -1110,25 +1119,15 @@ export class SalaryAutoUpdateService {
       throw new Error(errorMessage);
     }
 
-    // 获取提成计算的时间范围：上个月2号到本月1号
-    // 由于数据库存储UTC时间，需要将UTC+8时间范围转换为UTC时间进行查询
+    // 获取提成计算的时间范围：上个月1号到最后一天
+    // chargeDate字段为日期格式，直接使用YYYY-MM-DD格式比较
     
-    // 设置为中国时区 (UTC+8)
-    moment.locale('zh-cn');
-    
-    // 明确创建UTC+8时间范围
-    const commissionStartDateUTC8 = lastMonth.clone().date(2).startOf('day'); // 上个月2号 00:00:00 (UTC+8)
-    const commissionEndDateUTC8 = now.clone().date(1).endOf('day'); // 本月1号 23:59:59 (UTC+8)
-    
-    // 转换为UTC时间（减去8小时）用于数据库查询
-    const commissionStartDate = commissionStartDateUTC8.clone().subtract(8, 'hours').format('YYYY-MM-DD HH:mm:ss');
-    const commissionEndDate = commissionEndDateUTC8.clone().subtract(8, 'hours').format('YYYY-MM-DD HH:mm:ss');
+    // 计算上个月的日期范围
+    const commissionStartDate = lastMonth.clone().date(1).format('YYYY-MM-DD'); // 上个月1号
+    const commissionEndDate = lastMonth.clone().endOf('month').format('YYYY-MM-DD'); // 上个月最后一天
 
     this.logger.log(
-      `生成${commissionStartDateUTC8.format('YYYY-MM-DD')}至${commissionEndDateUTC8.format('YYYY-MM-DD')}期间的薪资数据 (UTC+8时间)`,
-    );
-    this.logger.log(
-      `对应UTC时间范围: ${commissionStartDate}至${commissionEndDate}`,
+      `生成${commissionStartDate}至${commissionEndDate}期间的薪资数据`,
     );
 
     // 先检查和更新记账会计绩效扣除
@@ -1136,7 +1135,7 @@ export class SalaryAutoUpdateService {
 
     // 第一步：清空指定日期范围内费用记录的提成字段
     this.logger.log(
-      `开始清空${commissionStartDateUTC8.format('YYYY-MM-DD')}至${commissionEndDateUTC8.format('YYYY-MM-DD')}期间费用记录的提成字段 (UTC+8时间)`,
+      `开始清空${commissionStartDate}至${commissionEndDate}期间费用记录的提成字段`,
     );
     await this.clearExpenseCommissionFields(commissionStartDate, commissionEndDate);
 

@@ -270,6 +270,27 @@ export class Expense {
   })
   otherBusinessOutsourcingFee: number;
 
+  @Column({ type: 'simple-json', nullable: true, comment: '其他业务(特殊)' })
+  otherBusinessSpecial: string[];
+
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    comment: '其他业务费用(特殊)',
+  })
+  otherBusinessSpecialFee: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    comment: '特殊业务提成金额',
+  })
+  specialBusinessCommission: number;
+
   @Column({ type: 'simple-json', nullable: true, comment: '收费凭证' })
   proofOfCharge: string[];
 

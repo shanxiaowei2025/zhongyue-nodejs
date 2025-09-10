@@ -286,6 +286,22 @@ export class CreateExpenseDto {
   @IsNumber()
   otherBusinessOutsourcingFee?: number;
 
+  @ApiProperty({ description: '其他业务(特殊)', required: false })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  otherBusinessSpecial?: string[];
+
+  @ApiProperty({ description: '其他业务费用(特殊)', required: false })
+  @IsOptional()
+  @IsNumber()
+  otherBusinessSpecialFee?: number;
+
+  @ApiProperty({ description: '特殊业务提成金额', required: false })
+  @IsOptional()
+  @IsNumber()
+  specialBusinessCommission?: number;
+
   @ApiProperty({ description: '收费凭证', required: false })
   @IsOptional()
   @IsArray()

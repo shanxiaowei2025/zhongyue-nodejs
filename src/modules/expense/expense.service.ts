@@ -33,6 +33,8 @@ import * as os from 'os';
 import { CancelAuditDto } from './dto/cancel-audit.dto';
 import { ViewReceiptDto } from './dto/view-receipt.dto';
 import { Department } from '../department/entities/department.entity';
+import { DataSource } from 'typeorm';
+
 
 @Injectable()
 export class ExpenseService {
@@ -46,6 +48,7 @@ export class ExpenseService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Department)
     private readonly departmentRepository: Repository<Department>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async create(createExpenseDto: CreateExpenseDto, username: string) {
@@ -2120,4 +2123,83 @@ export class ExpenseService {
 
     return result;
   }
+
+  /**
+   * 查询特殊业务费用记录列表
+   */
+  async findSpecialExpenses(query: any) {
+    const { page = 1, pageSize = 10, salesperson, startDate, endDate, companyName } = query;
+    const offset = (page - 1) * pageSize;
+    
+    // 构建查询条件
+    let whereConditions = ['status = 1']; // 只查询已审核的记录
+    let params = [];
+    
+    // 查询有特殊业务的记录（有特殊业务内容、特殊业务费用或特殊业务提成）
+    const specialBusinessCondition = [
+      '(otherBusinessSpecial IS NOT NULL AND JSON_LENGTH(otherBusinessSpecial) > 0)',
+      '(otherBusinessSpecialFee IS NOT NULL AND otherBusinessSpecialFee > 0)',
+      '(specialBusinessCommission IS NOT NULL AND specialBusinessCommission > 0)'
+    ].join(' OR ');
+    whereConditions.push(`(${specialBusinessCondition})`);
+    
+    if (salesperson) {
+      whereConditions.push('salesperson = ?');
+      params.push(salesperson);
+    }
+    
+    if (startDate) {
+      whereConditions.push('chargeDate >= ?');
+      params.push(startDate);
+    }
+    
+    if (endDate) {
+      whereConditions.push('chargeDate <= ?');
+      params.push(endDate);
+    }
+    
+    if (companyName) {
+      whereConditions.push('companyName LIKE ?');
+      params.push(`%${companyName}%`);
+    }
+    
+    const whereClause = whereConditions.join(' AND ');
+    
+    // 查询总数
+    const countQuery = `SELECT COUNT(*) as total FROM sys_expense WHERE ${whereClause}`;
+    const [countResult] = await this.dataSource.query(countQuery, params);
+    const total = countResult.total;
+    
+    // 查询数据
+    const dataQuery = `
+      SELECT 
+        id,
+        companyName,
+        salesperson,
+        chargeDate,
+        otherBusinessSpecial,
+        otherBusinessSpecialFee,
+        specialBusinessCommission,
+        totalFee,
+        businessType,
+        auditor,
+        auditDate
+      FROM sys_expense 
+      WHERE ${whereClause}
+      ORDER BY chargeDate DESC, id DESC
+      LIMIT ? OFFSET ?
+    `;
+    
+    const expenses = await this.dataSource.query(dataQuery, [...params, pageSize, offset]);
+    
+    return {
+      data: expenses,
+      total,
+      page: Number(page),
+      pageSize: Number(pageSize),
+      totalPages: Math.ceil(total / pageSize),
+    };
+  }
+
+
 }

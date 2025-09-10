@@ -38,6 +38,9 @@ import { Response } from 'express';
 import { QueryReceiptDto } from './dto/query-receipt.dto';
 import { QueryMaxDatesDto } from './dto/query-max-dates.dto';
 import { ExpensePermissionService } from './services/expense-permission.service';
+import { QuerySpecialExpenseDto } from './dto/query-special-expense.dto';
+
+
 
 @ApiTags('费用管理')
 @Controller('expense')
@@ -324,6 +327,13 @@ export class ExpenseController {
     }
   }
 
+  @Get('special')
+  @ApiOperation({ summary: '查询特殊业务费用记录列表' })
+  @ApiResponse({ status: 200, description: '查询成功' })
+  async findSpecialExpenses(@Query() query: QuerySpecialExpenseDto) {
+    return this.expenseService.findSpecialExpenses(query);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: '获取单个费用记录' })
   findOne(@Param('id') id: string, @Req() req) {
@@ -449,4 +459,6 @@ export class ExpenseController {
       cancelAuditDto.cancelReason,
     );
   }
+
+
 }
