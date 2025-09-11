@@ -106,13 +106,33 @@ def update_excel_data(file_path):
             print(f"文件扩展名: {file_ext}")
             
             if file_ext == '.csv':
-                # 读取CSV文件
-                print(f"检测到CSV文件，使用pandas.read_csv读取")
-                df = pd.read_csv(file_path, encoding='utf-8')
-                # 尝试不同的编码方式（如果UTF-8失败）
-                if df.empty or len(df.columns) == 0:
-                    print("尝试使用GBK编码读取CSV文件")
-                    df = pd.read_csv(file_path, encoding='gbk')
+                # 读取CSV文件，尝试多种编码方式
+                print(f"检测到CSV文件，尝试读取")
+                
+                # 定义可能的编码列表，按可能性顺序排列
+                encodings_to_try = ['utf-8', 'gbk', 'gb2312', 'gb18030', 'big5', 'latin-1']
+                
+                # 尝试不同的编码读取文件
+                df = None
+                last_error = None
+                
+                for encoding in encodings_to_try:
+                    try:
+                        print(f"尝试使用 {encoding} 编码读取CSV文件")
+                        df = pd.read_csv(file_path, encoding=encoding)
+                        if df is not None and len(df.columns) > 0:
+                            print(f"成功使用 {encoding} 编码读取CSV文件")
+                            break
+                    except Exception as e:
+                        last_error = str(e)
+                        print(f"使用 {encoding} 编码读取失败: {str(e)}")
+                        continue
+                
+                # 如果所有编码都失败了，抛出异常
+                if df is None or len(df.columns) == 0:
+                    error_msg = f"无法读取CSV文件，尝试了以下编码: {', '.join(encodings_to_try)}，最后错误: {last_error}"
+                    print(error_msg)
+                    raise Exception(error_msg)
             else:
                 # 读取Excel文件
                 print(f"检测到Excel文件，使用pandas.read_excel读取")
