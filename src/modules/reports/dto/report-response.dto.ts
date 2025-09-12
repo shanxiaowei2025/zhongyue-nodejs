@@ -339,6 +339,14 @@ export class AccountantClientStatsItem {
 
   @ApiProperty({ description: '部门' })
   department?: string;
+
+  @ApiProperty({ 
+    description: '各等级客户数量统计', 
+    example: { 'AA': 5, 'A': 3, 'B': 2, '未分级': 1 },
+    type: 'object',
+    additionalProperties: { type: 'number' }
+  })
+  levelStats: Record<string, number>;
 }
 
 /**

@@ -1325,13 +1325,14 @@ export class ReportsService {
           .createQueryBuilder('customer')
           .select([
             'customer.consultantAccountant as accountantName',
-            'COUNT(*) as clientCount'
+            'customer.customerLevel as level',
+            'COUNT(*) as count'
           ])
           .where('customer.consultantAccountant IS NOT NULL')
           .andWhere('customer.consultantAccountant != ""')
           .andWhere('customer.enterpriseStatus != :status', { status: '已注销' })
           .andWhere('customer.businessStatus != :businessStatus', { businessStatus: '已流失' })
-          .groupBy('customer.consultantAccountant');
+          .groupBy('customer.consultantAccountant, customer.customerLevel');
 
         if (query.accountantName) {
           consultantQueryBuilder.andWhere('customer.consultantAccountant LIKE :name', {
@@ -1343,14 +1344,31 @@ export class ReportsService {
 
         const consultantResults = await consultantQueryBuilder.getRawMany();
         
+        // 重新组织数据结构，计算总数和各等级统计
+        const consultantStatsMap = new Map();
         consultantResults.forEach(item => {
           if (item.accountantName) {
-            consultantStats.set(item.accountantName, {
-              accountantName: item.accountantName,
-              accountantType: 'consultantAccountant' as const,
-              clientCount: parseInt(item.clientCount),
-            });
+            const accountantName = item.accountantName;
+            if (!consultantStatsMap.has(accountantName)) {
+              consultantStatsMap.set(accountantName, {
+                accountantName: accountantName,
+                accountantType: 'consultantAccountant' as const,
+                clientCount: 0,
+                levelStats: {}
+              });
+            }
+            const accountant = consultantStatsMap.get(accountantName);
+            const level = item.level || '未分级';
+            const count = parseInt(item.count);
+            
+            accountant.clientCount += count;
+            accountant.levelStats[level] = count;
           }
+        });
+
+        // 将结果存储到 consultantStats
+        consultantStatsMap.forEach((value, key) => {
+          consultantStats.set(key, value);
         });
       }
 
@@ -1361,13 +1379,14 @@ export class ReportsService {
           .createQueryBuilder('customer')
           .select([
             'customer.bookkeepingAccountant as accountantName',
-            'COUNT(*) as clientCount'
+            'customer.customerLevel as level',
+            'COUNT(*) as count'
           ])
           .where('customer.bookkeepingAccountant IS NOT NULL')
           .andWhere('customer.bookkeepingAccountant != ""')
           .andWhere('customer.enterpriseStatus != :status', { status: '已注销' })
           .andWhere('customer.businessStatus != :businessStatus', { businessStatus: '已流失' })
-          .groupBy('customer.bookkeepingAccountant');
+          .groupBy('customer.bookkeepingAccountant, customer.customerLevel');
 
         if (query.accountantName) {
           bookkeepingQueryBuilder.andWhere('customer.bookkeepingAccountant LIKE :name', {
@@ -1379,14 +1398,31 @@ export class ReportsService {
 
         const bookkeepingResults = await bookkeepingQueryBuilder.getRawMany();
         
+        // 重新组织数据结构，计算总数和各等级统计
+        const bookkeepingStatsMap = new Map();
         bookkeepingResults.forEach(item => {
           if (item.accountantName) {
-            bookkeepingStats.set(item.accountantName, {
-              accountantName: item.accountantName,
-              accountantType: 'bookkeepingAccountant' as const,
-              clientCount: parseInt(item.clientCount),
-            });
+            const accountantName = item.accountantName;
+            if (!bookkeepingStatsMap.has(accountantName)) {
+              bookkeepingStatsMap.set(accountantName, {
+                accountantName: accountantName,
+                accountantType: 'bookkeepingAccountant' as const,
+                clientCount: 0,
+                levelStats: {}
+              });
+            }
+            const accountant = bookkeepingStatsMap.get(accountantName);
+            const level = item.level || '未分级';
+            const count = parseInt(item.count);
+            
+            accountant.clientCount += count;
+            accountant.levelStats[level] = count;
           }
+        });
+
+        // 将结果存储到 bookkeepingStats
+        bookkeepingStatsMap.forEach((value, key) => {
+          bookkeepingStats.set(key, value);
         });
       }
 
@@ -1397,13 +1433,14 @@ export class ReportsService {
           .createQueryBuilder('customer')
           .select([
             'customer.invoiceOfficer as accountantName',
-            'COUNT(*) as clientCount'
+            'customer.customerLevel as level',
+            'COUNT(*) as count'
           ])
           .where('customer.invoiceOfficer IS NOT NULL')
           .andWhere('customer.invoiceOfficer != ""')
           .andWhere('customer.enterpriseStatus != :status', { status: '已注销' })
           .andWhere('customer.businessStatus != :businessStatus', { businessStatus: '已流失' })
-          .groupBy('customer.invoiceOfficer');
+          .groupBy('customer.invoiceOfficer, customer.customerLevel');
 
         if (query.accountantName) {
           invoiceQueryBuilder.andWhere('customer.invoiceOfficer LIKE :name', {
@@ -1415,14 +1452,31 @@ export class ReportsService {
 
         const invoiceResults = await invoiceQueryBuilder.getRawMany();
         
+        // 重新组织数据结构，计算总数和各等级统计
+        const invoiceStatsMap = new Map();
         invoiceResults.forEach(item => {
           if (item.accountantName) {
-            invoiceStats.set(item.accountantName, {
-              accountantName: item.accountantName,
-              accountantType: 'invoiceOfficer' as const,
-              clientCount: parseInt(item.clientCount),
-            });
+            const accountantName = item.accountantName;
+            if (!invoiceStatsMap.has(accountantName)) {
+              invoiceStatsMap.set(accountantName, {
+                accountantName: accountantName,
+                accountantType: 'invoiceOfficer' as const,
+                clientCount: 0,
+                levelStats: {}
+              });
+            }
+            const accountant = invoiceStatsMap.get(accountantName);
+            const level = item.level || '未分级';
+            const count = parseInt(item.count);
+            
+            accountant.clientCount += count;
+            accountant.levelStats[level] = count;
           }
+        });
+
+        // 将结果存储到 invoiceStats
+        invoiceStatsMap.forEach((value, key) => {
+          invoiceStats.set(key, value);
         });
       }
 

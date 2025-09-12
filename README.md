@@ -226,7 +226,7 @@ socket.on('new-notification', (data) => { console.log('收到新通知:', data);
   - 社保信息导入：`POST /api/social-insurance/import`
   - 补贴合计导入：`POST /api/subsidy-summary/import`
   - 朋友圈扣款导入：`POST /api/friend-circle-payment/import`
-  - 考勤扣款导入：`POST /api/attendance-deduction/import`
+  - 考勤扣款导入：`POST /api/attendance-deduction/import`（已增强员工姓名对比功能）
   - 保证金导入：`POST /api/deposit/upload`
 - **年月查询统一优化**：所有薪资模块支持 `yearMonth=2025-06` 格式的年月查询参数
 - **薪资更新接口修复**：修复更新薪资记录时动态字段（`payrollCompany`、`depositTotal`）导致的数据库字段冲突问题
@@ -952,6 +952,65 @@ Body: {
 - 员工调岗后的权限重置
 
 ## 更新历史
+
+### 2025-01-17
+- **费用导出字段映射优化**：
+  - 修改费用导出CSV接口 `/api/expense/export/csv` 的字段映射名称
+  - **字段映射更新**：
+    - `otherBusiness`: `其他业务（自有）` → `其他业务(基础)`
+    - `otherBusinessFee`: `其他业务收费（自有）` → `其他业务收费(基础)`
+    - `otherBusinessOutsourcing`: `其他业务（外包）` → `其他业务`
+    - `otherBusinessOutsourcingFee`: `其他业务收费（外包）` → `其他业务收费`
+  - **新增字段映射**：
+    - `otherBusinessSpecial`: `其他业务(特殊)`
+    - `otherBusinessSpecialFee`: `其他业务收费(特殊)`
+  - **数据处理优化**：为新增的 `otherBusinessSpecial` 字段添加数组字符串处理逻辑
+  - **向后兼容**：保持原有导出功能完全兼容，仅调整字段标题显示
+
+### 2025-01-17
+- **客户管理接口多选参数功能**：
+  - 为 `/api/customer` 接口的5个字段实现多选支持，与 `/api/expense` 接口中 `businessType` 字段的多选功能保持一致
+  - **支持多选的字段**：
+    - `enterpriseType`：企业类型，支持多选查询
+    - `customerLevel`：客户分级，支持多选查询  
+    - `location`：归属地，支持多选查询
+    - `enterpriseStatus`：企业当前的经营状态，支持多选查询
+    - `businessStatus`：当前业务的状态，支持多选查询
+  - **技术实现**：
+    - 修改查询DTO和导出DTO，字段类型从 `string` 改为 `string | string[]`
+    - 在服务层实现复杂的OR条件查询逻辑，支持数组和单值两种格式
+    - 正确处理空值、null值和undefined值的查询条件
+    - 为查询和导出功能同时实现多选支持
+    - 在控制器中添加详细的API文档说明，包含多选使用示例
+  - **使用方式**：
+    - 单个值：`enterpriseType=有限责任公司`
+    - 多个值：`enterpriseType=有限责任公司&enterpriseType=股份有限公司`
+    - 支持与空值混合查询，能正确匹配数据库中的NULL或空字符串字段
+  - **向后兼容**：保持原有单选功能完全兼容，新增的多选功能不影响现有使用方式
+  - **完整覆盖**：查询接口、导出接口、Swagger文档均已完整支持多选功能
+
+### 2025-01-17
+- **考勤扣款导入员工姓名对比功能优化**：
+  - 为考勤扣款导入接口 `POST /api/attendance-deduction/import` 优化员工姓名对比功能
+  - **智能过滤导入**：改进导入逻辑，允许导入匹配的员工数据，自动跳过不匹配的员工
+  - **对比逻辑**：导入前自动对比导入文件中的姓名与 `sys_employees` 表中在职员工姓名
+  - **灵活处理策略**：
+    - 对于导入文件中存在但员工表中不存在的员工：**自动跳过**，不阻止整个导入流程
+    - 对于员工表中存在但导入文件中缺失的员工：**仅提醒**，不影响导入
+    - 只有当导入文件中所有员工都不存在于员工表时才完全拒绝导入
+  - **用户体验优化**：
+    - 支持部分导入，提高工作效率
+    - 提供详细的跳过和成功统计信息
+    - 返回具体的不匹配员工姓名列表，便于用户了解处理结果
+  - **在职员工筛选**：只对比在职员工（`isResigned = false` 或 `NULL`），离职员工不参与对比
+  - **技术实现**：
+    - Python脚本中实现智能过滤逻辑，过滤掉无效员工后继续处理
+    - API响应格式增强，包含 `warning`、`name_mismatch_details` 等详细信息
+    - 支持成功导入时同时返回警告信息
+  - **API响应优化**：
+    - 成功响应包含跳过员工的详细信息
+    - 新增 `warning` 字段提示部分员工被跳过
+    - 保持向后兼容，支持完全匹配和部分匹配两种场景
 
 ### 2025-01-17
 - **薪资管理接口数值字段范围筛选功能**：

@@ -246,10 +246,39 @@ export class CustomerService {
           "(customer.enterpriseType IS NULL OR customer.enterpriseType = '')",
         );
       } else {
-        // 否则按照原来的方式查询
-        queryBuilder.andWhere('customer.enterpriseType LIKE :enterpriseType', {
-          enterpriseType: `%${enterpriseType}%`,
-        });
+        // 处理多选企业类型筛选
+        const enterpriseTypes = Array.isArray(enterpriseType) 
+          ? enterpriseType 
+          : [enterpriseType];
+        
+        if (enterpriseTypes.length > 0) {
+          const conditions = [];
+          const params = {};
+          let paramIndex = 0;
+          
+          // 检查是否包含空值或null值
+          const hasEmptyValue = enterpriseTypes.some(type => 
+            type === '' || type === null || type === undefined || type === 'null'
+          );
+          
+          // 如果包含空值，添加NULL或空字符串的条件
+          if (hasEmptyValue) {
+            conditions.push("(customer.enterpriseType IS NULL OR customer.enterpriseType = '')");
+          }
+          
+          // 处理非空值
+          enterpriseTypes.forEach((type) => {
+            if (type !== '' && type !== null && type !== undefined && type !== 'null') {
+              conditions.push(`customer.enterpriseType LIKE :enterpriseType${paramIndex}`);
+              params[`enterpriseType${paramIndex}`] = `%${type}%`;
+              paramIndex++;
+            }
+          });
+          
+          if (conditions.length > 0) {
+            queryBuilder.andWhere(`(${conditions.join(' OR ')})`, params);
+          }
+        }
       }
     }
 
@@ -274,9 +303,39 @@ export class CustomerService {
           "(customer.enterpriseStatus IS NULL OR customer.enterpriseStatus = '')",
         );
       } else {
-        queryBuilder.andWhere('customer.enterpriseStatus = :enterpriseStatus', {
-          enterpriseStatus,
-        });
+        // 处理多选企业状态筛选
+        const enterpriseStatuses = Array.isArray(enterpriseStatus) 
+          ? enterpriseStatus 
+          : [enterpriseStatus];
+        
+        if (enterpriseStatuses.length > 0) {
+          const conditions = [];
+          const params = {};
+          let paramIndex = 0;
+          
+          // 检查是否包含空值或null值
+          const hasEmptyValue = enterpriseStatuses.some(status => 
+            status === '' || status === null || status === undefined || status === 'null'
+          );
+          
+          // 如果包含空值，添加NULL或空字符串的条件
+          if (hasEmptyValue) {
+            conditions.push("(customer.enterpriseStatus IS NULL OR customer.enterpriseStatus = '')");
+          }
+          
+          // 处理非空值
+          enterpriseStatuses.forEach((status) => {
+            if (status !== '' && status !== null && status !== undefined && status !== 'null') {
+              conditions.push(`customer.enterpriseStatus = :enterpriseStatus${paramIndex}`);
+              params[`enterpriseStatus${paramIndex}`] = status;
+              paramIndex++;
+            }
+          });
+          
+          if (conditions.length > 0) {
+            queryBuilder.andWhere(`(${conditions.join(' OR ')})`, params);
+          }
+        }
       }
     }
 
@@ -286,9 +345,39 @@ export class CustomerService {
           "(customer.customerLevel IS NULL OR customer.customerLevel = '')",
         );
       } else {
-        queryBuilder.andWhere('customer.customerLevel = :customerLevel', {
-          customerLevel,
-        });
+        // 处理多选客户等级筛选
+        const customerLevels = Array.isArray(customerLevel) 
+          ? customerLevel 
+          : [customerLevel];
+        
+        if (customerLevels.length > 0) {
+          const conditions = [];
+          const params = {};
+          let paramIndex = 0;
+          
+          // 检查是否包含空值或null值
+          const hasEmptyValue = customerLevels.some(level => 
+            level === '' || level === null || level === undefined || level === 'null'
+          );
+          
+          // 如果包含空值，添加NULL或空字符串的条件
+          if (hasEmptyValue) {
+            conditions.push("(customer.customerLevel IS NULL OR customer.customerLevel = '')");
+          }
+          
+          // 处理非空值
+          customerLevels.forEach((level) => {
+            if (level !== '' && level !== null && level !== undefined && level !== 'null') {
+              conditions.push(`customer.customerLevel = :customerLevel${paramIndex}`);
+              params[`customerLevel${paramIndex}`] = level;
+              paramIndex++;
+            }
+          });
+          
+          if (conditions.length > 0) {
+            queryBuilder.andWhere(`(${conditions.join(' OR ')})`, params);
+          }
+        }
       }
     }
 
@@ -298,9 +387,39 @@ export class CustomerService {
           "(customer.businessStatus IS NULL OR customer.businessStatus = '')",
         );
       } else {
-        queryBuilder.andWhere('customer.businessStatus = :businessStatus', {
-          businessStatus,
-        });
+        // 处理多选业务状态筛选
+        const businessStatuses = Array.isArray(businessStatus) 
+          ? businessStatus 
+          : [businessStatus];
+        
+        if (businessStatuses.length > 0) {
+          const conditions = [];
+          const params = {};
+          let paramIndex = 0;
+          
+          // 检查是否包含空值或null值
+          const hasEmptyValue = businessStatuses.some(status => 
+            status === '' || status === null || status === undefined || status === 'null'
+          );
+          
+          // 如果包含空值，添加NULL或空字符串的条件
+          if (hasEmptyValue) {
+            conditions.push("(customer.businessStatus IS NULL OR customer.businessStatus = '')");
+          }
+          
+          // 处理非空值
+          businessStatuses.forEach((status) => {
+            if (status !== '' && status !== null && status !== undefined && status !== 'null') {
+              conditions.push(`customer.businessStatus = :businessStatus${paramIndex}`);
+              params[`businessStatus${paramIndex}`] = status;
+              paramIndex++;
+            }
+          });
+          
+          if (conditions.length > 0) {
+            queryBuilder.andWhere(`(${conditions.join(' OR ')})`, params);
+          }
+        }
       }
     }
 
@@ -310,9 +429,39 @@ export class CustomerService {
           "(customer.location IS NULL OR customer.location = '')",
         );
       } else {
-        queryBuilder.andWhere('customer.location LIKE :location', {
-          location: `%${location}%`,
-        });
+        // 处理多选归属地筛选
+        const locations = Array.isArray(location) 
+          ? location 
+          : [location];
+        
+        if (locations.length > 0) {
+          const conditions = [];
+          const params = {};
+          let paramIndex = 0;
+          
+          // 检查是否包含空值或null值
+          const hasEmptyValue = locations.some(loc => 
+            loc === '' || loc === null || loc === undefined || loc === 'null'
+          );
+          
+          // 如果包含空值，添加NULL或空字符串的条件
+          if (hasEmptyValue) {
+            conditions.push("(customer.location IS NULL OR customer.location = '')");
+          }
+          
+          // 处理非空值
+          locations.forEach((loc) => {
+            if (loc !== '' && loc !== null && loc !== undefined && loc !== 'null') {
+              conditions.push(`customer.location LIKE :location${paramIndex}`);
+              params[`location${paramIndex}`] = `%${loc}%`;
+              paramIndex++;
+            }
+          });
+          
+          if (conditions.length > 0) {
+            queryBuilder.andWhere(`(${conditions.join(' OR ')})`, params);
+          }
+        }
       }
     }
 
@@ -848,13 +997,39 @@ export class CustomerService {
             "(customer.enterpriseType IS NULL OR customer.enterpriseType = '')",
           );
         } else {
-          // 否则按照原来的方式查询
-          queryBuilder.andWhere(
-            'customer.enterpriseType LIKE :enterpriseType',
-            {
-              enterpriseType: `%${query.enterpriseType}%`,
-            },
-          );
+          // 处理多选企业类型筛选
+          const enterpriseTypes = Array.isArray(query.enterpriseType) 
+            ? query.enterpriseType 
+            : [query.enterpriseType];
+          
+          if (enterpriseTypes.length > 0) {
+            const conditions = [];
+            const params = {};
+            let paramIndex = 0;
+            
+            // 检查是否包含空值或null值
+            const hasEmptyValue = enterpriseTypes.some(type => 
+              type === '' || type === null || type === undefined || type === 'null'
+            );
+            
+            // 如果包含空值，添加NULL或空字符串的条件
+            if (hasEmptyValue) {
+              conditions.push("(customer.enterpriseType IS NULL OR customer.enterpriseType = '')");
+            }
+            
+            // 处理非空值
+            enterpriseTypes.forEach((type) => {
+              if (type !== '' && type !== null && type !== undefined && type !== 'null') {
+                conditions.push(`customer.enterpriseType LIKE :enterpriseTypeExport${paramIndex}`);
+                params[`enterpriseTypeExport${paramIndex}`] = `%${type}%`;
+                paramIndex++;
+              }
+            });
+            
+            if (conditions.length > 0) {
+              queryBuilder.andWhere(`(${conditions.join(' OR ')})`, params);
+            }
+          }
         }
       }
 
@@ -879,12 +1054,39 @@ export class CustomerService {
             "(customer.enterpriseStatus IS NULL OR customer.enterpriseStatus = '')",
           );
         } else {
-          queryBuilder.andWhere(
-            'customer.enterpriseStatus = :enterpriseStatus',
-            {
-              enterpriseStatus: query.enterpriseStatus,
-            },
-          );
+          // 处理多选企业状态筛选
+          const enterpriseStatuses = Array.isArray(query.enterpriseStatus) 
+            ? query.enterpriseStatus 
+            : [query.enterpriseStatus];
+          
+          if (enterpriseStatuses.length > 0) {
+            const conditions = [];
+            const params = {};
+            let paramIndex = 0;
+            
+            // 检查是否包含空值或null值
+            const hasEmptyValue = enterpriseStatuses.some(status => 
+              status === '' || status === null || status === undefined || status === 'null'
+            );
+            
+            // 如果包含空值，添加NULL或空字符串的条件
+            if (hasEmptyValue) {
+              conditions.push("(customer.enterpriseStatus IS NULL OR customer.enterpriseStatus = '')");
+            }
+            
+            // 处理非空值
+            enterpriseStatuses.forEach((status) => {
+              if (status !== '' && status !== null && status !== undefined && status !== 'null') {
+                conditions.push(`customer.enterpriseStatus = :enterpriseStatusExport${paramIndex}`);
+                params[`enterpriseStatusExport${paramIndex}`] = status;
+                paramIndex++;
+              }
+            });
+            
+            if (conditions.length > 0) {
+              queryBuilder.andWhere(`(${conditions.join(' OR ')})`, params);
+            }
+          }
         }
       }
 
@@ -894,9 +1096,39 @@ export class CustomerService {
             "(customer.customerLevel IS NULL OR customer.customerLevel = '')",
           );
         } else {
-          queryBuilder.andWhere('customer.customerLevel = :customerLevel', {
-            customerLevel: query.customerLevel,
-          });
+          // 处理多选客户等级筛选
+          const customerLevels = Array.isArray(query.customerLevel) 
+            ? query.customerLevel 
+            : [query.customerLevel];
+          
+          if (customerLevels.length > 0) {
+            const conditions = [];
+            const params = {};
+            let paramIndex = 0;
+            
+            // 检查是否包含空值或null值
+            const hasEmptyValue = customerLevels.some(level => 
+              level === '' || level === null || level === undefined || level === 'null'
+            );
+            
+            // 如果包含空值，添加NULL或空字符串的条件
+            if (hasEmptyValue) {
+              conditions.push("(customer.customerLevel IS NULL OR customer.customerLevel = '')");
+            }
+            
+            // 处理非空值
+            customerLevels.forEach((level) => {
+              if (level !== '' && level !== null && level !== undefined && level !== 'null') {
+                conditions.push(`customer.customerLevel = :customerLevelExport${paramIndex}`);
+                params[`customerLevelExport${paramIndex}`] = level;
+                paramIndex++;
+              }
+            });
+            
+            if (conditions.length > 0) {
+              queryBuilder.andWhere(`(${conditions.join(' OR ')})`, params);
+            }
+          }
         }
       }
 
@@ -906,9 +1138,81 @@ export class CustomerService {
             "(customer.location IS NULL OR customer.location = '')",
           );
         } else {
-          queryBuilder.andWhere('customer.location LIKE :location', {
-            location: `%${query.location}%`,
-          });
+          // 处理多选归属地筛选
+          const locations = Array.isArray(query.location) 
+            ? query.location 
+            : [query.location];
+          
+          if (locations.length > 0) {
+            const conditions = [];
+            const params = {};
+            let paramIndex = 0;
+            
+            // 检查是否包含空值或null值
+            const hasEmptyValue = locations.some(loc => 
+              loc === '' || loc === null || loc === undefined || loc === 'null'
+            );
+            
+            // 如果包含空值，添加NULL或空字符串的条件
+            if (hasEmptyValue) {
+              conditions.push("(customer.location IS NULL OR customer.location = '')");
+            }
+            
+            // 处理非空值
+            locations.forEach((loc) => {
+              if (loc !== '' && loc !== null && loc !== undefined && loc !== 'null') {
+                conditions.push(`customer.location LIKE :locationExport${paramIndex}`);
+                params[`locationExport${paramIndex}`] = `%${loc}%`;
+                paramIndex++;
+              }
+            });
+            
+            if (conditions.length > 0) {
+              queryBuilder.andWhere(`(${conditions.join(' OR ')})`, params);
+            }
+          }
+        }
+      }
+
+      if (query.businessStatus !== undefined) {
+        if (query.businessStatus === '') {
+          queryBuilder.andWhere(
+            "(customer.businessStatus IS NULL OR customer.businessStatus = '')",
+          );
+        } else {
+          // 处理多选业务状态筛选
+          const businessStatuses = Array.isArray(query.businessStatus) 
+            ? query.businessStatus 
+            : [query.businessStatus];
+          
+          if (businessStatuses.length > 0) {
+            const conditions = [];
+            const params = {};
+            let paramIndex = 0;
+            
+            // 检查是否包含空值或null值
+            const hasEmptyValue = businessStatuses.some(status => 
+              status === '' || status === null || status === undefined || status === 'null'
+            );
+            
+            // 如果包含空值，添加NULL或空字符串的条件
+            if (hasEmptyValue) {
+              conditions.push("(customer.businessStatus IS NULL OR customer.businessStatus = '')");
+            }
+            
+            // 处理非空值
+            businessStatuses.forEach((status) => {
+              if (status !== '' && status !== null && status !== undefined && status !== 'null') {
+                conditions.push(`customer.businessStatus = :businessStatusExport${paramIndex}`);
+                params[`businessStatusExport${paramIndex}`] = status;
+                paramIndex++;
+              }
+            });
+            
+            if (conditions.length > 0) {
+              queryBuilder.andWhere(`(${conditions.join(' OR ')})`, params);
+            }
+          }
         }
       }
 

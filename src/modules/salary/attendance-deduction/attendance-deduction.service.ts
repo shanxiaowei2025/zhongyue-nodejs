@@ -85,115 +85,175 @@ export class AttendanceDeductionService {
 
         // 收集标准输出
         pythonProcess.stdout.on('data', (data) => {
-          dataString += data.toString();
-          console.log('Python输出:', data.toString());
+          const output = data.toString();
+          dataString += output;
+          console.log('Python输出:', output);
 
-          // 尝试提取JSON结果
-          const resultMatch = dataString.match(/IMPORT_RESULT_JSON: (\{.*\})/s);
-          if (resultMatch && resultMatch[1]) {
+          // 尝试解析JSON结果
+          const importResultMatch = output.match(
+            /IMPORT_RESULT_JSON:\s*({.*})/,
+          );
+          if (importResultMatch) {
             try {
-              resultJson = JSON.parse(resultMatch[1]);
+              resultJson = JSON.parse(importResultMatch[1]);
               console.log('解析到导入结果:', resultJson);
             } catch (e) {
-              console.error('解析JSON结果失败:', e);
+              console.error('解析导入结果JSON失败:', e);
             }
           }
 
-          // 尝试提取错误信息
-          const errorMatch = dataString.match(/ERROR_INFO_JSON: (\{.*\})/s);
-          if (errorMatch && errorMatch[1]) {
+          // 尝试解析错误信息JSON
+          const errorInfoMatch = output.match(/ERROR_INFO_JSON:\s*({.*})/);
+          if (errorInfoMatch) {
             try {
-              resultJson = JSON.parse(errorMatch[1]);
-              console.log('解析到错误信息:', resultJson);
+              const errorInfo = JSON.parse(errorInfoMatch[1]);
+              console.log('解析到错误信息:', errorInfo);
+              
+              // 处理不同类型的错误
+              if (errorInfo.error_type === 'name_mismatch') {
+                // 姓名对比错误
+                const nameMismatchDetails = errorInfo.name_mismatch_details || {};
+                const employeesNotRecorded = nameMismatchDetails.employees_not_recorded || [];
+                const employeesNoAttendance = nameMismatchDetails.employees_no_attendance || [];
+                
+                let detailedMessage = errorInfo.error_message;
+                if (employeesNotRecorded.length > 0) {
+                  detailedMessage += `\n未录入的员工: ${employeesNotRecorded.join(', ')}`;
+                }
+                if (employeesNoAttendance.length > 0) {
+                  detailedMessage += `\n缺少考勤信息的员工: ${employeesNoAttendance.join(', ')}`;
+                }
+                
+                resultJson = {
+                  success: false,
+                  error: '员工姓名对比失败',
+                  details: detailedMessage,
+                  error_type: 'name_mismatch',
+                  name_mismatch_details: nameMismatchDetails,
+                  importedCount: 0,
+                  failedCount: 0,
+                  failedRecords: [],
+                };
+              } else {
+                // 其他类型的错误
+                resultJson = {
+                  success: false,
+                  error: '导入失败',
+                  details: errorInfo.error_message,
+                  error_type: errorInfo.error_type,
+                  importedCount: 0,
+                  failedCount: 0,
+                  failedRecords: errorInfo.failed_records || [],
+                };
+              }
             } catch (e) {
-              console.error('解析JSON错误信息失败:', e);
+              console.error('解析错误信息JSON失败:', e);
             }
           }
         });
 
-        // 收集错误输出
+        // 收集标准错误
         pythonProcess.stderr.on('data', (data) => {
-          errorString += data.toString();
-          console.error('Python错误:', data.toString());
+          const error = data.toString();
+          errorString += error;
+          console.error('Python错误:', error);
         });
 
-        // 进程结束
+        // 进程结束处理
         pythonProcess.on('close', async (code) => {
-          console.log(`Python进程退出，退出码: ${code}`);
+          console.log(`Python进程结束，退出码: ${code}`);
 
-          // 清理临时文件
           try {
+            // 清理临时文件
             await fs.promises.unlink(tempFilePath);
-            console.log('临时文件已删除');
-          } catch (err) {
-            console.error('删除临时文件失败:', err);
+            console.log('临时文件已删除:', tempFilePath);
+          } catch (unlinkError) {
+            console.warn('删除临时文件失败:', unlinkError);
           }
 
-          if (code !== 0) {
-            console.error('Python脚本执行失败:', errorString);
-            return reject({
-              success: false,
-              error: '导入失败',
-              details: errorString || '未知错误',
-              exitCode: code,
-            });
-          }
-
-          // 如果没有从输出中解析到结果JSON，则创建一个默认的
-          if (!resultJson) {
-            if (code === 0) {
-              resultJson = {
+          if (code === 0) {
+            // 成功执行
+            if (resultJson) {
+              console.log('导入成功，结果:', resultJson);
+              
+              // 构建响应消息
+              let message = `成功导入 ${resultJson.imported_count} 条记录`;
+              if (resultJson.warning) {
+                message += `，${resultJson.warning}`;
+              }
+              
+              resolve({
                 success: true,
-                message: '文件导入成功，但未返回详细结果',
-                imported_count: 0,
-                failed_count: 0,
-              };
+                message: message,
+                importedCount: resultJson.imported_count,
+                failedCount: resultJson.failed_count,
+                failedRecords: resultJson.failed_records,
+                warning: resultJson.warning,
+                name_mismatch_details: resultJson.name_mismatch_details,
+              });
             } else {
-              resultJson = {
+              console.log('导入完成但未获取到结果JSON');
+              resolve({
+                success: true,
+                message: '导入完成',
+                importedCount: 0,
+                failedCount: 0,
+                failedRecords: [],
+              });
+            }
+          } else {
+            // 执行失败
+            console.error('Python脚本执行失败');
+            console.error('标准输出:', dataString);
+            console.error('标准错误:', errorString);
+
+            if (resultJson) {
+              // 有具体的错误信息
+              reject({
                 success: false,
-                message: '文件导入失败',
-                error_message: errorString || '未知错误',
-                imported_count: 0,
-                failed_count: 0,
-              };
+                error: resultJson.error || '导入失败',
+                details: resultJson.details || errorString || '未知错误',
+                error_type: resultJson.error_type,
+                name_mismatch_details: resultJson.name_mismatch_details,
+                importedCount: resultJson.importedCount || 0,
+                failedCount: resultJson.failedCount || 0,
+                failedRecords: resultJson.failedRecords || [],
+              });
+            } else {
+              // 通用错误处理
+              reject({
+                success: false,
+                error: '导入失败',
+                details: errorString || '未知错误',
+                importedCount: 0,
+                failedCount: 0,
+                failedRecords: [],
+              });
             }
           }
-
-          resolve({
-            success: resultJson.success,
-            message: resultJson.success
-              ? `成功导入 ${resultJson.imported_count} 条记录`
-              : resultJson.error_message || '导入失败',
-            importedCount: resultJson.imported_count || 0,
-            failedCount: resultJson.failed_count || 0,
-            failedRecords: resultJson.failed_records || [],
-          });
         });
 
-        // 处理错误
-        pythonProcess.on('error', async (err) => {
-          console.error('启动Python进程失败:', err);
-
-          // 清理临时文件
-          try {
-            await fs.promises.unlink(tempFilePath);
-            console.log('临时文件已删除');
-          } catch (delErr) {
-            console.error('删除临时文件失败:', delErr);
-          }
-
+        // 处理进程错误
+        pythonProcess.on('error', (error) => {
+          console.error('Python进程启动失败:', error);
           reject({
             success: false,
-            error: '启动导入进程失败',
-            details: err.message,
+            error: '导入失败',
+            details: `进程启动失败: ${error.message}`,
+            importedCount: 0,
+            failedCount: 0,
+            failedRecords: [],
           });
         });
       } catch (error) {
         console.error('导入数据异常:', error);
         reject({
           success: false,
-          error: '导入数据异常',
+          error: '导入失败',
           details: error.message,
+          importedCount: 0,
+          failedCount: 0,
+          failedRecords: [],
         });
       }
     });

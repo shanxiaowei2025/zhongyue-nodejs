@@ -1880,10 +1880,12 @@ export class ExpenseService {
       brandFee: '牌子费',
       generalSealFee: '一般刻章费用',
       invoiceSoftwareFee: '开票软件费',
-      otherBusinessFee: '其他业务收费（自有）',
-      otherBusiness: '其他业务（自有）',
-      otherBusinessOutsourcingFee: '其他业务收费（外包）',
-      otherBusinessOutsourcing: '其他业务（外包）',
+      otherBusinessFee: '其他业务收费(基础)',
+      otherBusiness: '其他业务(基础)',
+      otherBusinessOutsourcingFee: '其他业务收费',
+      otherBusinessOutsourcing: '其他业务',
+      otherBusinessSpecialFee: '其他业务收费(特殊)',
+      otherBusinessSpecial: '其他业务(特殊)',
       housingFundAgencyFee: '公积金代理费',
       statisticalReportFee: '统计局报表费',
       totalFeeExcludeRecordSeal: '总费用（除备案章费用）',
@@ -1908,7 +1910,7 @@ export class ExpenseService {
       }
 
       // 处理字符串数组类型字段
-      ['otherBusiness', 'otherBusinessOutsourcing'].forEach((field) => {
+      ['otherBusiness', 'otherBusinessOutsourcing', 'otherBusinessSpecial'].forEach((field) => {
         if (item[field] && Array.isArray(item[field])) {
           item[field] = item[field].join(',');
         }

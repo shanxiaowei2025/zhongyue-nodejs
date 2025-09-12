@@ -28,25 +28,42 @@ export class ExportCustomerDto {
   @IsString()
   taxBureau?: string;
 
-  @ApiProperty({ description: '企业类型', required: false })
+  @ApiProperty({ 
+    description: '企业类型，支持多选，可以传递单个值或数组', 
+    required: false,
+    example: ['有限责任公司', '股份有限公司'] 
+  })
   @IsOptional()
-  @IsString()
-  enterpriseType?: string;
+  enterpriseType?: string | string[];
 
   @ApiProperty({ description: '行业大类', required: false })
   @IsOptional()
   @IsString()
   industryCategory?: string;
 
-  @ApiProperty({ description: '企业当前的经营状态', required: false })
+  @ApiProperty({ 
+    description: '企业当前的经营状态，支持多选，可以传递单个值或数组', 
+    required: false,
+    example: ['存续', '在业'] 
+  })
   @IsOptional()
-  @IsString()
-  enterpriseStatus?: string;
+  enterpriseStatus?: string | string[];
 
-  @ApiProperty({ description: '客户分级', required: false })
+  @ApiProperty({ 
+    description: '客户分级，支持多选，可以传递单个值或数组', 
+    required: false,
+    example: ['AA', 'A'] 
+  })
   @IsOptional()
-  @IsString()
-  customerLevel?: string;
+  customerLevel?: string | string[];
+
+  @ApiProperty({ 
+    description: '当前业务的状态，支持多选，可以传递单个值或数组', 
+    required: false,
+    example: ['active', 'inactive'] 
+  })
+  @IsOptional()
+  businessStatus?: string | string[];
 
   @ApiProperty({
     description: '创建开始日期（筛选创建时间开始日期，格式：YYYY-MM-DD）',
@@ -67,10 +84,13 @@ export class ExportCustomerDto {
   @IsString()
   endDate?: string;
 
-  @ApiProperty({ description: '归属地', required: false })
+  @ApiProperty({ 
+    description: '归属地，支持多选，可以传递单个值或数组', 
+    required: false,
+    example: ['北京', '上海'] 
+  })
   @IsOptional()
-  @IsString()
-  location?: string;
+  location?: string | string[];
 
   @ApiProperty({ description: '宗族ID', required: false })
   @IsOptional()

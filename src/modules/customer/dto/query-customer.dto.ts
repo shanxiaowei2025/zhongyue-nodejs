@@ -28,30 +28,38 @@ export class QueryCustomerDto {
   @IsString()
   taxBureau?: string;
 
-  @ApiPropertyOptional({ description: '企业类型' })
+  @ApiPropertyOptional({ 
+    description: '企业类型，支持多选，可以传递单个值或数组',
+    example: ['有限责任公司', '股份有限公司'] 
+  })
   @IsOptional()
-  @IsString()
-  enterpriseType?: string;
+  enterpriseType?: string | string[];
 
   @ApiPropertyOptional({ description: '行业大类' })
   @IsOptional()
   @IsString()
   industryCategory?: string;
 
-  @ApiPropertyOptional({ description: '企业当前的经营状态' })
+  @ApiPropertyOptional({ 
+    description: '企业当前的经营状态，支持多选，可以传递单个值或数组',
+    example: ['存续', '在业'] 
+  })
   @IsOptional()
-  @IsString()
-  enterpriseStatus?: string;
+  enterpriseStatus?: string | string[];
 
-  @ApiPropertyOptional({ description: '客户分级' })
+  @ApiPropertyOptional({ 
+    description: '客户分级，支持多选，可以传递单个值或数组',
+    example: ['AA', 'A'] 
+  })
   @IsOptional()
-  @IsString()
-  customerLevel?: string;
+  customerLevel?: string | string[];
 
-  @ApiPropertyOptional({ description: '当前业务的状态' })
+  @ApiPropertyOptional({ 
+    description: '当前业务的状态，支持多选，可以传递单个值或数组',
+    example: ['active', 'inactive'] 
+  })
   @IsOptional()
-  @IsString()
-  businessStatus?: string;
+  businessStatus?: string | string[];
 
   @ApiPropertyOptional({ description: '出资人姓名关键词' })
   @IsOptional()
@@ -100,8 +108,10 @@ export class QueryCustomerDto {
   @IsNumber()
   clanId?: number;
 
-  @ApiPropertyOptional({ description: '归属地' })
+  @ApiPropertyOptional({ 
+    description: '归属地，支持多选，可以传递单个值或数组',
+    example: ['北京', '上海'] 
+  })
   @IsOptional()
-  @IsString()
-  location?: string;
+  location?: string | string[];
 }

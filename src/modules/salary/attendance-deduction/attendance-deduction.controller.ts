@@ -12,6 +12,7 @@ import {
   UploadedFile,
   ParseFilePipe,
   FileTypeValidator,
+  BadRequestException,
 } from '@nestjs/common';
 import { AttendanceDeductionService } from './attendance-deduction.service';
 import { CreateAttendanceDeductionDto } from './dto/create-attendance-deduction.dto';
@@ -57,13 +58,14 @@ export class AttendanceDeductionController {
   @ApiOperation({ summary: '导入考勤扣款数据(CSV/XLSX)' })
   @ApiResponse({
     status: 201,
-    description: '导入成功',
+    description: '导入成功（可能包含部分跳过的员工）',
     schema: {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: '成功导入 10 条记录' },
-        importedCount: { type: 'number', example: 10 },
+        message: { type: 'string', example: '成功导入 4 条记录，跳过 1 个未录入员工' },
+        warning: { type: 'string', example: '部分员工姓名不匹配已跳过' },
+        importedCount: { type: 'number', example: 4 },
         failedCount: { type: 'number', example: 0 },
         failedRecords: {
           type: 'array',
@@ -82,6 +84,23 @@ export class AttendanceDeductionController {
           },
           example: [],
         },
+        name_mismatch_details: {
+          type: 'object',
+          properties: {
+            employees_not_recorded: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['梁硕'],
+              description: '导入文件中存在但员工表中不存在的姓名（已跳过）'
+            },
+            employees_no_attendance: {
+              type: 'array', 
+              items: { type: 'string' },
+              example: ['王五', '赵六'],
+              description: '员工表中存在但导入文件中不存在的姓名（仅提醒）'
+            }
+          }
+        }
       },
     },
   })
@@ -89,12 +108,47 @@ export class AttendanceDeductionController {
     status: 400,
     description: '导入失败',
     schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: false },
-        error: { type: 'string', example: '导入失败' },
-        details: { type: 'string', example: '文件格式错误' },
-      },
+      oneOf: [
+        {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean', example: false },
+            error: { type: 'string', example: '没有有效数据可导入' },
+            details: { type: 'string', example: '导入文件中的所有员工都不存在于员工表中' },
+            error_type: { type: 'string', example: 'no_valid_data' },
+            message: { type: 'string', example: '导入文件中的所有员工都不存在于员工表中，请检查数据后重新导入。' },
+            name_mismatch_details: {
+              type: 'object',
+              properties: {
+                employees_not_recorded: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  example: ['张三', '李四'],
+                  description: '导入文件中存在但员工表中不存在的姓名'
+                },
+                employees_no_attendance: {
+                  type: 'array', 
+                  items: { type: 'string' },
+                  example: ['王五', '赵六'],
+                  description: '员工表中存在但导入文件中不存在的姓名'
+                }
+              }
+            }
+          }
+        },
+        {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean', example: false },
+            error: { type: 'string', example: '导入失败' },
+            details: { type: 'string', example: '文件格式错误' },
+            error_type: { type: 'string', example: 'file_processing' },
+            importedCount: { type: 'number', example: 0 },
+            failedCount: { type: 'number', example: 0 },
+            failedRecords: { type: 'array', example: [] }
+          }
+        }
+      ]
     },
   })
   @ApiResponse({ status: 403, description: '没有权限' })
@@ -108,7 +162,7 @@ export class AttendanceDeductionController {
           type: 'string',
           format: 'binary',
           description:
-            'CSV或Excel文件，包含以下列：姓名、考勤扣款、全勤奖励、年月、备注',
+            'CSV或Excel文件，包含以下列：姓名、考勤扣款、全勤奖励、年月、备注。注意：导入的员工姓名必须与员工表中的在职员工姓名完全一致。',
         },
       },
     },
@@ -116,48 +170,79 @@ export class AttendanceDeductionController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
-      fileFilter: (req, file, cb) => {
-        // 只允许上传CSV和XLSX文件
+      fileFilter: (req, file, callback) => {
         const allowedTypes = [
           'text/csv',
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           'application/vnd.ms-excel',
-          'application/octet-stream', // 有些浏览器可能会用这个MIME类型
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ];
-
-        // 检查MIME类型
-        const mimeTypeValid = allowedTypes.includes(file.mimetype);
-
-        // 检查文件扩展名
-        const originalName = file.originalname.toLowerCase();
-        const extValid =
-          originalName.endsWith('.csv') ||
-          originalName.endsWith('.xlsx') ||
-          originalName.endsWith('.xls');
-
-        if (mimeTypeValid && extValid) {
-          cb(null, true);
+        if (allowedTypes.includes(file.mimetype)) {
+          callback(null, true);
         } else {
-          cb(
-            new Error(
-              `只允许上传 CSV 或 Excel (XLSX/XLS) 文件! 当前文件: ${file.originalname}, MIME类型: ${file.mimetype}`,
-            ),
-            false,
-          );
+          callback(new Error('只支持CSV和Excel文件格式'), false);
         }
+      },
+      limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB
       },
     }),
   )
-  async importData(
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [], // 移除这里的验证器，因为我们已经在fileFilter中处理了
-        fileIsRequired: true,
-      }),
-    )
-    file: Express.Multer.File,
-  ) {
-    return this.attendanceDeductionService.importData(file);
+  async import(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('请选择要导入的文件');
+    }
+
+    try {
+      const result = await this.attendanceDeductionService.importData(file);
+      
+      // 如果有姓名不匹配的情况，在成功响应中包含警告信息
+      if (result && typeof result === 'object' && 'name_mismatch_details' in result && result.name_mismatch_details) {
+        const typedResult = result as any;
+        return {
+          ...typedResult,
+          warning: '部分员工姓名不匹配已跳过',
+          message: `成功导入 ${typedResult.importedCount || 0} 条记录，跳过 ${typedResult.name_mismatch_details?.employees_not_recorded?.length || 0} 个未录入员工`
+        };
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('导入考勤扣款数据失败:', error);
+      
+      // 检查是否是无有效数据错误
+      if (error.error_type === 'no_valid_data') {
+        throw new BadRequestException({
+          success: false,
+          error: '没有有效数据可导入',
+          details: error.error_message,
+          error_type: 'no_valid_data',
+          name_mismatch_details: error.name_mismatch_details,
+          message: '导入文件中的所有员工都不存在于员工表中，请检查数据后重新导入。'
+        });
+      }
+      
+      // 检查是否是姓名对比错误（保留兼容性）
+      if (error.error_type === 'name_mismatch') {
+        throw new BadRequestException({
+          success: false,
+          error: '员工姓名对比失败',
+          details: error.details || error.error_message,
+          error_type: 'name_mismatch',
+          name_mismatch_details: error.name_mismatch_details,
+          message: '导入的员工姓名与员工表中的在职员工不匹配，请检查数据后重新导入。'
+        });
+      }
+      
+      // 其他类型的错误
+      throw new BadRequestException({
+        success: false,
+        error: error.error || '导入失败',
+        details: error.details || error.message || '未知错误',
+        importedCount: error.importedCount || 0,
+        failedCount: error.failedCount || 0,
+        failedRecords: error.failedRecords || [],
+      });
+    }
   }
 
   @Get()

@@ -20,6 +20,43 @@ def debug_print(message):
     if DEBUG:
         print(f"DEBUG: {message}")
 
+def get_employee_names(engine):
+    """
+    查询员工表中所有在职员工的姓名
+    """
+    try:
+        query = text("""
+            SELECT DISTINCT name 
+            FROM sys_employees 
+            WHERE (isResigned IS NULL OR isResigned = 0) 
+            AND name IS NOT NULL 
+            AND name != ''
+        """)
+        
+        with engine.connect() as conn:
+            result = conn.execute(query)
+            employee_names = [row[0] for row in result]
+            
+        debug_print(f"查询到 {len(employee_names)} 个在职员工姓名")
+        return set(employee_names)  # 返回set类型便于对比
+        
+    except Exception as e:
+        debug_print(f"查询员工姓名失败: {str(e)}")
+        return set()
+
+def compare_employee_names(employee_names, import_names):
+    """
+    对比员工表姓名和导入文件中的姓名
+    返回不匹配的情况
+    """
+    # 找出导入文件中存在但员工表中不存在的姓名（员工未录入）
+    not_in_employee_table = import_names - employee_names
+    
+    # 找出员工表中存在但导入文件中不存在的姓名（没有考勤信息）
+    not_in_import_file = employee_names - import_names
+    
+    return not_in_employee_table, not_in_import_file
+
 def import_attendance_deduction_data(file_path, overwrite_mode=False):
     try:
         debug_print("开始导入考勤扣款数据函数")
@@ -148,6 +185,67 @@ def import_attendance_deduction_data(file_path, overwrite_mode=False):
             current_time = datetime.now()
             db_data['createdAt'] = current_time
             db_data['updatedAt'] = current_time
+            
+            # 获取导入文件中的所有姓名（去除空值和重复值）
+            import_names = set()
+            if 'name' in db_data.columns:
+                import_names = set(db_data['name'].dropna().astype(str).str.strip())
+                import_names = {name for name in import_names if name and name != ''}
+            
+            debug_print(f"导入文件中包含 {len(import_names)} 个不同的姓名")
+            
+            # 查询员工表中的所有在职员工姓名
+            employee_names = get_employee_names(engine)
+            
+            # 对比姓名
+            not_in_employee_table, not_in_import_file = compare_employee_names(employee_names, import_names)
+            
+            # 检查是否有姓名不匹配的情况
+            name_mismatch_errors = []
+            
+            if not_in_employee_table:
+                for name in not_in_employee_table:
+                    name_mismatch_errors.append(f"{name}员工未录入")
+            
+            if not_in_import_file:
+                for name in not_in_import_file:
+                    name_mismatch_errors.append(f"{name}没有考勤信息")
+            
+            # 记录姓名不匹配的情况，但不阻止导入
+            name_mismatch_details = {
+                "employees_not_recorded": list(not_in_employee_table),
+                "employees_no_attendance": list(not_in_import_file)
+            }
+            
+            if name_mismatch_errors:
+                error_msg = "姓名对比发现问题: " + "; ".join(name_mismatch_errors)
+                print(error_msg)
+                
+                # 过滤掉未录入的员工，只处理已录入的员工数据
+                valid_employee_names = [name for name in import_names if name not in not_in_employee_table]
+                
+                if not valid_employee_names:
+                    # 如果没有任何有效的员工数据，则返回错误
+                    error_info = {
+                        "success": False,
+                        "error_type": "no_valid_data",
+                        "error_message": "没有找到任何有效的员工数据可以导入",
+                        "failed_records": [],
+                        "name_mismatch_details": name_mismatch_details
+                    }
+                    print(f"ERROR_INFO_JSON: {json.dumps(error_info, ensure_ascii=False)}")
+                    return False
+                
+                print(f"发现 {len(not_in_employee_table)} 个未录入的员工，将跳过: {', '.join(not_in_employee_table)}")
+                print(f"将处理 {len(valid_employee_names)} 个有效员工的数据")
+                
+                # 过滤数据，只保留有效员工的记录
+                db_data = db_data[db_data['name'].isin(valid_employee_names)].copy()
+                print(f"过滤后的数据包含 {len(db_data)} 行记录")
+            else:
+                print("姓名对比通过，继续进行数据验证...")
+                # 保留姓名对比的详细信息，即使没有错误也要返回给前端
+                debug_print(f"姓名对比详情: 员工表中缺失 {len(not_in_import_file)} 个员工的考勤信息")
             
             # 检查和收集数据验证错误
             validation_errors = []
@@ -287,6 +385,15 @@ def import_attendance_deduction_data(file_path, overwrite_mode=False):
                 'failed_records': validation_errors,
                 'error_message': error_message
             }
+            
+            # 如果有姓名不匹配的情况，添加到结果中
+            if name_mismatch_details and (name_mismatch_details['employees_not_recorded'] or name_mismatch_details['employees_no_attendance']):
+                result['name_mismatch_details'] = name_mismatch_details
+                # 如果有跳过的员工，添加警告信息
+                if name_mismatch_details['employees_not_recorded']:
+                    if not result['error_message']:
+                        result['error_message'] = "部分员工姓名不匹配，已跳过处理"
+                    result['warning'] = f"跳过了 {len(name_mismatch_details['employees_not_recorded'])} 个未录入的员工"
             
             # 输出JSON格式结果，便于Node.js解析
             print(f"IMPORT_RESULT_JSON: {json.dumps(result)}")

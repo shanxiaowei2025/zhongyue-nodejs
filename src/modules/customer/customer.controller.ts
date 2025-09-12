@@ -97,6 +97,36 @@ export class CustomerController {
       '通过各种条件筛选客户列表。使用startDate和endDate参数可以按创建日期范围筛选，如果使用相同的日期（如startDate=2023-01-01&endDate=2023-01-01），查询将返回该整天的数据。',
   })
   @ApiResponse({ status: 200, description: '成功获取客户列表' })
+  @ApiQuery({ 
+    name: 'enterpriseType', 
+    required: false, 
+    description: '企业类型，支持多选。单个值：enterpriseType=有限责任公司，多个值：enterpriseType=有限责任公司&enterpriseType=股份有限公司',
+    example: '有限责任公司'
+  })
+  @ApiQuery({ 
+    name: 'customerLevel', 
+    required: false, 
+    description: '客户分级，支持多选。单个值：customerLevel=AA，多个值：customerLevel=AA&customerLevel=A',
+    example: 'AA'
+  })
+  @ApiQuery({ 
+    name: 'location', 
+    required: false, 
+    description: '归属地，支持多选。单个值：location=北京，多个值：location=北京&location=上海',
+    example: '北京'
+  })
+  @ApiQuery({ 
+    name: 'enterpriseStatus', 
+    required: false, 
+    description: '企业当前的经营状态，支持多选。单个值：enterpriseStatus=存续，多个值：enterpriseStatus=存续&enterpriseStatus=在业',
+    example: '存续'
+  })
+  @ApiQuery({ 
+    name: 'businessStatus', 
+    required: false, 
+    description: '当前业务的状态，支持多选。单个值：businessStatus=active，多个值：businessStatus=active&businessStatus=inactive',
+    example: 'active'
+  })
   findAll(@Query() query: QueryCustomerDto, @Req() req) {
     if (!req.user || !req.user.id) {
       throw new ForbiddenException('未能获取有效的用户身份');
