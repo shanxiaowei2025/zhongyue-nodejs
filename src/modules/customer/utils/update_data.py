@@ -119,7 +119,15 @@ def update_excel_data(file_path):
                 for encoding in encodings_to_try:
                     try:
                         print(f"尝试使用 {encoding} 编码读取CSV文件")
-                        df = pd.read_csv(file_path, encoding=encoding)
+                        # 添加参数来处理混合数据类型和性能优化
+                        df = pd.read_csv(
+                            file_path, 
+                            encoding=encoding, 
+                            dtype=str,  # 将所有列都读取为字符串类型，避免混合类型警告
+                            low_memory=False,  # 解决 low_memory 警告
+                            na_values=['', 'NULL', 'null', 'None', 'none', 'NaN', 'nan'],  # 统一空值处理
+                            keep_default_na=True
+                        )
                         if df is not None and len(df.columns) > 0:
                             print(f"成功使用 {encoding} 编码读取CSV文件")
                             break
@@ -132,20 +140,77 @@ def update_excel_data(file_path):
                 if df is None or len(df.columns) == 0:
                     error_msg = f"无法读取CSV文件，尝试了以下编码: {', '.join(encodings_to_try)}，最后错误: {last_error}"
                     print(error_msg)
-                    raise Exception(error_msg)
+                    error_info = {
+                        "success": False,
+                        "error_type": "file_reading_error",
+                        "error_message": error_msg,
+                        "failed_records": []
+                    }
+                    print(f"ERROR_INFO_JSON: {json.dumps(error_info)}")
+                    return False
             else:
                 # 读取Excel文件
                 print(f"检测到Excel文件，使用pandas.read_excel读取")
                 df = pd.read_excel(file_path, engine='openpyxl')
             
-            print(f"成功读取文件，包含 {len(df)} 行数据")
+            print(f"成功读取文件，包含 {len(df)} 行数据，{len(df.columns)} 列")
+            
+            # 检查是否有数据
+            if len(df) == 0:
+                error_msg = "文件中没有数据行"
+                print(error_msg)
+                error_info = {
+                    "success": False,
+                    "error_type": "empty_file",
+                    "error_message": error_msg,
+                    "failed_records": []
+                }
+                print(f"ERROR_INFO_JSON: {json.dumps(error_info)}")
+                return False
             
             # 显示前几行数据以检查
             print("数据预览:")
             print(df.head())
             
             # 获取列名
-            debug_print("文件列名: " + ", ".join(df.columns.tolist()))
+            column_names = df.columns.tolist()
+            debug_print(f"文件列名 ({len(column_names)} 列): " + ", ".join(column_names))
+            
+            # 检查是否包含必要的列（企业名称是必须的）
+            required_columns = ['企业名称']
+            missing_columns = [col for col in required_columns if col not in column_names]
+            if missing_columns:
+                error_msg = f"文件缺少必要的列: {', '.join(missing_columns)}"
+                print(error_msg)
+                error_info = {
+                    "success": False,
+                    "error_type": "missing_columns",
+                    "error_message": error_msg,
+                    "failed_records": []
+                }
+                print(f"ERROR_INFO_JSON: {json.dumps(error_info)}")
+                return False
+            
+            # 检查可用的更新字段
+            available_update_fields = []
+            if '顾问会计' in column_names:
+                available_update_fields.append('顾问会计')
+            if '记账会计' in column_names:
+                available_update_fields.append('记账会计')
+            
+            if not available_update_fields:
+                error_msg = "文件中没有可更新的字段（顾问会计、记账会计）"
+                print(error_msg)
+                error_info = {
+                    "success": False,
+                    "error_type": "no_update_fields",
+                    "error_message": error_msg,
+                    "failed_records": []
+                }
+                print(f"ERROR_INFO_JSON: {json.dumps(error_info)}")
+                return False
+                
+            print(f"发现可更新字段: {', '.join(available_update_fields)}")
             
             # 根据实体定义创建完整的映射关系
             column_mapping = {
@@ -223,13 +288,19 @@ def update_excel_data(file_path):
             # 遍历映射关系，将Excel数据映射到数据库字段
             for excel_col, db_col in column_mapping.items():
                 if excel_col in df.columns:
-                    db_data[db_col] = df[excel_col]
+                    # 复制列数据并清理空值
+                    column_data = df[excel_col].copy()
+                    # 将空字符串和常见的空值表示转换为 None
+                    column_data = column_data.replace(['', 'NULL', 'null', 'None', 'none', 'NaN', 'nan'], None)
+                    # 去除字符串两端的空白
+                    column_data = column_data.apply(lambda x: x.strip() if isinstance(x, str) and x is not None else x)
+                    db_data[db_col] = column_data
                     debug_print(f"映射列: {excel_col} -> {db_col}")
                 else:
                     debug_print(f"警告: 文件中未找到列 '{excel_col}'")
                     db_data[db_col] = None
             
-            # 验证统一社会信用代码是否存在
+            # 验证企业名称是否存在
             validation_errors = []
             valid_records = []
             
@@ -244,9 +315,13 @@ def update_excel_data(file_path):
             for index, row in db_data.iterrows():
                 row_errors = []
                 
-                # 检查统一社会信用代码是否为空（更新必须有此字段）
-                if pd.isna(row.get('unifiedSocialCreditCode')) or not row.get('unifiedSocialCreditCode'):
-                    row_errors.append("统一社会信用代码不能为空")
+                # 检查企业名称是否为空（更新必须有此字段）
+                company_name = row.get('companyName')
+                if pd.isna(company_name) or not company_name or str(company_name).strip() == '':
+                    row_errors.append("企业名称不能为空")
+                else:
+                    # 清理企业名称
+                    company_name = str(company_name).strip()
                 
                 # 收集此行的所有错误
                 if row_errors:
@@ -273,59 +348,77 @@ def update_excel_data(file_path):
                 # 处理日期字段
                 for field in date_fields:
                     if field in db_data:
-                        # 确保日期格式正确
-                        if db_data[field].dtype != 'datetime64[ns]':
-                            try:
-                                db_data[field] = pd.to_datetime(db_data[field], errors='coerce')
-                            except:
-                                debug_print(f"警告: 无法将 {field} 转换为日期格式，设置为NULL")
+                        # 由于所有数据都是字符串类型，需要更谨慎地处理日期转换
+                        try:
+                            # 先过滤掉空值和无效值
+                            date_series = db_data[field].copy()
+                            # 将空字符串和None值设为pd.NaT
+                            date_series = date_series.replace(['', 'NULL', 'null', 'None', 'none'], None)
+                            # 尝试转换为日期时间
+                            db_data[field] = pd.to_datetime(date_series, errors='coerce', dayfirst=False)
+                            debug_print(f"成功处理日期字段: {field}")
+                        except Exception as e:
+                            debug_print(f"警告: 无法将 {field} 转换为日期格式，设置为NULL: {str(e)}")
+                            db_data[field] = None
             
             # 替换NaN为None(NULL)
             if not db_data.empty:
                 db_data = db_data.replace({np.nan: None})
             
-            # 查询数据库中存在的统一社会信用代码
-            existing_codes_map = {}
+            # 查询数据库中存在的企业名称
+            existing_companies_map = {}
             not_found_records = []
             
             if not db_data.empty:
-                # 获取所有统一社会信用代码
-                codes_to_check = [
-                    code for code in db_data['unifiedSocialCreditCode'].tolist() 
-                    if code is not None
+                # 获取所有企业名称
+                names_to_check = [
+                    name for name in db_data['companyName'].tolist() 
+                    if name is not None and str(name).strip() != ''
                 ]
                 
-                # 检查这些代码是否存在于数据库中
-                if codes_to_check:
-                    code_list_str = ', '.join([f"'{code}'" for code in codes_to_check])
-                    query = f"SELECT id, unifiedSocialCreditCode FROM sys_customer WHERE unifiedSocialCreditCode IN ({code_list_str})"
+                # 检查这些企业名称是否存在于数据库中
+                if names_to_check:
+                    # 使用参数化查询防止SQL注入
+                    placeholders = ', '.join([f':name_{i}' for i in range(len(names_to_check))])
+                    query = f"SELECT id, companyName FROM sys_customer WHERE companyName IN ({placeholders})"
+                    
+                    # 构建参数字典
+                    params = {f'name_{i}': name for i, name in enumerate(names_to_check)}
                     
                     with engine.connect() as conn:
-                        result = conn.execute(text(query))
+                        result = conn.execute(text(query), params)
                         for row in result:
-                            existing_codes_map[row[1]] = row[0]  # 存储代码和对应的ID
+                            existing_companies_map[row[1]] = row[0]  # 存储企业名称和对应的ID
             
-            debug_print(f"数据库中找到 {len(existing_codes_map)} 个匹配的统一社会信用代码记录")
+            debug_print(f"数据库中找到 {len(existing_companies_map)} 个匹配的企业名称记录")
             
             # 筛选出存在和不存在的记录
             records_to_update = []
             
             if not db_data.empty:
                 for index, row in db_data.iterrows():
-                    code = row.get('unifiedSocialCreditCode')
-                    # 检查统一社会信用代码是否存在于数据库中
-                    if code in existing_codes_map:
-                        # 添加数据库记录ID到行数据中
-                        row_dict = row.to_dict()
-                        row_dict['id'] = existing_codes_map[code]
-                        records_to_update.append(row_dict)
+                    company_name = row.get('companyName')
+                    if company_name and str(company_name).strip() != '':
+                        company_name = str(company_name).strip()
+                        # 检查企业名称是否存在于数据库中
+                        if company_name in existing_companies_map:
+                            # 添加数据库记录ID到行数据中
+                            row_dict = row.to_dict()
+                            row_dict['id'] = existing_companies_map[company_name]
+                            records_to_update.append(row_dict)
+                        else:
+                            not_found_records.append({
+                                'index': index,
+                                'row': index + 2,  # 文件行号从1开始，且有标题行
+                                'companyName': company_name,
+                                'reason': '企业名称在数据库中不存在'
+                            })
                     else:
                         not_found_records.append({
                             'index': index,
-                            'row': index + 2,  # 文件行号从1开始，且有标题行
-                            'companyName': row.get('companyName', '未知企业'),
-                            'unifiedSocialCreditCode': code,
-                            'reason': '统一社会信用代码在数据库中不存在'
+                            'row': index + 2,
+                            'companyName': '企业名称为空',
+                            'reason': '企业名称不能为空'
                         })
             
             # 输出待更新和未找到的记录信息
@@ -352,8 +445,20 @@ def update_excel_data(file_path):
                         for record in records_to_update:
                             record_id = record.pop('id')  # 提取ID并从字典中移除
                             
-                            # 排除为None的字段（保持数据库中原有值）
-                            update_fields = {k: v for k, v in record.items() if v is not None}
+                            # 只更新CSV文件中实际包含的字段
+                            update_fields = {}
+                            
+                            # 检查顾问会计字段
+                            if 'consultantAccountant' in record and record['consultantAccountant'] is not None:
+                                consultant = str(record['consultantAccountant']).strip()
+                                if consultant:  # 不为空字符串
+                                    update_fields['consultantAccountant'] = consultant
+                            
+                            # 检查记账会计字段  
+                            if 'bookkeepingAccountant' in record and record['bookkeepingAccountant'] is not None:
+                                bookkeeper = str(record['bookkeepingAccountant']).strip()
+                                if bookkeeper:  # 不为空字符串
+                                    update_fields['bookkeepingAccountant'] = bookkeeper
                             
                             # 添加更新时间
                             update_fields['updateTime'] = current_time
@@ -378,7 +483,7 @@ def update_excel_data(file_path):
                                 print(f"更新记录ID={record_id}时出错: {str(e)}")
                                 failed_records.append({
                                     'id': record_id,
-                                    'unifiedSocialCreditCode': record.get('unifiedSocialCreditCode', ''),
+                                    'companyName': record.get('companyName', ''),
                                     'reason': f"更新失败: {str(e)}"
                                 })
                         
@@ -395,18 +500,18 @@ def update_excel_data(file_path):
                             with engine.connect() as conn:
                                 # 逐一处理每条更新记录
                                 for record in records_to_update:
-                                    # 提取需要的字段
+                                    # 提取需要的字段（只记录实际更新的字段）
                                     service_history_fields = {
                                         'companyName': record.get('companyName'),
-                                        'unifiedSocialCreditCode': record.get('unifiedSocialCreditCode'),
-                                        'consultantAccountant': record.get('consultantAccountant'),
-                                        'bookkeepingAccountant': record.get('bookkeepingAccountant'),
-                                        'invoiceOfficer': record.get('invoiceOfficer'),
-                                        'enterpriseStatus': record.get('enterpriseStatus'),
-                                        'businessStatus': record.get('businessStatus'),
                                         'createdAt': current_time,
                                         'updatedAt': current_time
                                     }
+                                    
+                                    # 只添加实际更新的字段到服务历程
+                                    if record.get('consultantAccountant'):
+                                        service_history_fields['consultantAccountant'] = record.get('consultantAccountant')
+                                    if record.get('bookkeepingAccountant'):
+                                        service_history_fields['bookkeepingAccountant'] = record.get('bookkeepingAccountant')
                                     
                                     # 移除None值
                                     service_history_fields = {k: v for k, v in service_history_fields.items() if v is not None}
