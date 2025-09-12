@@ -256,6 +256,12 @@ export class ExpenseController {
     description: '业务类型，支持多选。单个值：businessType=新增，多个值：businessType=新增&businessType=续费',
     example: '新增'
   })
+  @ApiQuery({ 
+    name: 'socialInsuranceBusinessType', 
+    required: false, 
+    description: '社保代理业务类型，支持多选。单个值：socialInsuranceBusinessType=新增，多个值：socialInsuranceBusinessType=新增&socialInsuranceBusinessType=续费',
+    example: '新增'
+  })
   @ApiQuery({ name: 'chargeMethod', required: false, description: '收费方式' })
   @ApiQuery({ name: 'receiptNo', required: false, description: '收据编号' })
   @ApiQuery({ name: 'auditor', required: false, description: '审核人' })

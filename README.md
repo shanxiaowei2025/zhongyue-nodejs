@@ -954,6 +954,21 @@ Body: {
 ## 更新历史
 
 ### 2025-01-17
+- **费用管理模块socialInsuranceBusinessType多选参数功能**：
+  - 为 `/api/expense` 接口的 GET 请求添加 `socialInsuranceBusinessType` 参数，支持多选功能
+  - **技术实现**：与 `businessType` 参数保持一致的多选支持
+    - 修改查询DTO和导出DTO，添加 `socialInsuranceBusinessType` 字段，类型为 `string | string[]`
+    - 在费用服务的查询和导出功能中实现复杂的OR条件查询逻辑
+    - 支持数组和单值两种格式，正确处理空值、null值和undefined值的查询条件
+    - 在控制器中添加详细的API文档说明，包含多选使用示例
+  - **使用方式**：
+    - 单个值：`socialInsuranceBusinessType=新增`
+    - 多个值：`socialInsuranceBusinessType=新增&socialInsuranceBusinessType=续费`
+    - 支持与空值混合查询，能正确匹配数据库中的NULL或空字符串字段
+  - **向后兼容**：新增功能不影响现有使用方式，与费用管理模块现有的多选查询功能保持一致
+  - **完整覆盖**：查询接口、导出接口、Swagger文档均已完整支持多选功能
+
+### 2025-01-17
 - **费用导出字段映射优化**：
   - 修改费用导出CSV接口 `/api/expense/export/csv` 的字段映射名称
   - **字段映射更新**：

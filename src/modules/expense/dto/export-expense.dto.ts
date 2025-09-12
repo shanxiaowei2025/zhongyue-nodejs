@@ -55,6 +55,14 @@ export class ExportExpenseDto {
   @IsOptional()
   businessType?: string | string[];
 
+  @ApiProperty({ 
+    description: '社保代理业务类型，支持多选，可以传递单个值或数组', 
+    required: false,
+    example: ['新增', '续费'] 
+  })
+  @IsOptional()
+  socialInsuranceBusinessType?: string | string[];
+
   @ApiProperty({ description: '收费方式', required: false })
   @IsOptional()
   @IsString()

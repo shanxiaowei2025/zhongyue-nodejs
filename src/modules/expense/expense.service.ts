@@ -606,6 +606,48 @@ export class ExpenseService {
       }
     }
 
+    if (query.socialInsuranceBusinessType !== undefined) {
+      if (query.socialInsuranceBusinessType === '') {
+        queryBuilder.andWhere(
+          "(expense.socialInsuranceBusinessType IS NULL OR expense.socialInsuranceBusinessType = '')",
+        );
+      } else {
+        // 处理多选社保代理业务类型筛选
+        const socialInsuranceBusinessTypes = Array.isArray(query.socialInsuranceBusinessType) 
+          ? query.socialInsuranceBusinessType 
+          : [query.socialInsuranceBusinessType];
+        
+        if (socialInsuranceBusinessTypes.length > 0) {
+          const conditions = [];
+          const params = {};
+          let paramIndex = 0;
+          
+          // 检查是否包含空值或null值
+          const hasEmptyValue = socialInsuranceBusinessTypes.some(type => 
+            type === '' || type === null || type === undefined || type === 'null'
+          );
+          
+          // 如果包含空值，添加NULL或空字符串的条件
+          if (hasEmptyValue) {
+            conditions.push("(expense.socialInsuranceBusinessType IS NULL OR expense.socialInsuranceBusinessType = '')");
+          }
+          
+          // 处理非空值
+          socialInsuranceBusinessTypes.forEach((type) => {
+            if (type !== '' && type !== null && type !== undefined && type !== 'null') {
+              conditions.push(`expense.socialInsuranceBusinessType LIKE :socialInsuranceBusinessType${paramIndex}`);
+              params[`socialInsuranceBusinessType${paramIndex}`] = `%${type}%`;
+              paramIndex++;
+            }
+          });
+          
+          if (conditions.length > 0) {
+            queryBuilder.andWhere(`(${conditions.join(' OR ')})`, params);
+          }
+        }
+      }
+    }
+
     if (query.status !== undefined) {
       queryBuilder.andWhere('expense.status = :status', {
         status: query.status,
@@ -1739,6 +1781,31 @@ export class ExpenseService {
       }
     }
 
+    if (query.socialInsuranceBusinessType !== undefined) {
+      if (query.socialInsuranceBusinessType === '') {
+        queryBuilder.andWhere(
+          "(expense.socialInsuranceBusinessType IS NULL OR expense.socialInsuranceBusinessType = '')",
+        );
+      } else {
+        // 处理多选社保代理业务类型筛选
+        const socialInsuranceBusinessTypes = Array.isArray(query.socialInsuranceBusinessType) 
+          ? query.socialInsuranceBusinessType 
+          : [query.socialInsuranceBusinessType];
+        
+        if (socialInsuranceBusinessTypes.length > 0) {
+          const conditions = socialInsuranceBusinessTypes.map((type, index) => 
+            `expense.socialInsuranceBusinessType LIKE :socialInsuranceBusinessTypeExport${index}`
+          );
+          const params = {};
+          socialInsuranceBusinessTypes.forEach((type, index) => {
+            params[`socialInsuranceBusinessTypeExport${index}`] = `%${type}%`;
+          });
+          
+          queryBuilder.andWhere(`(${conditions.join(' OR ')})`, params);
+        }
+      }
+    }
+
     if (query.status !== undefined) {
       queryBuilder.andWhere('expense.status = :status', {
         status: query.status,
@@ -1873,6 +1940,7 @@ export class ExpenseService {
       addressFee: '地址费',
       agencyFee: '代理费',
       giftAgencyDuration: '赠送详情',
+      socialInsuranceBusinessType: '社保代理业务类型',
       socialInsuranceAgencyFee: '社保代理费',
       administrativeLicenseFee: '行政许可收费',
       changeFee: '变更收费',
