@@ -50,7 +50,8 @@ src/
 │   ├── roles/             # 角色管理
 │   ├── permissions/       # 权限管理
 │   ├── notifications/     # 通知系统
-│   └── reports/           # 报表分析（新增）
+│   ├── reports/           # 报表分析
+│   └── groups/            # 群组管理（新增）
 └── database/              # 数据库相关
     └── migrations/        # 数据库迁移文件
 ```
@@ -236,7 +237,28 @@ socket.on('new-notification', (data) => { console.log('收到新通知:', data);
 - **员工状态同步功能**：新增员工从离职状态改为在职状态时，自动启用对应用户账号的功能，与原有的离职禁用用户账号功能形成完整闭环
 - **薪资接口考勤备注功能**：为四个薪资接口（管理员列表、员工列表、管理员详情、员工详情）添加 `attendanceRemark` 字段，通过姓名和年月从 `sys_attendance_deduction` 表获取考勤备注信息
 
-### 11. 报表分析模块 (reports)
+### 11. 群组管理模块 (groups)
+- 企业微信群组信息管理
+- 群成员信息跟踪（员工和客户）
+- 群消息监控和记录
+- 群提醒级别管理
+- 支持群组的CRUD操作
+- **数据库表结构**：
+  - `groups`：群组主表
+    - `id`：自增主键ID
+    - `chatId`：企业微信群聊唯一标识符
+    - `name`：群聊名称
+    - `owner`：群主企业微信用户ID
+    - `members`：群成员信息（JSON格式，包含成员ID、类型、姓名等）
+    - `lastMessage`：群内最后一条消息记录（JSON格式）
+    - `lastEmployeeMessage`：员工发送的最后一条消息记录（JSON格式）
+    - `lastCustomerMessage`：客户发送的最后一条消息记录（JSON格式）
+    - `needAlert`：是否需要发送提醒（0-不需要，1-需要）
+    - `alertLevel`：提醒级别（数字越大级别越高）
+    - `createdAt`：记录创建时间（自动时间戳）
+    - `updatedAt`：记录最后更新时间（自动更新时间戳）
+
+### 12. 报表分析模块 (reports)
 - **数据分析与报表功能**：提供多维度的业务数据分析和统计报表
 - **智能缓存系统**：使用基于权限的缓存机制提升报表查询性能，支持用户级和全局缓存
 - **角色变更缓存处理**：当用户角色发生变更时，自动清除相关缓存确保数据准确性
@@ -951,7 +973,44 @@ Body: {
 - 安全事件后需要强制重置薪资密码
 - 员工调岗后的权限重置
 
+### 群组管理API
+- `/api/groups`：群组管理的完整CRUD接口
+  - `POST /api/groups`：创建群组记录
+    - 请求体包含：`chatId`、`name`、`owner`、`members`、`lastMessage`等字段
+    - `members` 字段支持数组格式，包含成员信息对象
+  - `GET /api/groups`：查询群组列表（支持分页）
+  - `GET /api/groups/:id`：获取单个群组详情
+  - `GET /api/groups/chat/:chatId`：根据聊天ID查询群组
+  - `PATCH /api/groups/:id`：更新群组信息
+  - `DELETE /api/groups/:id`：删除群组记录
+  - `DELETE /api/groups/batch/remove`：批量删除群组
+  - `PATCH /api/groups/:id/last-message`：更新群组最后消息
+    - 支持三种消息类型：`general`（普通消息）、`employee`（员工消息）、`customer`（客户消息）
+    - 请求体格式（与数据库字段格式一致）：
+      ```json
+      {
+        "from": "用户ID",
+        "msgId": "消息ID",
+        "content": "消息内容",
+        "fromType": "employee|customer",
+        "createTime": "2025-07-21T16:00:00Z"
+      }
+      ```
+  - `PATCH /api/groups/:id/alert-settings`：更新群组提醒设置
+  - `GET /api/groups/alerts/list`：获取需要提醒的群组列表
+
 ## 更新历史
+
+### 2025-09-15
+- **群组管理模块新增**：
+  - 新增完整的群组管理模块，支持企业微信群组信息管理
+  - 实现群组的CRUD操作：创建、查询、更新、删除
+  - 支持群成员信息跟踪，包含员工和客户类型区分
+  - 群消息记录功能，分别记录最后消息、员工消息、客户消息
+  - 群提醒级别管理，支持不同级别的提醒设置
+  - 数据库表时间戳优化，支持自动创建和更新时间
+  - 完整的TypeORM实体定义和DTO验证
+  - Swagger API文档集成
 
 ### 2025-01-17
 - **费用管理模块socialInsuranceBusinessType多选参数功能**：

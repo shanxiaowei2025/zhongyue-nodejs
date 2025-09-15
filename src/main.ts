@@ -25,6 +25,12 @@ import { UpdateVoucherRecordMonthDto } from './modules/voucher-record/dto/update
 import { QueryVoucherRecordDto } from './modules/voucher-record/dto/query-voucher-record.dto';
 import { VoucherRecordYear } from './modules/voucher-record/entities/voucher-record-year.entity';
 import { VoucherRecordMonth } from './modules/voucher-record/entities/voucher-record-month.entity';
+// 群组管理模块
+import { CreateGroupDto } from './modules/groups/dto/create-group.dto';
+import { UpdateGroupDto } from './modules/groups/dto/update-group.dto';
+import { QueryGroupDto } from './modules/groups/dto/query-group.dto';
+import { UpdateAlertSettingsDto } from './modules/groups/dto/update-alert-settings.dto';
+import { Group } from './modules/groups/entities/group.entity';
 import cookieParser from 'cookie-parser';
 import { join } from 'path';
 import express from 'express';
@@ -200,6 +206,12 @@ async function bootstrap() {
         QueryVoucherRecordDto,
         VoucherRecordYear,
         VoucherRecordMonth,
+        // 群组管理模块
+        CreateGroupDto,
+        UpdateGroupDto,
+        QueryGroupDto,
+        UpdateAlertSettingsDto,
+        Group,
         // 删除不存在的模型引用
         // require('./modules/enterprise-service/financial-self-inspection/dto/count-response.dto').CountResponseDto
       ], // 确保包含额外模型
