@@ -272,6 +272,23 @@ export class GroupsController {
     summary: '批量删除群组',
     description: '根据群组ID数组批量删除群组',
   })
+  @ApiBody({
+    description: '要删除的群组ID数组',
+    schema: {
+      type: 'object',
+      properties: {
+        ids: {
+          type: 'array',
+          items: {
+            type: 'number',
+          },
+          description: '群组ID数组',
+          example: [1, 2, 3, 4, 5],
+        },
+      },
+      required: ['ids'],
+    },
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: '批量删除成功',
@@ -279,6 +296,28 @@ export class GroupsController {
       example: {
         message: '成功删除 3 个群组',
         deletedCount: 3,
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: '请求参数错误',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: '请提供要删除的群组ID',
+        error: 'Conflict',
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: '未找到要删除的群组',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: '没有找到要删除的群组',
+        error: 'Not Found',
       },
     },
   })

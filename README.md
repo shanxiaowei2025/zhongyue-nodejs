@@ -984,6 +984,19 @@ Body: {
   - `PATCH /api/groups/:id`：更新群组信息
   - `DELETE /api/groups/:id`：删除群组记录
   - `DELETE /api/groups/batch/remove`：批量删除群组
+    - 请求体格式：
+      ```json
+      {
+        "ids": [1, 2, 3, 4, 5]
+      }
+      ```
+    - 响应格式：
+      ```json
+      {
+        "message": "成功删除 3 个群组",
+        "deletedCount": 3
+      }
+      ```
   - `PATCH /api/groups/:id/last-message`：更新群组最后消息
     - 支持三种消息类型：`general`（普通消息）、`employee`（员工消息）、`customer`（客户消息）
     - 请求体格式（与数据库字段格式一致）：
