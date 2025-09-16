@@ -44,15 +44,7 @@ def update_status_data(file_path):
             debug_print("未找到 .env 文件，使用系统环境变量和默认值")
         
         # 配置数据库连接
-        # 从环境变量获取数据库连接信息，使用项目的默认配置
-        # 如果在Docker外部运行脚本，使用localhost；如果在Docker内部，使用host.docker.internal
-        db_host_env = os.environ.get('DB_HOST', 'host.docker.internal')
-        if db_host_env == 'host.docker.internal':
-            # 检测是否在Docker外部运行，如果是则使用localhost
-            DB_HOST = 'localhost'
-        else:
-            DB_HOST = db_host_env
-            
+        DB_HOST = 'localhost'
         DB_PORT = os.environ.get('DB_PORT', '3306')
         DB_NAME = os.environ.get('DB_DATABASE', 'zhongyue_nodejs')
         DB_USER = os.environ.get('DB_USERNAME', 'root')
