@@ -264,13 +264,13 @@ export class CreateExpenseDto {
   @IsNumber()
   administrativeLicenseFee?: number;
 
-  @ApiProperty({ description: '其他业务(自有)', required: false })
+  @ApiProperty({ description: '其他业务(基础)', required: false })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   otherBusiness?: string[];
 
-  @ApiProperty({ description: '其他业务收费(自有)', required: false })
+  @ApiProperty({ description: '其他业务收费(基础)', required: false })
   @IsOptional()
   @IsNumber()
   otherBusinessFee?: number;
@@ -281,7 +281,7 @@ export class CreateExpenseDto {
   @IsString({ each: true })
   otherBusinessOutsourcing?: string[];
 
-  @ApiProperty({ description: '其他业务收费(外包)', required: false })
+  @ApiProperty({ description: '其他业务收费', required: false })
   @IsOptional()
   @IsNumber()
   otherBusinessOutsourcingFee?: number;

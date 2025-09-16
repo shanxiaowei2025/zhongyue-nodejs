@@ -1556,14 +1556,19 @@ export class ExpenseService {
           listField: 'administrativeLicense',
         },
         {
-          name: '其他业务收费(自有)',
+          name: '其他业务收费(基础)',
           amountField: 'otherBusinessFee',
           listField: 'otherBusiness',
         },
         {
-          name: '其他业务收费(外包)',
+          name: '其他业务收费',
           amountField: 'otherBusinessOutsourcingFee',
           listField: 'otherBusinessOutsourcing',
+        },
+        {
+          name: '其他业务收费(特殊)',
+          amountField: 'otherBusinessSpecialFee',
+          listField: 'otherBusinessSpecial',
         },
       ];
 

@@ -254,7 +254,7 @@ export class Expense {
     precision: 10,
     scale: 2,
     nullable: true,
-    comment: '其他业务收费(自有)',
+    comment: '其他业务收费(基础)',
   })
   otherBusinessFee: number;
 
@@ -266,7 +266,7 @@ export class Expense {
     precision: 10,
     scale: 2,
     nullable: true,
-    comment: '其他业务收费(外包)',
+    comment: '其他业务收费',
   })
   otherBusinessOutsourcingFee: number;
 
