@@ -246,7 +246,7 @@ export class Expense {
   })
   administrativeLicenseFee: number;
 
-  @Column({ type: 'simple-json', nullable: true, comment: '其他业务(自有)' })
+  @Column({ type: 'simple-json', nullable: true, comment: '其他业务(基础)' })
   otherBusiness: string[];
 
   @Column({
@@ -258,7 +258,7 @@ export class Expense {
   })
   otherBusinessFee: number;
 
-  @Column({ type: 'simple-json', nullable: true, comment: '其他业务(外包)' })
+  @Column({ type: 'simple-json', nullable: true, comment: '其他业务' })
   otherBusinessOutsourcing: string[];
 
   @Column({
