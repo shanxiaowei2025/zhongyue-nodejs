@@ -102,8 +102,25 @@ export class CustomerService {
       throw new ForbiddenException('用户不存在');
     }
 
+    // 处理 followUpRecords 智能时间填充
+    const processedDto = { ...createCustomerDto };
+    if (processedDto.followUpRecords && processedDto.followUpRecords.length > 0) {
+      processedDto.followUpRecords = processedDto.followUpRecords.map(record => {
+        // 如果记录只有 text 没有 datetime，自动填充当前时间
+        if (record.text && !record.datetime) {
+          return {
+            ...record,
+            datetime: new Date().toISOString()
+          };
+        }
+        return record;
+      });
+      
+      this.logger.log(`为新客户的跟进记录自动填充时间，共处理 ${processedDto.followUpRecords.length} 条记录`);
+    }
+
     // 创建客户实体
-    const customer = this.customerRepository.create(createCustomerDto);
+    const customer = this.customerRepository.create(processedDto);
 
     // 保存客户信息
     const savedCustomer = await this.customerRepository.save(customer);
@@ -139,6 +156,7 @@ export class CustomerService {
       endDate,
       contributorName,
       licenseType,
+      followUpKeyword,
       page = 1,
       pageSize = 10,
     } = query;
@@ -570,6 +588,14 @@ export class CustomerService {
       });
     }
 
+    // 跟进记录搜索
+    if (followUpKeyword !== undefined && followUpKeyword !== '') {
+      queryBuilder.andWhere(
+        "JSON_SEARCH(customer.followUpRecords, 'all', :followUpKeyword) IS NOT NULL",
+        { followUpKeyword: `%${followUpKeyword}%` }
+      );
+    }
+
     console.log('最终SQL:', queryBuilder.getSql());
     console.log('最终参数:', queryBuilder.getParameters());
 
@@ -752,8 +778,37 @@ export class CustomerService {
       updateCustomerDto.customerLevel !== undefined &&
       updateCustomerDto.customerLevel !== existingCustomer.customerLevel;
 
+    // 处理跟进记录的追加逻辑
+    let finalUpdateDto = { ...updateCustomerDto };
+    
+    if (updateCustomerDto.followUpRecords && updateCustomerDto.followUpRecords.length > 0) {
+      // 获取现有的跟进记录
+      const existingFollowUpRecords = existingCustomer.followUpRecords || [];
+      
+      // 处理新的跟进记录：为有text但没有datetime的记录自动填充当前时间
+      const processedFollowUpRecords = updateCustomerDto.followUpRecords.map(record => {
+        if (record.text && !record.datetime) {
+          return {
+            ...record,
+            datetime: new Date().toISOString()
+          };
+        }
+        return record;
+      });
+      
+      // 将处理后的跟进记录追加到现有记录中
+      finalUpdateDto.followUpRecords = [
+        ...existingFollowUpRecords,
+        ...processedFollowUpRecords
+      ];
+      
+      this.logger.log(
+        `为客户 ${existingCustomer.companyName} 追加 ${updateCustomerDto.followUpRecords.length} 条跟进记录`
+      );
+    }
+
     // 更新客户信息
-    await this.customerRepository.update(id, updateCustomerDto);
+    await this.customerRepository.update(id, finalUpdateDto);
 
     // 获取更新后的客户信息
     const updatedCustomer = await this.findOne(id, userId);
@@ -1280,6 +1335,14 @@ export class CustomerService {
         Object.entries(permissionConditions).forEach(([key, value]) => {
           queryBuilder.andWhere(`customer.${key} = :${key}`, { [key]: value });
         });
+      }
+
+      // 跟进记录搜索
+      if (query.followUpKeyword !== undefined && query.followUpKeyword !== '') {
+        queryBuilder.andWhere(
+          "JSON_SEARCH(customer.followUpRecords, 'all', :followUpKeyword) IS NOT NULL",
+          { followUpKeyword: `%${query.followUpKeyword}%` }
+        );
       }
 
       console.log('导出CSV - 最终SQL:', queryBuilder.getSql());

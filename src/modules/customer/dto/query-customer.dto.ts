@@ -114,4 +114,12 @@ export class QueryCustomerDto {
   })
   @IsOptional()
   location?: string | string[];
+
+  @ApiPropertyOptional({ 
+    description: '跟进记录搜索关键词（会在跟进记录的文本内容中进行模糊搜索）',
+    example: '联系客户'
+  })
+  @IsOptional()
+  @IsString()
+  followUpKeyword?: string;
 }

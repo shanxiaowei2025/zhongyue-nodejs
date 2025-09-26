@@ -34,6 +34,7 @@ import { ExportCustomerDto } from './dto/export-customer.dto';
 import { ImportCustomerDto } from './dto/import-customer.dto';
 import { SearchCustomerArchiveDto } from './dto/search-customer-archive.dto';
 import { CustomerArchiveResponseDto } from './dto/customer-archive-response.dto';
+import { CustomerResponseDto, CustomerListResponseDto } from './dto/customer-response.dto';
 import { Public } from '../auth/decorators/public.decorator';
 import {
   ApiBearerAuth,
@@ -72,7 +73,11 @@ export class CustomerController {
 
   @Post()
   @ApiOperation({ summary: '创建客户信息' })
-  @ApiResponse({ status: 201, description: '客户信息创建成功' })
+  @ApiResponse({ 
+    status: 201, 
+    description: '客户信息创建成功',
+    type: CustomerResponseDto 
+  })
   @ApiResponse({
     status: 403,
     description: '没有创建客户的权限或统一社会信用代码/公司名称已存在',
@@ -96,7 +101,11 @@ export class CustomerController {
     description:
       '通过各种条件筛选客户列表。使用startDate和endDate参数可以按创建日期范围筛选，如果使用相同的日期（如startDate=2023-01-01&endDate=2023-01-01），查询将返回该整天的数据。',
   })
-  @ApiResponse({ status: 200, description: '成功获取客户列表' })
+  @ApiResponse({ 
+    status: 200, 
+    description: '成功获取客户列表',
+    type: CustomerListResponseDto 
+  })
   @ApiQuery({ 
     name: 'enterpriseType', 
     required: false, 
@@ -127,6 +136,12 @@ export class CustomerController {
     description: '当前业务的状态，支持多选。单个值：businessStatus=active，多个值：businessStatus=active&businessStatus=inactive',
     example: 'active'
   })
+  @ApiQuery({ 
+    name: 'followUpKeyword', 
+    required: false, 
+    description: '跟进记录搜索关键词，在跟进记录内容中进行模糊搜索',
+    example: '联系客户'
+  })
   findAll(@Query() query: QueryCustomerDto, @Req() req) {
     if (!req.user || !req.user.id) {
       throw new ForbiddenException('未能获取有效的用户身份');
@@ -137,7 +152,11 @@ export class CustomerController {
 
   @Get(':id')
   @ApiOperation({ summary: '获取客户详情' })
-  @ApiResponse({ status: 200, description: '获取客户详情成功' })
+  @ApiResponse({ 
+    status: 200, 
+    description: '获取客户详情成功',
+    type: CustomerResponseDto 
+  })
   findOne(@Param('id') id: string, @Request() req) {
     if (!req.user || !req.user.id) {
       throw new ForbiddenException('未能获取有效的用户身份');
@@ -147,8 +166,18 @@ export class CustomerController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: '更新客户信息' })
-  @ApiResponse({ status: 200, description: '客户信息更新成功' })
+  @ApiOperation({ 
+    summary: '更新客户信息',
+    description: '部分更新客户信息。特别说明：' +
+      '1. followUpRecords字段会自动追加到现有跟进记录数组中，不会覆盖原有记录；' +
+      '2. 如果跟进记录只提供text字段而未提供datetime字段，系统会自动填充当前时间；' +
+      '3. 其他字段则按常规方式更新。'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: '客户信息更新成功。如果包含followUpRecords，新记录已追加到现有记录中',
+    type: CustomerResponseDto 
+  })
   @ApiResponse({
     status: 403,
     description: '没有更新客户的权限或统一社会信用代码/公司名称已存在',

@@ -71,6 +71,25 @@ export class ActualResponsibleItemDto {
   phone?: string;
 }
 
+// 跟进记录数据结构
+export class FollowUpRecordItemDto {
+  @ApiPropertyOptional({ 
+    description: '跟进时间（ISO 8601格式，与createTime格式一致）。如果不提供此字段但提供了text字段，系统会在POST创建和PATCH更新时自动填充当前时间', 
+    example: '2025-09-26T10:30:00.000Z',
+    format: 'date-time'
+  })
+  @IsString()
+  @IsOptional()
+  datetime?: string;
+
+  @ApiProperty({ 
+    description: '跟进记录内容', 
+    example: '初次联系客户，了解基本业务需求' 
+  })
+  @IsString()
+  text: string;
+}
+
 export class CreateCustomerDto {
   @ApiProperty({
     description: '企业名称（必须唯一，系统会检查是否已存在）',
@@ -473,4 +492,18 @@ export class CreateCustomerDto {
   @IsObject()
   @IsOptional()
   supplementaryImages?: Record<string, any>;
+
+  @ApiPropertyOptional({
+    description: '跟进记录，数组对象格式：[{"datetime": "ISO 8601格式", "text": "跟进记录内容"}]',
+    type: [FollowUpRecordItemDto],
+    example: [
+      { datetime: '2025-09-26T10:30:00.000Z', text: '初次联系客户，了解基本需求' },
+      { datetime: '2025-09-26T14:15:00.000Z', text: '发送了服务介绍资料' }
+    ]
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => FollowUpRecordItemDto)
+  @IsOptional()
+  followUpRecords?: FollowUpRecordItemDto[];
 }

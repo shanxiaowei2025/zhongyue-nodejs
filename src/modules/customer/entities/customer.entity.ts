@@ -13,6 +13,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
+import { ApiProperty } from '@nestjs/swagger';
 import { BusinessStatus } from '../enums/customer.enum';
 import { Clan } from './clan.entity';
 
@@ -345,4 +346,22 @@ export class Customer {
 
   @Column({ type: 'text', nullable: true, comment: '备注信息' })
   remarks: string;
+
+  @ApiProperty({
+    description: '跟进记录，JSON数组格式：[{"datetime": "ISO 8601格式", "text": "跟进记录内容"}]',
+    required: false,
+    example: [
+      { datetime: '2025-09-26T10:30:00.000Z', text: '初次联系客户，了解基本需求' },
+      { datetime: '2025-09-26T14:15:00.000Z', text: '发送了服务介绍资料' }
+    ]
+  })
+  @Column({
+    nullable: true,
+    type: 'json',
+    comment: '跟进记录，数组对象格式：[{"datetime": "ISO 8601格式", "text": "跟进记录内容"}]',
+  })
+  followUpRecords: Array<{
+    datetime: string;
+    text: string;
+  }>;
 }

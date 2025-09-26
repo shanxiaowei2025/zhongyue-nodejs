@@ -96,4 +96,9 @@ export class ExportCustomerDto {
   @IsOptional()
   @IsNumber()
   clanId?: number;
+
+  @ApiProperty({ description: '跟进记录搜索关键词', required: false })
+  @IsOptional()
+  @IsString()
+  followUpKeyword?: string;
 }
