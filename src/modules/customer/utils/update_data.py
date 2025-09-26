@@ -226,7 +226,7 @@ def update_excel_data(file_path):
                 '实际经营地址': 'businessAddress',
                 '所属分局': 'taxBureau',
                 '实际负责人(备注)': 'actualResponsibleRemark',
-                '同宗企业': 'affiliatedEnterprises',
+                '宗族ID': 'clanId',
                 '老板画像': 'bossProfile',
                 '企业画像': 'enterpriseProfile',
                 '行业大类': 'industryCategory',
