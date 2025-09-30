@@ -222,6 +222,21 @@ export class Expense {
   @Column({ type: 'date', nullable: true, comment: '统计结束日期' })
   statisticalEndDate: string;
 
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    comment: '客户资料整理费',
+  })
+  customerDataOrganizationFee: number;
+
+  @Column({ type: 'date', nullable: true, comment: '整理费开始日期' })
+  organizationStartDate: string;
+
+  @Column({ type: 'date', nullable: true, comment: '整理费结束日期' })
+  organizationEndDate: string;
+
   @Column({ type: 'simple-json', nullable: true, comment: '变更业务' })
   changeBusiness: string[];
 

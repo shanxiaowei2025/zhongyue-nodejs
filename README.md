@@ -1014,6 +1014,26 @@ Body: {
 
 ## 更新历史
 
+### 2025-09-30
+- **费用管理模块新增客户资料整理相关字段**：
+  - 为费用管理模块添加三个新字段：客户资料整理费、整理费开始日期、整理费结束日期
+  - **数据库字段**：
+    - `customerDataOrganizationFee`：客户资料整理费（DECIMAL(10,2)）
+    - `organizationStartDate`：整理费开始日期（DATE）
+    - `organizationEndDate`：整理费结束日期（DATE）
+  - **字段位置**：新字段位于 `statisticalEndDate` 字段之后，保持数据表结构的逻辑顺序
+  - **功能覆盖**：
+    - 更新费用实体（Expense Entity）：添加新字段的数据库映射定义
+    - 更新创建费用DTO：添加新字段的验证和API文档
+    - 更新CSV导出功能：在导出映射中添加新字段的中文列名
+    - 更新收据查看接口：在 `/api/expense/receipt` 接口中添加客户资料整理费显示
+    - 提供数据库迁移脚本：`database/migrations/2025-09-30-add-customer-data-organization-fields.sql`
+  - **技术实现**：
+    - TypeORM实体字段定义完整，包含类型、精度、注释等
+    - DTO验证使用 `@IsOptional()` 和 `@IsNumber()/@IsString()` 装饰器
+    - CSV导出字段映射按逻辑顺序排列，便于数据分析
+  - **向后兼容**：所有新字段均为可选字段，不影响现有功能的正常使用
+
 ### 2025-09-15
 - **群组管理模块新增**：
   - 新增完整的群组管理模块，支持企业微信群组信息管理

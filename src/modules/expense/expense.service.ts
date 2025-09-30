@@ -1546,6 +1546,12 @@ export class ExpenseService {
           endDateField: 'statisticalEndDate',
         },
         {
+          name: '客户资料整理费',
+          amountField: 'customerDataOrganizationFee',
+          startDateField: 'organizationStartDate',
+          endDateField: 'organizationEndDate',
+        },
+        {
           name: '变更收费',
           amountField: 'changeFee',
           listField: 'changeBusiness',
@@ -1961,6 +1967,7 @@ export class ExpenseService {
       otherBusinessSpecial: '其他业务(特殊)',
       housingFundAgencyFee: '公积金代理费',
       statisticalReportFee: '统计局报表费',
+      customerDataOrganizationFee: '客户资料整理费',
       totalFeeExcludeRecordSeal: '总费用（除备案章费用）',
       businessType: '业务类型',
       createdAt: '创建时间',

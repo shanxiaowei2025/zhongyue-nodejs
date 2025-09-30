@@ -242,6 +242,21 @@ export class CreateExpenseDto {
   @IsString()
   statisticalEndDate?: string;
 
+  @ApiProperty({ description: '客户资料整理费', required: false })
+  @IsOptional()
+  @IsNumber()
+  customerDataOrganizationFee?: number;
+
+  @ApiProperty({ description: '整理费开始日期', required: false })
+  @IsOptional()
+  @IsString()
+  organizationStartDate?: string;
+
+  @ApiProperty({ description: '整理费结束日期', required: false })
+  @IsOptional()
+  @IsString()
+  organizationEndDate?: string;
+
   @ApiProperty({ description: '变更业务', required: false })
   @IsOptional()
   @IsArray()
