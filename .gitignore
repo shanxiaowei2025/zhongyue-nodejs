@@ -94,3 +94,6 @@ docker-volumes/
 .cursorrules
 .env*
 !.env.example
+
+# Cursor AI 记忆文件
+.remember/

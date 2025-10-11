@@ -135,12 +135,13 @@ export class SalaryAutoUpdateService {
     try {
       // 1. 筛选sys_expense表中chargeDate为上个月的记录（不限制businessType，因为所有类型的费用都可能产生提成）
       // socialInsuranceAgencyFee 只有在 socialInsuranceBusinessType = '续费' 时才参与计算
+      // accountingSoftwareFee 和 invoiceSoftwareFee 只有在 businessType = '续费' 时才参与计算
       const expenseQuery = `
         SELECT 
           SUM(CASE WHEN businessType = '续费' THEN agencyFee ELSE 0 END) as totalAgencyFee, 
           SUM(CASE WHEN socialInsuranceBusinessType = '续费' THEN socialInsuranceAgencyFee ELSE 0 END) as totalSocialInsuranceAgencyFee,
-          SUM(accountingSoftwareFee) as totalAccountingSoftwareFee,
-          SUM(invoiceSoftwareFee) as totalInvoiceSoftwareFee,
+          SUM(CASE WHEN businessType = '续费' THEN accountingSoftwareFee ELSE 0 END) as totalAccountingSoftwareFee,
+          SUM(CASE WHEN businessType = '续费' THEN invoiceSoftwareFee ELSE 0 END) as totalInvoiceSoftwareFee,
           SUM(addressFee) as totalAddressFee
         FROM sys_expense 
         WHERE 
@@ -171,6 +172,7 @@ export class SalaryAutoUpdateService {
       const agencyTotalFee = totalAgencyFee + totalSocialInsuranceAgencyFee;
 
       // 计算软件费用总和（提成比例10%）
+      // 记账软件费和开票软件费只有在 businessType = '续费' 时才计算10%提成
       const totalAccountingSoftwareFee = Number(
         expenseResults[0].totalAccountingSoftwareFee || 0,
       );
@@ -188,11 +190,11 @@ export class SalaryAutoUpdateService {
 
       this.logger.debug(`
         员工 ${employeeName} 的费用明细：
-        代理费: ${totalAgencyFee}，
-        社保代理费: ${totalSocialInsuranceAgencyFee}，
-        记账软件费: ${totalAccountingSoftwareFee}，
-        开票软件费: ${totalInvoiceSoftwareFee}，
-        地址费: ${totalAddressFee}
+        代理费(续费): ${totalAgencyFee}，
+        社保代理费(续费): ${totalSocialInsuranceAgencyFee}，
+        记账软件费(续费): ${totalAccountingSoftwareFee}，
+        开票软件费(续费): ${totalInvoiceSoftwareFee}，
+        地址费(所有类型): ${totalAddressFee}
       `);
 
       // 3. 计算代理费提成 = 代理费总和 × 1% + 软件费总和 × 10%
@@ -273,8 +275,13 @@ export class SalaryAutoUpdateService {
         const agencyTotalFee = agencyFee + socialInsuranceAgencyFee;
 
         // 软件费类（提成比例10%）
-        const accountingSoftwareFee = Number(record.accountingSoftwareFee || 0);
-        const invoiceSoftwareFee = Number(record.invoiceSoftwareFee || 0);
+        // 记账软件费和开票软件费只有在 businessType = '续费' 时才计算10%提成
+        const accountingSoftwareFee = record.businessType === '续费' 
+          ? Number(record.accountingSoftwareFee || 0) 
+          : 0;
+        const invoiceSoftwareFee = record.businessType === '续费' 
+          ? Number(record.invoiceSoftwareFee || 0) 
+          : 0;
         const addressFee = Number(record.addressFee || 0);
         const softwareTotalFee = accountingSoftwareFee + invoiceSoftwareFee + addressFee;
 
@@ -291,6 +298,7 @@ export class SalaryAutoUpdateService {
           更新费用记录ID ${record.id} 的代理费提成: 
           代理费: ${agencyFee}, 社保代理费: ${socialInsuranceAgencyFee} (socialInsuranceBusinessType: ${record.socialInsuranceBusinessType})
           记账软件费: ${accountingSoftwareFee}, 开票软件费: ${invoiceSoftwareFee}, 地址费: ${addressFee}
+          (记账软件费和开票软件费仅在 businessType='续费' 时计算, 当前businessType: ${record.businessType})
           代理费提成: ${agencyCommission}
         `);
       }
@@ -426,7 +434,8 @@ export class SalaryAutoUpdateService {
           Number(expense.statisticalReportFee || 0) +
           Number(expense.changeFee || 0) +
           Number(expense.administrativeLicenseFee || 0) +
-          Number(expense.otherBusinessFee || 0);
+          Number(expense.otherBusinessFee || 0) +
+          Number(expense.customerDataOrganizationFee || 0);
 
         // 外包业务费用总和
         const outsourceFee =
@@ -494,7 +503,8 @@ export class SalaryAutoUpdateService {
               Number(expense.statisticalReportFee || 0) +
               Number(expense.changeFee || 0) +
               Number(expense.administrativeLicenseFee || 0) +
-              Number(expense.otherBusinessFee || 0);
+              Number(expense.otherBusinessFee || 0) +
+              Number(expense.customerDataOrganizationFee || 0);
 
             // 外包业务费用
             const outsourceFee =
@@ -526,7 +536,8 @@ export class SalaryAutoUpdateService {
                 Number(expense.statisticalReportFee || 0) +
                 Number(expense.changeFee || 0) +
                 Number(expense.administrativeLicenseFee || 0) +
-                Number(expense.otherBusinessFee || 0);
+                Number(expense.otherBusinessFee || 0) +
+                Number(expense.customerDataOrganizationFee || 0);
                 
               const otherBasicCommission = otherBasicFee * commissionRate;
               
