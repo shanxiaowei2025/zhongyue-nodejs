@@ -1015,6 +1015,29 @@ Body: {
 ## 更新历史
 
 ### 2025-10-13
+- **业务提成计算逻辑优化 - 社保代理费计入条件调整**：
+  - **修改内容**：调整基础业务提成中社保代理费的计入条件
+  - **原规则**：社保代理费仅在 `socialInsuranceBusinessType = '新增'` 时计入基础业务费用
+  - **新规则**：社保代理费在以下任一情况下计入基础业务费用：
+    - `socialInsuranceBusinessType = '新增'`
+    - `socialInsuranceBusinessType` 字段为 `null`
+    - `socialInsuranceBusinessType` 字段为空字符串 `''`
+  - **影响范围**：
+    - 业务提成计算方法 `calculateBusinessCommission()`
+    - 涉及3处社保代理费计算逻辑（第427行、第499行、第536行）
+  - **计算逻辑更新**：
+    ```typescript
+    // 新的社保代理费计入条件
+    const socialInsuranceAgencyFee = (
+      expense.socialInsuranceBusinessType === '新增' || 
+      !expense.socialInsuranceBusinessType || 
+      expense.socialInsuranceBusinessType === ''
+    ) ? Number(expense.socialInsuranceAgencyFee || 0) : 0;
+    ```
+  - **业务影响**：扩大了社保代理费的计入范围，包含历史数据中未填写业务类型的记录
+  - **向后兼容**：不影响已有的业务逻辑，仅扩展计入条件
+
+### 2025-10-13（早前更新）
 - **薪资数据导入时间限制功能**：
   - **功能概述**：为保证金、社保信息、补贴汇总和朋友圈缴费导入接口添加时间验证，只允许导入上个月的数据
   - **影响接口**：

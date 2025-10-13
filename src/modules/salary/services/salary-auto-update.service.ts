@@ -423,9 +423,12 @@ export class SalaryAutoUpdateService {
       // 先计算所有记录的基础业务费用总和
       for (const expense of expenseResults) {
         // 基础业务费用总和
-        // socialInsuranceAgencyFee 只有在 socialInsuranceBusinessType = '新增' 时才参与计算
-        const socialInsuranceAgencyFee = expense.socialInsuranceBusinessType === '新增' 
-          ? Number(expense.socialInsuranceAgencyFee || 0) 
+        // socialInsuranceAgencyFee 在以下情况计入：socialInsuranceBusinessType = '新增' 或为空或为空字符串
+        const socialInsuranceAgencyFee = (
+          expense.socialInsuranceBusinessType === '新增' || 
+          !expense.socialInsuranceBusinessType || 
+          expense.socialInsuranceBusinessType === ''
+        ) ? Number(expense.socialInsuranceAgencyFee || 0) 
           : 0;
         
         const basicFee =
@@ -492,9 +495,12 @@ export class SalaryAutoUpdateService {
           // 使用获取到的提成比率计算每条记录的提成
           for (const expense of expenseResults) {
             // 基础业务费用
-            // socialInsuranceAgencyFee 只有在 socialInsuranceBusinessType = '新增' 时才参与计算
-            const socialInsuranceAgencyFee = expense.socialInsuranceBusinessType === '新增' 
-              ? Number(expense.socialInsuranceAgencyFee || 0) 
+            // socialInsuranceAgencyFee 在以下情况计入：socialInsuranceBusinessType = '新增' 或为空或为空字符串
+            const socialInsuranceAgencyFee = (
+              expense.socialInsuranceBusinessType === '新增' || 
+              !expense.socialInsuranceBusinessType || 
+              expense.socialInsuranceBusinessType === ''
+            ) ? Number(expense.socialInsuranceAgencyFee || 0) 
               : 0;
             
             const basicFee =
@@ -527,8 +533,11 @@ export class SalaryAutoUpdateService {
               const specialAgencyCommission = (agencyFee / 2) * (commissionRate + 0.05);
               
               // 计算其他基础业务费用的提成(不包括agencyFee)
-              const socialInsuranceAgencyFee = expense.socialInsuranceBusinessType === '新增' 
-                ? Number(expense.socialInsuranceAgencyFee || 0) 
+              const socialInsuranceAgencyFee = (
+                expense.socialInsuranceBusinessType === '新增' || 
+                !expense.socialInsuranceBusinessType || 
+                expense.socialInsuranceBusinessType === ''
+              ) ? Number(expense.socialInsuranceAgencyFee || 0) 
                 : 0;
               
               const otherBasicFee =
