@@ -135,14 +135,14 @@ export class SalaryAutoUpdateService {
     try {
       // 1. 筛选sys_expense表中chargeDate为上个月的记录（不限制businessType，因为所有类型的费用都可能产生提成）
       // socialInsuranceAgencyFee 只有在 socialInsuranceBusinessType = '续费' 时才参与计算
-      // accountingSoftwareFee 和 invoiceSoftwareFee 只有在 businessType = '续费' 时才参与计算
+      // accountingSoftwareFee、invoiceSoftwareFee 和 addressFee 只有在 businessType = '续费' 时才参与计算
       const expenseQuery = `
         SELECT 
           SUM(CASE WHEN businessType = '续费' THEN agencyFee ELSE 0 END) as totalAgencyFee, 
           SUM(CASE WHEN socialInsuranceBusinessType = '续费' THEN socialInsuranceAgencyFee ELSE 0 END) as totalSocialInsuranceAgencyFee,
           SUM(CASE WHEN businessType = '续费' THEN accountingSoftwareFee ELSE 0 END) as totalAccountingSoftwareFee,
           SUM(CASE WHEN businessType = '续费' THEN invoiceSoftwareFee ELSE 0 END) as totalInvoiceSoftwareFee,
-          SUM(addressFee) as totalAddressFee
+          SUM(CASE WHEN businessType = '续费' THEN addressFee ELSE 0 END) as totalAddressFee
         FROM sys_expense 
         WHERE 
           salesperson = ? AND 
@@ -172,7 +172,7 @@ export class SalaryAutoUpdateService {
       const agencyTotalFee = totalAgencyFee + totalSocialInsuranceAgencyFee;
 
       // 计算软件费用总和（提成比例10%）
-      // 记账软件费和开票软件费只有在 businessType = '续费' 时才计算10%提成
+      // 记账软件费、开票软件费和地址费只有在 businessType = '续费' 时才计算10%提成
       const totalAccountingSoftwareFee = Number(
         expenseResults[0].totalAccountingSoftwareFee || 0,
       );
@@ -194,7 +194,7 @@ export class SalaryAutoUpdateService {
         社保代理费(续费): ${totalSocialInsuranceAgencyFee}，
         记账软件费(续费): ${totalAccountingSoftwareFee}，
         开票软件费(续费): ${totalInvoiceSoftwareFee}，
-        地址费(所有类型): ${totalAddressFee}
+        地址费(续费): ${totalAddressFee}
       `);
 
       // 3. 计算代理费提成 = 代理费总和 × 1% + 软件费总和 × 10%
