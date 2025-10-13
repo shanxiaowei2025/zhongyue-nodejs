@@ -183,15 +183,26 @@ export class DepositService {
 
           if (code !== 0) {
             console.error('Python脚本执行失败:', errorString);
-            return reject({
-              success: false,
-              error: '导入失败',
-              details: errorString || '未知错误',
-              exitCode: code,
-            });
+            
+            // 如果有解析到错误信息JSON，优先使用
+            if (resultJson && !resultJson.success) {
+              return reject(new BadRequestException(
+                resultJson.error_message || '导入失败'
+              ));
+            }
+            
+            return reject(new BadRequestException(
+              errorString || '导入失败，请检查文件格式和内容'
+            ));
           }
 
           if (resultJson) {
+            // 检查是否有错误信息
+            if (!resultJson.success) {
+              return reject(new BadRequestException(
+                resultJson.error_message || '导入失败'
+              ));
+            }
             // 如果有解析到结果，返回结果
             return resolve(resultJson);
           } else {

@@ -264,21 +264,27 @@ export class FriendCirclePaymentService {
 
         // 处理进程结束
         pythonProcess.on('close', async (code) => {
-          if (code !== 0) {
-            console.error(`Python脚本退出代码: ${code}`);
-            return reject(
-              new BadRequestException(`处理导入文件时发生错误: ${stderrData}`),
-            );
-          }
-
           try {
-            // 解析Python脚本的输出
+            // 先尝试解析Python脚本的输出
             const result = JSON.parse(stdoutData);
 
             if (!result.success) {
+              // 检查是否是时间验证错误
+              if (result.error === 'invalid_date_range') {
+                console.error('时间验证失败:', result.details);
+                console.error('无效记录:', JSON.stringify(result.invalidRecords, null, 2));
+                return reject(
+                  new BadRequestException(result.message || '只能导入上个月数据，导入失败。'),
+                );
+              }
               return reject(
                 new BadRequestException(result.error || '导入失败'),
               );
+            }
+
+            // 如果解析成功但退出代码不为0，记录警告
+            if (code !== 0) {
+              console.warn(`Python脚本退出代码为${code}，但返回了有效的JSON结果`);
             }
 
             // 插入有效数据
@@ -326,7 +332,17 @@ export class FriendCirclePaymentService {
               failedRecords: result.failedRecords,
             });
           } catch (error) {
+            // JSON解析失败，可能是Python脚本出错
             console.error('解析Python输出错误:', error);
+            console.error('Python标准输出:', stdoutData);
+            console.error('Python标准错误:', stderrData);
+            
+            if (code !== 0) {
+              return reject(
+                new BadRequestException(`处理导入文件时发生错误: ${stderrData || error.message}`),
+              );
+            }
+            
             reject(
               new BadRequestException(`解析导入结果失败: ${error.message}`),
             );

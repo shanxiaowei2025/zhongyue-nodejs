@@ -6,6 +6,7 @@ from sqlalchemy import create_engine, text # type: ignore
 import numpy as np # type: ignore
 import os
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 import argparse
 import sys
 import traceback
@@ -19,6 +20,64 @@ def debug_print(message):
     """打印调试信息"""
     if DEBUG:
         print(f"DEBUG: {message}")
+
+def validate_date_range(df, date_column):
+    """
+    验证数据中的日期是否为上个月
+    
+    参数:
+        df: DataFrame对象
+        date_column: 日期列名
+    
+    返回:
+        (is_valid, error_message, invalid_records)
+    """
+    # 计算上个月的年月
+    current_date = datetime.now()
+    last_month = current_date - relativedelta(months=1)
+    expected_year_month = last_month.strftime("%Y-%m")
+    
+    invalid_records = []
+    
+    # 检查每条记录的日期
+    for idx, row in df.iterrows():
+        if date_column in df.columns:
+            date_value = row[date_column]
+            if pd.notna(date_value):  # 只检查非空值
+                try:
+                    # 尝试解析日期
+                    if isinstance(date_value, str):
+                        # 提取年月部分 (YYYY-MM)
+                        date_str = date_value.strip()
+                        if len(date_str) >= 7:
+                            year_month = date_str[:7]
+                        else:
+                            year_month = date_str
+                    else:
+                        # 如果是日期对象，转换为字符串
+                        year_month = pd.to_datetime(date_value).strftime("%Y-%m")
+                    
+                    # 检查是否为上个月
+                    if year_month != expected_year_month:
+                        invalid_records.append({
+                            "row": idx + 2,  # 考虑表头行
+                            "date": year_month,
+                            "expected": expected_year_month
+                        })
+                except Exception as e:
+                    # 日期格式错误也记录
+                    invalid_records.append({
+                        "row": idx + 2,
+                        "date": str(date_value),
+                        "expected": expected_year_month,
+                        "error": f"日期格式错误: {str(e)}"
+                    })
+    
+    if invalid_records:
+        error_message = f"只能导入上个月({expected_year_month})的数据。发现 {len(invalid_records)} 条不符合要求的记录。"
+        return False, error_message, invalid_records
+    
+    return True, None, []
 
 def get_employee_names(engine):
     """
@@ -185,6 +244,25 @@ def import_attendance_deduction_data(file_path, overwrite_mode=False):
             current_time = datetime.now()
             db_data['createdAt'] = current_time
             db_data['updatedAt'] = current_time
+            
+            # 验证日期范围 - 只允许导入上个月的数据
+            if '年月' in df.columns:
+                print("开始验证日期范围...")
+                is_valid, error_message, invalid_records = validate_date_range(df, '年月')
+                if not is_valid:
+                    print(f"日期验证失败: {error_message}")
+                    error_info = {
+                        "success": False,
+                        "error": "invalid_date_range",
+                        "message": "只能导入上个月数据，导入失败。",
+                        "details": error_message,
+                        "invalidRecords": invalid_records
+                    }
+                    print(f"ERROR_INFO_JSON: {json.dumps(error_info, ensure_ascii=False)}")
+                    return False
+                print("日期验证通过")
+            else:
+                print("警告: 未找到'年月'列，跳过日期验证")
             
             # 获取导入文件中的所有姓名（去除空值和重复值）
             import_names = set()

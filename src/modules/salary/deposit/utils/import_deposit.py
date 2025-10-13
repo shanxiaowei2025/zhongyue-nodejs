@@ -204,6 +204,63 @@ def import_deposit_data(file_path, overwrite_mode=False):
         # 显示数据转换后的结果
         debug_print(f"数据清洗后，前5行:\n{df.head()}")
         
+        # ========== 时间验证：只能导入上个月的数据 ==========
+        # 获取当前日期和上个月的年月
+        now = datetime.now()
+        current_year = now.year
+        current_month = now.month
+        
+        # 计算上个月的年月
+        if current_month == 1:
+            last_month = 12
+            last_year = current_year - 1
+        else:
+            last_month = current_month - 1
+            last_year = current_year
+        
+        # 格式化为YYYY-MM格式
+        last_month_str = f"{last_year:04d}-{last_month:02d}"
+        
+        print(f"时间验证: 当前年月={current_year:04d}-{current_month:02d}, 允许导入的年月={last_month_str}")
+        
+        # 验证所有记录的年月
+        invalid_dates = []
+        for index, row in df.iterrows():
+            deduction_date = row.get('扣除日期')
+            if deduction_date:
+                # 提取年月 (YYYY-MM)
+                date_year_month = deduction_date[:7]
+                if date_year_month != last_month_str:
+                    invalid_dates.append({
+                        "row": index + 1,
+                        "name": row.get('姓名', '未知'),
+                        "date": deduction_date,
+                        "year_month": date_year_month
+                    })
+        
+        # 如果存在不符合要求的日期，返回错误
+        if invalid_dates:
+            error_msg = f"只能导入上个月数据，导入失败。"
+            print(error_msg)
+            
+            # 显示前几条无效记录的详细信息
+            sample_invalid = invalid_dates[:5]
+            print(f"无效日期示例: {sample_invalid}")
+            
+            error_info = {
+                "success": False,
+                "error_type": "invalid_date_range",
+                "error_message": error_msg,
+                "allowed_month": last_month_str,
+                "invalid_dates": invalid_dates,
+                "failed_records": []
+            }
+            print(f"ERROR_INFO_JSON: {json.dumps(error_info, ensure_ascii=False)}")
+            return False
+        
+        print(f"时间验证通过: 所有记录的日期都是上个月({last_month_str})")
+        # ========== 时间验证结束 ==========
+        
         # 定义失败记录和成功计数
         failed_records = []
         success_count = 0
@@ -321,7 +378,11 @@ def main():
     parser.add_argument('--overwrite', action='store_true', help='如果存在相同姓名和年月的记录，则覆盖')
     args = parser.parse_args()
     
-    import_deposit_data(args.file, args.overwrite)
+    # 执行导入并根据结果设置退出码
+    success = import_deposit_data(args.file, args.overwrite)
+    if not success:
+        sys.exit(1)  # 导入失败，返回非零退出码
+    sys.exit(0)  # 导入成功
 
 if __name__ == "__main__":
     main() 

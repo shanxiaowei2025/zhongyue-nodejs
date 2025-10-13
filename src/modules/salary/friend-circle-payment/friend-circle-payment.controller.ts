@@ -12,6 +12,7 @@ import {
   UploadedFile,
   ParseFilePipe,
   Req,
+  BadRequestException,
 } from '@nestjs/common';
 import { FriendCirclePaymentService } from './friend-circle-payment.service';
 import { CreateFriendCirclePaymentDto } from './dto/create-friend-circle-payment.dto';
@@ -164,7 +165,14 @@ export class FriendCirclePaymentController {
     )
     file: Express.Multer.File,
   ) {
-    return this.friendCirclePaymentService.importData(file);
+    try {
+      return await this.friendCirclePaymentService.importData(file);
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException(`导入失败: ${error.message}`);
+    }
   }
 
   @Get()

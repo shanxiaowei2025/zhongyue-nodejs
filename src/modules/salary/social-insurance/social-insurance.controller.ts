@@ -12,6 +12,7 @@ import {
   UploadedFile,
   ParseFilePipe,
   FileTypeValidator,
+  BadRequestException,
 } from '@nestjs/common';
 import { SocialInsuranceService } from './social-insurance.service';
 import { CreateSocialInsuranceDto } from './dto/create-social-insurance.dto';
@@ -157,7 +158,16 @@ export class SocialInsuranceController {
     )
     file: Express.Multer.File,
   ) {
-    return this.socialInsuranceService.importData(file);
+    try {
+      return await this.socialInsuranceService.importData(file);
+    } catch (error) {
+      // 如果是时间验证错误，抛出BadRequestException
+      if (error.error && error.error.includes('只能导入上个月数据')) {
+        throw new BadRequestException(error.error);
+      }
+      // 其他错误也抛出
+      throw new BadRequestException(error.error || error.message || '导入失败');
+    }
   }
 
   @Get()

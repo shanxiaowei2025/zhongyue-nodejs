@@ -12,6 +12,7 @@ import {
   UploadedFile,
   ParseFilePipe,
   FileTypeValidator,
+  BadRequestException,
 } from '@nestjs/common';
 import { SubsidySummaryService } from './subsidy-summary.service';
 import { CreateSubsidySummaryDto } from './dto/create-subsidy-summary.dto';
@@ -155,7 +156,16 @@ export class SubsidySummaryController {
     )
     file: Express.Multer.File,
   ) {
-    return this.subsidySummaryService.importData(file);
+    try {
+      return await this.subsidySummaryService.importData(file);
+    } catch (error) {
+      // 如果是时间验证错误，抛出BadRequestException
+      if (error.error && error.error.includes('只能导入上个月数据')) {
+        throw new BadRequestException(error.error);
+      }
+      // 其他错误也抛出
+      throw new BadRequestException(error.error || error.message || '导入失败');
+    }
   }
 
   @Get()

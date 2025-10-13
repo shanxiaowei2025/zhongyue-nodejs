@@ -110,7 +110,22 @@ export class AttendanceDeductionService {
               console.log('解析到错误信息:', errorInfo);
               
               // 处理不同类型的错误
-              if (errorInfo.error_type === 'name_mismatch') {
+              if (errorInfo.error === 'invalid_date_range') {
+                // 时间验证错误
+                console.log('时间验证失败:', errorInfo.details);
+                console.log('无效记录:', JSON.stringify(errorInfo.invalidRecords, null, 2));
+                
+                resultJson = {
+                  success: false,
+                  error: '时间验证失败',
+                  details: errorInfo.message || '只能导入上个月数据，导入失败。',
+                  error_type: 'invalid_date_range',
+                  invalidRecords: errorInfo.invalidRecords || [],
+                  importedCount: 0,
+                  failedCount: 0,
+                  failedRecords: [],
+                };
+              } else if (errorInfo.error_type === 'name_mismatch') {
                 // 姓名对比错误
                 const nameMismatchDetails = errorInfo.name_mismatch_details || {};
                 const employeesNotRecorded = nameMismatchDetails.employees_not_recorded || [];

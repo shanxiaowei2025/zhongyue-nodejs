@@ -157,6 +157,59 @@ def import_insurance_data(file_path, overwrite_mode=False):
             db_data['createdAt'] = current_time
             db_data['updatedAt'] = current_time
             
+            # 时间验证：只允许导入上个月的数据
+            from datetime import date
+            from dateutil.relativedelta import relativedelta # type: ignore
+            
+            # 计算上个月的年月
+            today = date.today()
+            last_month = today - relativedelta(months=1)
+            last_month_str = last_month.strftime('%Y-%m')
+            
+            print(f"当前日期: {today.strftime('%Y-%m-%d')}")
+            print(f"允许导入的月份: {last_month_str}")
+            
+            # 验证所有记录的日期
+            invalid_dates = []
+            for index, row in db_data.iterrows():
+                if 'yearMonth' in row and not pd.isna(row['yearMonth']):
+                    try:
+                        # 转换为日期对象
+                        if isinstance(row['yearMonth'], str):
+                            year_month_date = pd.to_datetime(row['yearMonth'])
+                        else:
+                            year_month_date = row['yearMonth']
+                        
+                        # 提取年月部分
+                        year_month_str = year_month_date.strftime('%Y-%m')
+                        
+                        # 检查是否是上个月
+                        if year_month_str != last_month_str:
+                            invalid_dates.append({
+                                'row': index + 2,  # Excel行号
+                                'name': row.get('name', '未知'),
+                                'date': year_month_date.strftime('%Y-%m-%d'),
+                                'year_month': year_month_str
+                            })
+                    except Exception as e:
+                        debug_print(f"日期验证错误: {str(e)}")
+            
+            # 如果存在不符合要求的日期，返回错误
+            if invalid_dates:
+                error_msg = f"只能导入上个月数据，导入失败。"
+                print(error_msg)
+                
+                error_info = {
+                    "success": False,
+                    "error_type": "invalid_date_range",
+                    "error_message": error_msg,
+                    "allowed_month": last_month_str,
+                    "invalid_dates": invalid_dates,
+                    "failed_records": []
+                }
+                print(f"ERROR_INFO_JSON: {json.dumps(error_info, ensure_ascii=False)}")
+                return False
+            
             # 检查和收集数据验证错误
             validation_errors = []
             valid_records = []
@@ -424,6 +477,7 @@ def main():
             else:
                 sys.exit(1)
         else:
+            # 导入失败，返回非零退出码
             sys.exit(1)
     except Exception as e:
         print(f"主函数异常: {str(e)}")

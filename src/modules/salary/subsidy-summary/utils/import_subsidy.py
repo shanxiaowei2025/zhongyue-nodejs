@@ -5,7 +5,8 @@ import pandas as pd # type: ignore
 from sqlalchemy import create_engine, text # type: ignore
 import numpy as np # type: ignore
 import os
-from datetime import datetime
+from datetime import datetime, date
+from dateutil.relativedelta import relativedelta # type: ignore
 import argparse
 import sys
 import traceback
@@ -165,6 +166,53 @@ def import_subsidy_data(file_path, overwrite_mode=False):
             
             # 自动计算补贴合计
             db_data = calculate_total_subsidy(db_data)
+            
+            # 时间验证：只允许导入上个月的数据
+            print("开始验证导入数据的时间范围...")
+            today = date.today()
+            last_month = today - relativedelta(months=1)
+            last_month_str = last_month.strftime('%Y-%m')
+            print(f"当前日期: {today}, 允许导入的月份: {last_month_str}")
+            
+            invalid_dates = []
+            
+            # 检查每条记录的年月是否为上个月
+            for index, row in db_data.iterrows():
+                if 'yearMonth' in row and not pd.isna(row['yearMonth']):
+                    try:
+                        # 确保yearMonth是日期类型
+                        if isinstance(row['yearMonth'], str):
+                            year_month_date = pd.to_datetime(row['yearMonth'])
+                        else:
+                            year_month_date = row['yearMonth']
+                        
+                        # 提取年月部分进行比较
+                        year_month_str = year_month_date.strftime('%Y-%m')
+                        
+                        if year_month_str != last_month_str:
+                            invalid_dates.append({
+                                'row': index + 2,  # Excel行号从1开始，且有标题行
+                                'name': row.get('name', '未知姓名'),
+                                'date': year_month_date.strftime('%Y-%m-%d'),
+                                'year_month': year_month_str
+                            })
+                    except Exception as e:
+                        print(f"处理第 {index + 2} 行的年月字段时出错: {str(e)}")
+            
+            # 如果有不符合时间要求的记录，拒绝整个导入
+            if invalid_dates:
+                error_info = {
+                    "success": False,
+                    "error_type": "invalid_date_range",
+                    "error_message": "只能导入上个月数据，导入失败。",
+                    "allowed_month": last_month_str,
+                    "invalid_dates": invalid_dates
+                }
+                print(f"时间验证失败，发现 {len(invalid_dates)} 条不符合要求的记录")
+                print(f"ERROR_INFO_JSON: {json.dumps(error_info, ensure_ascii=False)}")
+                return False
+            
+            print(f"时间验证通过，所有记录的年月都是 {last_month_str}")
             
             # 检查每条记录
             for index, row in db_data.iterrows():

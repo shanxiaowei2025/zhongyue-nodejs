@@ -145,6 +145,17 @@ export class SocialInsuranceService {
 
           if (code !== 0) {
             console.error('Python脚本执行失败:', errorString);
+            
+            // 如果有解析到的错误信息，使用它
+            if (resultJson && resultJson.error_type === 'invalid_date_range') {
+              return reject({
+                success: false,
+                error: resultJson.error_message || '只能导入上个月数据，导入失败。',
+                details: resultJson,
+                exitCode: code,
+              });
+            }
+            
             return reject({
               success: false,
               error: '导入失败',

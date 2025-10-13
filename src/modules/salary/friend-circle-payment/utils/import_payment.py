@@ -4,6 +4,66 @@ import json
 import pandas as pd # type: ignore
 import numpy as np # type: ignore
 from io import BytesIO
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+
+def validate_date_range(df, date_column):
+    """
+    验证数据中的日期是否为上个月
+    
+    参数:
+        df: DataFrame对象
+        date_column: 日期列名
+    
+    返回:
+        (is_valid, error_message, invalid_records)
+    """
+    # 计算上个月的年月
+    current_date = datetime.now()
+    last_month = current_date - relativedelta(months=1)
+    expected_year_month = last_month.strftime("%Y-%m")
+    
+    invalid_records = []
+    
+    # 检查每条记录的日期
+    for idx, row in df.iterrows():
+        if date_column in df.columns:
+            date_value = row[date_column]
+            if pd.notna(date_value):  # 只检查非空值
+                try:
+                    # 尝试解析日期
+                    if isinstance(date_value, str):
+                        # 提取年月部分 (YYYY-MM)
+                        date_str = date_value.strip()
+                        if len(date_str) >= 7:
+                            year_month = date_str[:7]
+                        else:
+                            year_month = date_str
+                    else:
+                        # 如果是日期对象，转换为字符串
+                        year_month = pd.to_datetime(date_value).strftime("%Y-%m")
+                    
+                    # 检查是否为上个月
+                    if year_month != expected_year_month:
+                        invalid_records.append({
+                            "row": idx + 2,  # 考虑表头行
+                            "date": year_month,
+                            "expected": expected_year_month
+                        })
+                except Exception as e:
+                    # 日期格式错误也记录
+                    invalid_records.append({
+                        "row": idx + 2,
+                        "date": str(date_value),
+                        "expected": expected_year_month,
+                        "error": f"日期格式错误: {str(e)}"
+                    })
+    
+    if invalid_records:
+        error_message = f"只能导入上个月({expected_year_month})的数据。发现 {len(invalid_records)} 条不符合要求的记录。"
+        return False, error_message, invalid_records
+    
+    return True, None, []
 
 def main():
     # 从标准输入读取文件内容
@@ -22,6 +82,20 @@ def main():
         
         # 替换NaN值为None，这样JSON序列化时会转为null
         df = df.replace({np.nan: None})
+        
+        # 验证日期范围 - 在处理数据之前进行验证
+        if "年月" in df.columns:
+            is_valid, error_message, invalid_records = validate_date_range(df, "年月")
+            if not is_valid:
+                error_result = {
+                    "success": False,
+                    "error": "invalid_date_range",
+                    "message": "只能导入上个月数据，导入失败。",
+                    "details": error_message,
+                    "invalidRecords": invalid_records
+                }
+                print(json.dumps(error_result, ensure_ascii=False))
+                sys.exit(1)
         
         # 准备结果
         result = {

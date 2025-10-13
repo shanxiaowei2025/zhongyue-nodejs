@@ -209,6 +209,18 @@ export class AttendanceDeductionController {
     } catch (error) {
       console.error('导入考勤扣款数据失败:', error);
       
+      // 检查是否是时间验证错误
+      if (error.error_type === 'invalid_date_range') {
+        throw new BadRequestException({
+          success: false,
+          error: '时间验证失败',
+          details: error.details || '只能导入上个月数据，导入失败。',
+          error_type: 'invalid_date_range',
+          invalidRecords: error.invalidRecords || [],
+          message: '只能导入上个月数据，导入失败。'
+        });
+      }
+      
       // 检查是否是无有效数据错误
       if (error.error_type === 'no_valid_data') {
         throw new BadRequestException({
