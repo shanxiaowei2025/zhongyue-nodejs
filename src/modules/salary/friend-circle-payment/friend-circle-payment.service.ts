@@ -274,7 +274,7 @@ export class FriendCirclePaymentService {
                 console.error('时间验证失败:', result.details);
                 console.error('无效记录:', JSON.stringify(result.invalidRecords, null, 2));
                 return reject(
-                  new BadRequestException(result.message || '只能导入上个月数据，导入失败。'),
+                  new BadRequestException(result.message || '只能导入上个月数据'),
                 );
               }
               return reject(

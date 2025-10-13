@@ -240,7 +240,7 @@ def import_deposit_data(file_path, overwrite_mode=False):
         
         # 如果存在不符合要求的日期，返回错误
         if invalid_dates:
-            error_msg = f"只能导入上个月数据，导入失败。"
+            error_msg = f"只能导入上个月数据"
             print(error_msg)
             
             # 显示前几条无效记录的详细信息

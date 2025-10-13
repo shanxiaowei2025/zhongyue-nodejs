@@ -139,7 +139,7 @@ export class SubsidySummaryService {
             if (resultJson && resultJson.error_type === 'invalid_date_range') {
               return reject({
                 success: false,
-                error: resultJson.error_message || '只能导入上个月数据，导入失败。',
+                error: resultJson.error_message || '只能导入上个月数据',
                 details: resultJson,
                 exitCode: code,
               });

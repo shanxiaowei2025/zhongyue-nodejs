@@ -254,7 +254,7 @@ def import_attendance_deduction_data(file_path, overwrite_mode=False):
                     error_info = {
                         "success": False,
                         "error": "invalid_date_range",
-                        "message": "只能导入上个月数据，导入失败。",
+                        "message": "只能导入上个月数据",
                         "details": error_message,
                         "invalidRecords": invalid_records
                     }

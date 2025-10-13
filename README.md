@@ -1023,7 +1023,7 @@ Body: {
     - `POST /api/subsidy-summary/import` - 补贴汇总导入接口
     - `POST /api/friend-circle-payment/import` - 朋友圈缴费导入接口
   - **限制规则**：当月导入时只能导入上个月的数据，不能导入其他时间的数据
-  - **错误提示**：当因为时间限制导入失败时，返回错误信息："只能导入上个月数据，导入失败。"
+  - **错误提示**：当因为时间限制导入失败时，返回错误信息："只能导入上个月数据"
   - **验证时机**：在数据导入前进行验证，发现不符合时间要求的数据立即拒绝整个导入操作
   - **技术实现**：
     - 在Python导入脚本中添加时间验证逻辑
@@ -1039,7 +1039,7 @@ Body: {
     {
       "success": false,
       "error_type": "invalid_date_range",
-      "error_message": "只能导入上个月数据，导入失败。",
+      "error_message": "只能导入上个月数据",
       "allowed_month": "2025-09",
       "invalid_dates": [
         {
@@ -1534,7 +1534,7 @@ Body: {
   - **错误处理**：
     - Python脚本返回结构化的错误信息（error_type: `invalid_date_range`）
     - TypeScript服务层正确解析和处理时间验证错误
-    - Controller层返回友好的错误提示："只能导入上个月数据，导入失败。"
+    - Controller层返回友好的错误提示："只能导入上个月数据"
   - **技术实现**：
     - 使用 `dateutil.relativedelta` 计算上个月的年月
     - 支持字符串和日期对象两种日期格式的验证

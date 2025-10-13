@@ -118,7 +118,7 @@ export class AttendanceDeductionService {
                 resultJson = {
                   success: false,
                   error: '时间验证失败',
-                  details: errorInfo.message || '只能导入上个月数据，导入失败。',
+                  details: errorInfo.message || '只能导入上个月数据',
                   error_type: 'invalid_date_range',
                   invalidRecords: errorInfo.invalidRecords || [],
                   importedCount: 0,

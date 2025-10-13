@@ -204,7 +204,7 @@ def import_subsidy_data(file_path, overwrite_mode=False):
                 error_info = {
                     "success": False,
                     "error_type": "invalid_date_range",
-                    "error_message": "只能导入上个月数据，导入失败。",
+                    "error_message": "只能导入上个月数据",
                     "allowed_month": last_month_str,
                     "invalid_dates": invalid_dates
                 }

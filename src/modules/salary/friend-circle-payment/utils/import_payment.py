@@ -90,7 +90,7 @@ def main():
                 error_result = {
                     "success": False,
                     "error": "invalid_date_range",
-                    "message": "只能导入上个月数据，导入失败。",
+                    "message": "只能导入上个月数据",
                     "details": error_message,
                     "invalidRecords": invalid_records
                 }

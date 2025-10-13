@@ -214,10 +214,10 @@ export class AttendanceDeductionController {
         throw new BadRequestException({
           success: false,
           error: '时间验证失败',
-          details: error.details || '只能导入上个月数据，导入失败。',
+          details: error.details || '只能导入上个月数据',
           error_type: 'invalid_date_range',
           invalidRecords: error.invalidRecords || [],
-          message: '只能导入上个月数据，导入失败。'
+          message: '只能导入上个月数据'
         });
       }
       
