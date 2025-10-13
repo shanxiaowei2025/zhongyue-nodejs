@@ -1970,6 +1970,10 @@ export class ExpenseService {
       customerDataOrganizationFee: '客户资料整理费',
       totalFeeExcludeRecordSeal: '总费用（除备案章费用）',
       businessType: '业务类型',
+      businessCommissionOwn: '基础业务提成',
+      businessCommissionOutsource: '外包业务提成',
+      specialBusinessCommission: '特殊业务提成',
+      agencyCommission: '代理费提成',
       createdAt: '创建时间',
     };
 

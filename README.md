@@ -1015,6 +1015,18 @@ Body: {
 ## 更新历史
 
 ### 2025-10-13
+- **费用导出CSV接口字段扩展**：
+  - 为 `/api/expense/export/csv` 接口添加四个提成字段的导出功能
+  - **新增导出字段**：
+    - `businessCommissionOwn`: 基础业务提成
+    - `businessCommissionOutsource`: 外包业务提成
+    - `specialBusinessCommission`: 特殊业务提成
+    - `agencyCommission`: 代理费提成
+  - **字段位置**：新增字段位于"业务类型"之后、"创建时间"之前
+  - **向后兼容**：不影响现有导出功能，只是增加了额外的提成数据列
+  - **技术实现**：在 `expense.service.ts` 的 `fieldMapping` 对象中添加字段映射关系
+
+### 2025-10-13（早前更新）
 - **业务提成计算逻辑优化 - 社保代理费计入条件调整**：
   - **修改内容**：调整基础业务提成中社保代理费的计入条件
   - **原规则**：社保代理费仅在 `socialInsuranceBusinessType = '新增'` 时计入基础业务费用
