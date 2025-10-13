@@ -275,14 +275,16 @@ export class SalaryAutoUpdateService {
         const agencyTotalFee = agencyFee + socialInsuranceAgencyFee;
 
         // 软件费类（提成比例10%）
-        // 记账软件费和开票软件费只有在 businessType = '续费' 时才计算10%提成
+        // 记账软件费、开票软件费和地址费只有在 businessType = '续费' 时才计算10%提成
         const accountingSoftwareFee = record.businessType === '续费' 
           ? Number(record.accountingSoftwareFee || 0) 
           : 0;
         const invoiceSoftwareFee = record.businessType === '续费' 
           ? Number(record.invoiceSoftwareFee || 0) 
           : 0;
-        const addressFee = Number(record.addressFee || 0);
+        const addressFee = record.businessType === '续费' 
+          ? Number(record.addressFee || 0) 
+          : 0;
         const softwareTotalFee = accountingSoftwareFee + invoiceSoftwareFee + addressFee;
 
         // 计算该条记录的代理费提成
@@ -298,7 +300,7 @@ export class SalaryAutoUpdateService {
           更新费用记录ID ${record.id} 的代理费提成: 
           代理费: ${agencyFee}, 社保代理费: ${socialInsuranceAgencyFee} (socialInsuranceBusinessType: ${record.socialInsuranceBusinessType})
           记账软件费: ${accountingSoftwareFee}, 开票软件费: ${invoiceSoftwareFee}, 地址费: ${addressFee}
-          (记账软件费和开票软件费仅在 businessType='续费' 时计算, 当前businessType: ${record.businessType})
+          (记账软件费、开票软件费和地址费仅在 businessType='续费' 时计算, 当前businessType: ${record.businessType})
           代理费提成: ${agencyCommission}
         `);
       }
