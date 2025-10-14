@@ -1014,6 +1014,81 @@ Body: {
 
 ## 更新历史
 
+### 2025-10-14
+- **费用管理模块业务查询筛选功能**：
+  - **功能概述**：为费用列表接口和导出接口添加"业务查询"筛选字段，支持根据不同业务类型快速筛选费用记录
+  - **新增参数**：`businessInquiry` - 业务查询筛选字段（可选，支持多选）
+  - **参数类型**：`string | string[]` - 可以传递单个值或数组
+  - **多选示例**：
+    - 单个值：`businessInquiry=代理费`
+    - 多个值：`businessInquiry=代理费&businessInquiry=记账软件费`
+    - 数组形式：`businessInquiry[]=代理费&businessInquiry[]=记账软件费`
+  - **影响接口**：
+    - `GET /api/expense?businessInquiry=代理费&businessInquiry=记账软件费` - 费用列表查询接口（支持多选）
+    - `GET /api/expense/export/csv?businessInquiry=代理费&businessInquiry=记账软件费` - 费用导出CSV接口（支持多选）
+  - **重要修复**：修复了变更业务字段的查询逻辑
+    - 移除了旧的变更业务名称映射（"地址变更" → "变更地址"）
+    - 改为直接匹配数据库中存储的值（现在数据库使用新标准格式："地址变更"、"名称变更"等）
+    - 确保查询结果与数据库实际存储的值一致
+  - **功能增强**：支持业务查询多选筛选
+    - 多个业务查询值之间为"或"（OR）关系
+    - 例如：选择"代理费"和"记账软件费"，将返回包含代理费或记账软件费的所有费用记录
+    - 参考项目中已有的 `businessType` 和 `socialInsuranceBusinessType` 多选实现
+  - **支持的业务类型**：
+    - **费用类型（非空非0筛选）**：
+      - 代理费 (agencyFee)
+      - 记账软件费 (accountingSoftwareFee)
+      - 开票软件费 (invoiceSoftwareFee)
+      - 地址费 (addressFee)
+      - 社保代理费 (socialInsuranceAgencyFee)
+      - 公积金代理费 (housingFundAgencyFee)
+      - 统计局报表费 (statisticalReportFee)
+      - 客户资料整理费 (customerDataOrganizationFee)
+      - 办照费用 (licenseFee)
+      - 牌子费 (brandFee)
+      - 备案章费用 (recordSealFee)
+      - 一般刻章费用 (generalSealFee)
+    - **变更业务类型（JSON数组包含筛选）**：
+      - 地址变更、名称变更、股东变更、监事变更、范围变更
+      - 注册资本变更、跨区域变更、法定代表人变更、个升企
+    - **行政许可类型（JSON数组包含筛选）**：
+      - 食品经营许可证、卫生许可证、酒类经营许可证、道路运输许可证
+      - 医疗器械经营许可证、建筑施工许可证、特种行业许可证
+    - **其他业务(基础)类型（JSON数组包含筛选）**：
+      - 非代理企业工商注销、非代理企业税务注销、非代理企业银行注销
+      - 税务处理逾期/补充申报、工商年报/工商公示、补执照、报表编制
+      - 非代理企业行政许可注销、银行开户、银行变更
+    - **其他业务(外包)类型（JSON数组包含筛选）**：
+      - 代理企业工商注销、代理企业税务注销、代理企业银行注销、代理企业注销
+      - 解除工商异常、解除税务异常、代办条形码、劳务派遣证年检、民非证年检
+      - 公司转让、建设项目环境影响登记表、代办固定污染源排污、登报
+      - 商标注册、商标变更、商标续展、商标过户、审计报告、检测报告、验资报告
+      - 出版物许可证、著作权、版权、建筑资质证书、3A信用认证
+      - 质量体系认证（环境、健康、职业）、信用修复、暂住证、贷款业务、金融业务
+      - 资产评估报告、区块链、招标投标代理、工程审计/预算/决算、标书制作
+      - 定位服务、活动费用、执行标准、外包地址、税务风险报告
+      - 代理企业行政许可注销、公司合作业务
+    - **其他业务(特殊)类型（JSON数组包含筛选）**：
+      - 代办烟草证、出口退税、建筑资质证书
+  - **使用示例**：
+    ```bash
+    # 查询包含代理费的费用记录
+    GET /api/expense?businessInquiry=代理费
+    
+    # 查询包含地址变更业务的费用记录
+    GET /api/expense?businessInquiry=地址变更
+    
+    # 导出包含社保代理费的费用记录
+    GET /api/expense/export/csv?businessInquiry=社保代理费
+    ```
+  - **技术实现**：
+    - 在DTO中添加 `businessInquiry` 可选字段（QueryExpenseDto、ExportExpenseDto）
+    - 在Service层实现智能筛选逻辑，根据搜索值类型选择不同的查询条件
+    - 使用MySQL的 `JSON_CONTAINS` 函数查询JSON数组字段
+    - 使用 `IS NOT NULL AND != 0` 条件查询费用类型字段
+  - **向后兼容**：新增功能不影响现有查询功能，参数为可选参数
+  - **文档更新**：完整的Swagger API文档和README说明
+
 ### 2025-10-13
 - **费用导出CSV接口字段扩展**：
   - 为 `/api/expense/export/csv` 接口添加四个提成字段的导出功能

@@ -114,4 +114,12 @@ export class ExportExpenseDto {
   @IsOptional()
   @IsDateString()
   auditDateEnd?: string;
+
+  @ApiProperty({
+    description: '业务查询筛选字段，支持多选，可以传递单个值或数组。根据不同搜索值筛选相应费用字段',
+    required: false,
+    example: ['代理费', '记账软件费'],
+  })
+  @IsOptional()
+  businessInquiry?: string | string[];
 }

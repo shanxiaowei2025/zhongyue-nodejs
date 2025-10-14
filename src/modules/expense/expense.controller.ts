@@ -291,6 +291,31 @@ export class ExpenseController {
       '审核结束日期（筛选审核时间结束日期，当与auditDateStart相同时，会查询整天的数据）',
     example: '2023-12-31',
   })
+  @ApiQuery({
+    name: 'businessInquiry',
+    required: false,
+    description: `业务查询筛选字段，支持多选（传递数组或单个值），根据不同搜索值筛选相应费用字段：
+    - 代理费：筛选agencyFee非空非0
+    - 记账软件费：筛选accountingSoftwareFee非空非0
+    - 开票软件费：筛选invoiceSoftwareFee非空非0
+    - 地址费：筛选addressFee非空非0
+    - 社保代理费：筛选socialInsuranceAgencyFee非空非0
+    - 公积金代理费：筛选housingFundAgencyFee非空非0
+    - 统计局报表费：筛选statisticalReportFee非空非0
+    - 客户资料整理费：筛选customerDataOrganizationFee非空非0
+    - 办照费用：筛选licenseFee非空非0
+    - 牌子费：筛选brandFee非空非0
+    - 备案章费用：筛选recordSealFee非空非0
+    - 一般刻章费用：筛选generalSealFee非空非0
+    - 变更类（地址变更、名称变更等）：筛选changeBusiness字段包含对应值
+    - 许可证类（食品经营许可证等）：筛选administrativeLicense字段包含对应值
+    - 基础业务类（非代理企业工商注销等）：筛选otherBusiness字段包含对应值
+    - 外包业务类（代理企业工商注销等）：筛选otherBusinessOutsourcing字段包含对应值
+    - 特殊业务类（代办烟草证等）：筛选otherBusinessSpecial字段包含对应值
+    
+    多选示例：businessInquiry=代理费&businessInquiry=记账软件费`,
+    example: '代理费',
+  })
   @ApiQuery({ name: 'page', required: false, description: '页码', example: 1 })
   @ApiQuery({
     name: 'pageSize',
