@@ -2227,6 +2227,8 @@ export class ExpenseService {
       otherBusinessOutsourcing: '其他业务',
       otherBusinessSpecialFee: '其他业务收费(特殊)',
       otherBusinessSpecial: '其他业务(特殊)',
+      basicBusinessPerformance: '基础业务业绩',
+      outsourcingBusinessPerformance: '外包业务业绩',
       housingFundAgencyFee: '公积金代理费',
       statisticalReportFee: '统计局报表费',
       customerDataOrganizationFee: '客户资料整理费',

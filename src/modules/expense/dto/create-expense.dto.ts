@@ -312,6 +312,16 @@ export class CreateExpenseDto {
   @IsNumber()
   otherBusinessSpecialFee?: number;
 
+  @ApiProperty({ description: '基础业务业绩', required: false })
+  @IsOptional()
+  @IsNumber()
+  basicBusinessPerformance?: number;
+
+  @ApiProperty({ description: '外包业务业绩', required: false })
+  @IsOptional()
+  @IsNumber()
+  outsourcingBusinessPerformance?: number;
+
   @ApiProperty({ description: '特殊业务提成金额', required: false })
   @IsOptional()
   @IsNumber()

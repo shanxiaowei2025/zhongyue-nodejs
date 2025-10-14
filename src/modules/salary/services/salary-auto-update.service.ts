@@ -328,14 +328,16 @@ export class SalaryAutoUpdateService {
     try {
       this.logger.log('开始清空费用记录的提成字段');
 
-      // 清空指定日期范围内费用记录的提成字段
+      // 清空指定日期范围内费用记录的提成字段和业绩字段
       const clearQuery = `
         UPDATE sys_expense 
         SET 
           business_commission = 0,
           business_commission_own = 0,
           business_commission_outsource = 0,
-          agency_commission = 0
+          agency_commission = 0,
+          basicBusinessPerformance = 0,
+          outsourcingBusinessPerformance = 0
         WHERE 
           chargeDate BETWEEN ? AND ? AND
           status = 1
@@ -573,16 +575,18 @@ export class SalaryAutoUpdateService {
             const totalBusinessCommission =
               basicBusinessCommission + outsourceBusinessCommission + specialCommission;
 
-            // 更新费用表中的业务提成字段（保留原有字段，同时更新新字段）
+            // 更新费用表中的业务提成字段和业绩字段（保留原有字段，同时更新新字段）
             await this.dataSource.query(
               `
               UPDATE sys_expense SET 
                 business_commission = ?, 
                 business_commission_own = ?, 
-                business_commission_outsource = ?
+                business_commission_outsource = ?,
+                basicBusinessPerformance = ?,
+                outsourcingBusinessPerformance = ?
               WHERE id = ?
             `,
-              [totalBusinessCommission, basicBusinessCommission, outsourceBusinessCommission, expense.id],
+              [totalBusinessCommission, basicBusinessCommission, outsourceBusinessCommission, basicFee, outsourceFee, expense.id],
             );
 
             // 累计每个员工每条记录的业务提成
@@ -629,16 +633,37 @@ export class SalaryAutoUpdateService {
             // 计算总业务提成
             const totalBusinessCommission = basicBusinessCommission + outsourceBusinessCommission + specialCommission;
 
-            // 更新费用表中的业务提成字段
+            // 计算基础业务费用总和（用于业绩字段）
+            const socialInsuranceAgencyFeeForPerformance = (
+              expense.socialInsuranceBusinessType === '新增' || 
+              !expense.socialInsuranceBusinessType || 
+              expense.socialInsuranceBusinessType === ''
+            ) ? Number(expense.socialInsuranceAgencyFee || 0) 
+              : 0;
+            
+            const basicFeeForPerformance =
+              Number(expense.licenseFee || 0) +
+              Number(expense.agencyFee || 0) +
+              socialInsuranceAgencyFeeForPerformance +
+              Number(expense.housingFundAgencyFee || 0) +
+              Number(expense.statisticalReportFee || 0) +
+              Number(expense.changeFee || 0) +
+              Number(expense.administrativeLicenseFee || 0) +
+              Number(expense.otherBusinessFee || 0) +
+              Number(expense.customerDataOrganizationFee || 0);
+
+            // 更新费用表中的业务提成字段和业绩字段
             await this.dataSource.query(
               `
               UPDATE sys_expense SET 
                 business_commission = ?, 
                 business_commission_own = ?, 
-                business_commission_outsource = ?
+                business_commission_outsource = ?,
+                basicBusinessPerformance = ?,
+                outsourcingBusinessPerformance = ?
               WHERE id = ?
             `,
-              [totalBusinessCommission, basicBusinessCommission, outsourceBusinessCommission, expense.id],
+              [totalBusinessCommission, basicBusinessCommission, outsourceBusinessCommission, basicFeeForPerformance, outsourceFee, expense.id],
             );
 
             // 累计每个员工每条记录的业务提成
@@ -683,16 +708,37 @@ export class SalaryAutoUpdateService {
           // 计算总业务提成
           const totalBusinessCommission = basicBusinessCommission + outsourceBusinessCommission + specialCommission;
 
-          // 更新费用表中的业务提成字段
+          // 计算基础业务费用总和（用于业绩字段）
+          const socialInsuranceAgencyFeeForPerformance = (
+            expense.socialInsuranceBusinessType === '新增' || 
+            !expense.socialInsuranceBusinessType || 
+            expense.socialInsuranceBusinessType === ''
+          ) ? Number(expense.socialInsuranceAgencyFee || 0) 
+            : 0;
+          
+          const basicFeeForPerformance =
+            Number(expense.licenseFee || 0) +
+            Number(expense.agencyFee || 0) +
+            socialInsuranceAgencyFeeForPerformance +
+            Number(expense.housingFundAgencyFee || 0) +
+            Number(expense.statisticalReportFee || 0) +
+            Number(expense.changeFee || 0) +
+            Number(expense.administrativeLicenseFee || 0) +
+            Number(expense.otherBusinessFee || 0) +
+            Number(expense.customerDataOrganizationFee || 0);
+
+          // 更新费用表中的业务提成字段和业绩字段
           await this.dataSource.query(
             `
             UPDATE sys_expense SET 
               business_commission = ?, 
               business_commission_own = ?, 
-              business_commission_outsource = ?
+              business_commission_outsource = ?,
+              basicBusinessPerformance = ?,
+              outsourcingBusinessPerformance = ?
             WHERE id = ?
           `,
-            [totalBusinessCommission, basicBusinessCommission, outsourceBusinessCommission, expense.id],
+            [totalBusinessCommission, basicBusinessCommission, outsourceBusinessCommission, basicFeeForPerformance, outsourceFee, expense.id],
           );
 
           // 累计每个员工每条记录的业务提成

@@ -302,6 +302,24 @@ export class Expense {
     precision: 10,
     scale: 2,
     nullable: true,
+    comment: '基础业务业绩',
+  })
+  basicBusinessPerformance: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    comment: '外包业务业绩',
+  })
+  outsourcingBusinessPerformance: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
     comment: '特殊业务提成金额',
   })
   specialBusinessCommission: number;
