@@ -107,7 +107,7 @@ export class QueryEmployeeDto extends PaginationDto {
    * @example '北京中岳企业管理有限公司'
    */
   @ApiPropertyOptional({
-    description: '发工资公司',
+    description: '发工资公司（支持模糊查询，传入空字符串、"NULL" 或 "empty" 可查询空值）',
     example: '北京中岳企业管理有限公司',
   })
   @IsString()

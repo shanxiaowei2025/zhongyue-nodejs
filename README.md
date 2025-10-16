@@ -1015,6 +1015,28 @@ Body: {
 ## 更新历史
 
 ### 2025-10-16
+- **员工查询接口payrollCompany字段空值查询功能**：
+  - **功能概述**：为员工查询接口的 `payrollCompany`（发工资公司）字段添加空值查询支持
+  - **实现方案**：使用空字符串或特殊标识符查询空值
+    - 传入空字符串 `""` 可查询发工资公司为空的员工记录
+    - 传入 `"NULL"` 或 `"empty"` 也可查询空值记录
+    - 传入其他值时进行正常的模糊查询
+  - **技术实现**：
+    - 在 `employee.service.ts` 的 `findAll` 方法中添加空值判断逻辑
+    - 将判断条件从 `if (payrollCompany)` 改为 `if (payrollCompany !== undefined)`
+    - 使用 TypeORM 的 `IsNull()` 操作符查询空值记录
+    - 使用 `Like()` 操作符进行模糊查询
+  - **使用示例**：
+    - 查询空值：`GET /api/employee?payrollCompany=` 或 `GET /api/employee?payrollCompany=NULL` 或 `GET /api/employee?payrollCompany=empty`
+    - 正常查询：`GET /api/employee?payrollCompany=北京中岳`
+  - **影响接口**：`GET /api/employee` - 员工列表查询接口
+  - **影响文件**：
+    - `src/modules/employee/employee.service.ts`
+    - `src/modules/employee/dto/query-employee.dto.ts`
+  - **API文档更新**：在 Swagger 文档中添加了空值查询的说明
+  - **向后兼容**：完全向后兼容，不影响现有查询功能
+  - **问题修复**：修复了传入空字符串时仍然返回非空值记录的问题
+
 - **薪资导出CSV字段格式优化**：
   - **功能概述**：优化薪资导出CSV接口，确保身份证号和银行卡号字段作为字符串类型导出
   - **修改字段**：

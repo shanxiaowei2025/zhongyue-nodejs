@@ -284,8 +284,13 @@ export class EmployeeService {
       where.bankName = Like(`%${bankName}%`);
     }
 
-    if (payrollCompany) {
-      where.payrollCompany = Like(`%${payrollCompany}%`);
+    if (payrollCompany !== undefined) {
+      // 支持查询空值：传入空字符串、'NULL' 或 'empty' 时查询发工资公司为空的记录
+      if (payrollCompany === '' || payrollCompany === 'NULL' || payrollCompany === 'empty') {
+        where.payrollCompany = IsNull();
+      } else {
+        where.payrollCompany = Like(`%${payrollCompany}%`);
+      }
     }
 
     const queryBuilder = this.employeeRepository.createQueryBuilder('employee');
