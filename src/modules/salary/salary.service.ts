@@ -117,7 +117,6 @@ export class SalaryService {
     const personalIncomeTax = Number(result.personalIncomeTax || 0);
     const other = Number(result.other || 0);
     const bankCardOrWechat = Number(result.bankCardOrWechat || 0);
-    const cashPaid = Number(result.cashPaid || 0);
 
     // 计算绩效佣金，如果有标记则跳过
     if (!result.skipPerformanceCalculation) {
@@ -171,7 +170,7 @@ export class SalaryService {
     result.totalPayable = totalPayable;
 
     // 计算对公金额
-    const corporatePayment = totalPayable - bankCardOrWechat - cashPaid;
+    const corporatePayment = totalPayable - bankCardOrWechat;
     result.corporatePayment = corporatePayment;
 
     // 计算个税申报
@@ -475,8 +474,6 @@ export class SalaryService {
       totalPayableMax,
       bankCardOrWechatMin,
       bankCardOrWechatMax,
-      cashPaidMin,
-      cashPaidMax,
       corporatePaymentMin,
       corporatePaymentMax,
       taxDeclarationMin,
@@ -723,12 +720,6 @@ export class SalaryService {
     }
 
     // 现金发放
-    if (cashPaidMin !== undefined) {
-      queryBuilder.andWhere('salary.cashPaid >= :cashPaidMin', { cashPaidMin });
-    }
-    if (cashPaidMax !== undefined) {
-      queryBuilder.andWhere('salary.cashPaid <= :cashPaidMax', { cashPaidMax });
-    }
 
     // 企业代付
     if (corporatePaymentMin !== undefined) {
@@ -1615,12 +1606,6 @@ export class SalaryService {
     }
 
     // 现金发放
-    if (query.cashPaidMin !== undefined) {
-      queryBuilder.andWhere('salary.cashPaid >= :cashPaidMin', { cashPaidMin: query.cashPaidMin });
-    }
-    if (query.cashPaidMax !== undefined) {
-      queryBuilder.andWhere('salary.cashPaid <= :cashPaidMax', { cashPaidMax: query.cashPaidMax });
-    }
 
     // 企业代付
     if (query.corporatePaymentMin !== undefined) {
@@ -1689,7 +1674,6 @@ export class SalaryService {
       bankCardNumber: '银行卡号',
       payrollCompany: '发薪公司',
       bankCardOrWechat: '银行卡/微信',
-      cashPaid: '已发现金',
       corporatePayment: '对公',
       taxDeclaration: '个税申报',
       isPaid: '是否已发放',

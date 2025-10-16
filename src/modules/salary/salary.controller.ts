@@ -147,9 +147,6 @@ class SalaryCreateExample {
   @ApiProperty({ example: 10000, description: '银行卡/微信' })
   bankCardOrWechat: number;
 
-  @ApiProperty({ example: 2000, description: '已发现金' })
-  cashPaid: number;
-
   @ApiProperty({ example: 0, description: '对公' })
   corporatePayment: number;
 
@@ -281,8 +278,6 @@ export class SalaryController {
   @ApiQuery({ name: 'totalPayableMax', required: false, type: Number, description: '应付合计最大值' })
   @ApiQuery({ name: 'bankCardOrWechatMin', required: false, type: Number, description: '银行卡/微信最小值' })
   @ApiQuery({ name: 'bankCardOrWechatMax', required: false, type: Number, description: '银行卡/微信最大值' })
-  @ApiQuery({ name: 'cashPaidMin', required: false, type: Number, description: '现金发放最小值' })
-  @ApiQuery({ name: 'cashPaidMax', required: false, type: Number, description: '现金发放最大值' })
   @ApiQuery({ name: 'corporatePaymentMin', required: false, type: Number, description: '企业代付最小值' })
   @ApiQuery({ name: 'corporatePaymentMax', required: false, type: Number, description: '企业代付最大值' })
   @ApiQuery({ name: 'taxDeclarationMin', required: false, type: Number, description: '税务申报最小值' })
@@ -688,8 +683,6 @@ export class SalaryController {
   @ApiQuery({ name: 'totalPayableMax', required: false, type: Number, description: '应付合计最大值' })
   @ApiQuery({ name: 'bankCardOrWechatMin', required: false, type: Number, description: '银行卡/微信最小值' })
   @ApiQuery({ name: 'bankCardOrWechatMax', required: false, type: Number, description: '银行卡/微信最大值' })
-  @ApiQuery({ name: 'cashPaidMin', required: false, type: Number, description: '现金发放最小值' })
-  @ApiQuery({ name: 'cashPaidMax', required: false, type: Number, description: '现金发放最大值' })
   @ApiQuery({ name: 'corporatePaymentMin', required: false, type: Number, description: '企业代付最小值' })
   @ApiQuery({ name: 'corporatePaymentMax', required: false, type: Number, description: '企业代付最大值' })
   @ApiQuery({ name: 'taxDeclarationMin', required: false, type: Number, description: '税务申报最小值' })

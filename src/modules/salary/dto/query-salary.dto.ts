@@ -296,19 +296,6 @@ export class QuerySalaryDto extends PaginationDto {
   @IsNumber()
   bankCardOrWechatMax?: number;
 
-  // 现金发放
-  @ApiPropertyOptional({ description: '现金发放最小值', type: 'number' })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  cashPaidMin?: number;
-
-  @ApiPropertyOptional({ description: '现金发放最大值', type: 'number' })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  cashPaidMax?: number;
-
   // 企业代付
   @ApiPropertyOptional({ description: '企业代付最小值', type: 'number' })
   @IsOptional()

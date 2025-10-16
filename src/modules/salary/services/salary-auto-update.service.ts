@@ -38,7 +38,6 @@ export class SalaryAutoUpdateService {
     const personalIncomeTax = Number(result.personalIncomeTax || 0);
     const other = Number(result.other || 0);
     const bankCardOrWechat = Number(result.bankCardOrWechat || 0);
-    const cashPaid = Number(result.cashPaid || 0);
 
     // 计算绩效扣除总额
     let performanceDeductionTotal = 0;
@@ -89,7 +88,7 @@ export class SalaryAutoUpdateService {
     result.totalPayable = totalPayable;
 
     // 计算对公金额
-    const corporatePayment = totalPayable - bankCardOrWechat - cashPaid;
+    const corporatePayment = totalPayable - bankCardOrWechat;
     result.corporatePayment = corporatePayment;
 
     // 计算个税申报
@@ -1418,7 +1417,6 @@ export class SalaryAutoUpdateService {
           bankCardNumber: employee.bankCardNumber || '',
           // company: existingSalary?.company || '', // 注意：company字段已从数据库中删除，改用员工表中的payrollCompany字段
           bankCardOrWechat: existingSalary?.bankCardOrWechat || 0,
-          cashPaid: existingSalary?.cashPaid || 0,
           yearMonth: salaryYearMonth, // 使用统一的薪资年月
         };
 

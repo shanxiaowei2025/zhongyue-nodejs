@@ -139,10 +139,6 @@ export class CreateSalaryDto {
 
   @IsNumber()
   @IsOptional()
-  cashPaid: number;
-
-  @IsNumber()
-  @IsOptional()
   corporatePayment: number;
 
   @IsNumber()

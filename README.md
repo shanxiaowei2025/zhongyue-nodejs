@@ -1015,6 +1015,34 @@ Body: {
 ## 更新历史
 
 ### 2025-10-16
+- **薪资管理模块字段删除 - cashPaid（已发现金）字段**：
+  - **功能概述**：从薪资管理系统中移除不再使用的 cashPaid（已发现金）字段
+  - **修改范围**：
+    - 实体类：删除 `sys_salary` 表中的 `cashPaid` 字段定义
+    - DTO类：从创建、更新、查询、导出DTO中删除 `cashPaid` 相关字段
+    - Controller：删除 `cashPaid` 相关的API查询参数和接口定义
+    - Service：删除 `cashPaid` 相关的计算和查询逻辑
+    - 自动更新服务：删除 `cashPaid` 相关的自动填充逻辑
+  - **计算公式调整**：
+    - 原公式：`对公 = 应发合计 - 银行卡/微信 - 已发现金`
+    - 新公式：`对公 = 应发合计 - 银行卡/微信`
+  - **数据库变更**：
+    - 需要执行SQL删除语句：`ALTER TABLE sys_salary DROP COLUMN cashPaid;`
+  - **影响文件**：
+    - `src/modules/salary/entities/salary.entity.ts`
+    - `src/modules/salary/dto/create-salary.dto.ts`
+    - `src/modules/salary/dto/update-salary.dto.ts`
+    - `src/modules/salary/dto/query-salary.dto.ts`
+    - `src/modules/salary/dto/export-salary.dto.ts`
+    - `src/modules/salary/salary.controller.ts`
+    - `src/modules/salary/salary.service.ts`
+    - `src/modules/salary/services/salary-auto-update.service.ts`
+  - **向后兼容**：删除字段会影响现有数据，建议先备份数据库
+  - **API变更**：
+    - 删除查询参数：`cashPaidMin`、`cashPaidMax`
+    - 删除接口字段：`cashPaid`
+
+### 2025-10-16
 - **员工查询接口payrollCompany字段空值查询功能**：
   - **功能概述**：为员工查询接口的 `payrollCompany`（发工资公司）字段添加空值查询支持
   - **实现方案**：使用空字符串或特殊标识符查询空值

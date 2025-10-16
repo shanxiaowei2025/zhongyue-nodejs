@@ -318,19 +318,6 @@ export class ExportSalaryDto {
   @IsNumber()
   bankCardOrWechatMax?: number;
 
-  // 现金发放
-  @ApiProperty({ description: '现金发放最小值', required: false, type: 'number' })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  cashPaidMin?: number;
-
-  @ApiProperty({ description: '现金发放最大值', required: false, type: 'number' })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  cashPaidMax?: number;
-
   // 企业代付
   @ApiProperty({ description: '企业代付最小值', required: false, type: 'number' })
   @IsOptional()

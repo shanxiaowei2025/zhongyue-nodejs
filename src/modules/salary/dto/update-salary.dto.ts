@@ -262,16 +262,6 @@ export class UpdateSalaryDto {
   @IsOptional()
   bankCardOrWechat?: number;
 
-  @ApiProperty({
-    description: '已发现金',
-    type: 'number',
-    required: false,
-    example: 1000,
-  })
-  @IsNumber()
-  @IsOptional()
-  cashPaid?: number;
-
   // ❌ 移除：对公 - 这是自动计算字段
   // corporatePayment?: number;
 

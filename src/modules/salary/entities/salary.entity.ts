@@ -259,15 +259,6 @@ export class Salary {
   bankCardOrWechat: number;
 
   @Column({
-    comment: '已发现金',
-    type: 'decimal',
-    precision: 10,
-    scale: 2,
-    default: 0,
-  })
-  cashPaid: number;
-
-  @Column({
     comment: '对公',
     type: 'decimal',
     precision: 10,
