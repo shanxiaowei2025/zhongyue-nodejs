@@ -1729,6 +1729,9 @@ export class SalaryService {
           row[fieldMapping[key]] = salary[key]
             ? new Date(salary[key]).toISOString().split('T')[0]
             : '';
+        } else if (key === 'idCard' || key === 'bankCardNumber') {
+          // 身份证号和银行卡号强制作为字符串导出（添加制表符前缀防止Excel科学计数法显示）
+          row[fieldMapping[key]] = salary[key] ? `\t${salary[key]}` : '';
         } else {
           row[fieldMapping[key]] = salary[key] || '';
         }
