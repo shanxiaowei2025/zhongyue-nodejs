@@ -1709,9 +1709,9 @@ export class ExpenseService {
         },
       ];
 
-      // 遍历费用字段，找出非零正数的费用
+      // 遍历费用字段，找出非零的费用(包括负数)
       for (const field of feeFieldsMap) {
-        if (expense[field.amountField] && expense[field.amountField] > 0) {
+        if (expense[field.amountField] && expense[field.amountField] !== 0) {
           let feeName = field.name;
 
           // 特殊处理三个业务字段，将数组内容合并到名称中
