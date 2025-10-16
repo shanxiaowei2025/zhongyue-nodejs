@@ -1005,6 +1005,50 @@ export class SalaryService {
   }
 
   /**
+   * 更新薪资记录的确认状态（仅限管理员）
+   * @param id 薪资记录ID
+   * @param isConfirmed 确认状态
+   * @param userId 用户ID
+   * @returns 更新后的薪资记录
+   */
+  async updateConfirmed(
+    id: number,
+    isConfirmed: boolean,
+    userId: number,
+  ): Promise<Salary> {
+    // 检查权限 - 只有薪资管理员和超级管理员可以调用
+    const hasPermission =
+      await this.salaryPermissionService.hasSalaryEditPermission(userId);
+    if (!hasPermission) {
+      throw new ForbiddenException('没有权限修改薪资确认状态');
+    }
+
+    // 确保id是有效的数字
+    const safeId = Number(id);
+    if (isNaN(safeId)) {
+      console.error(`更新确认状态时无效的ID值: ${id}, 转换后: ${safeId}`);
+      throw new NotFoundException(`无效的薪资记录ID: ${id}`);
+    }
+
+    // 检查记录是否存在
+    const existingSalary = await this.salaryRepository.findOne({
+      where: { id: safeId },
+    });
+
+    if (!existingSalary) {
+      throw new NotFoundException(`ID为${id}的薪资记录不存在`);
+    }
+
+    // 只更新 isConfirmed 字段
+    await this.salaryRepository.update(safeId, {
+      isConfirmed,
+    });
+
+    // 返回更新后的记录
+    return this.findOne(safeId, userId);
+  }
+
+  /**
    * 根据员工姓名删除所有薪资记录
    * @param employeeName 员工姓名
    * @returns 删除的记录数量

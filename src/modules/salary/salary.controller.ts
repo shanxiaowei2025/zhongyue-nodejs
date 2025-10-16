@@ -21,6 +21,7 @@ import { UpdateSalaryDto } from './dto/update-salary.dto';
 import { QuerySalaryDto } from './dto/query-salary.dto';
 import { ConfirmSalaryDto } from './dto/confirm-salary.dto';
 import { ExportSalaryDto } from './dto/export-salary.dto';
+import { UpdateConfirmedDto } from './dto/update-confirmed.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -459,6 +460,38 @@ export class SalaryController {
     } catch (error) {
       throw new HttpException(
         error.message || '更新薪资记录失败',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Patch(':id/confirmed')
+  @Roles('salary_admin', 'super_admin')
+  @ApiOperation({
+    summary: '更新薪资确认状态',
+    description: '根据ID更新薪资记录的确认状态（仅限管理员和超级管理员）',
+  })
+  @ApiParam({ name: 'id', description: '薪资记录ID' })
+  @ApiBody({ type: UpdateConfirmedDto })
+  @ApiResponse({ status: HttpStatus.OK, description: '更新成功' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: '薪资记录不存在' })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: '未授权' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: '权限不足' })
+  async updateConfirmed(
+    @Param('id') id: string,
+    @Body() updateConfirmedDto: UpdateConfirmedDto,
+    @Req() req: RequestWithUser,
+  ) {
+    try {
+      const safeId = safeIdParam(id);
+      return this.salaryService.updateConfirmed(
+        safeId,
+        updateConfirmedDto.isConfirmed,
+        req.user.id,
+      );
+    } catch (error) {
+      throw new HttpException(
+        error.message || '更新薪资确认状态失败',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

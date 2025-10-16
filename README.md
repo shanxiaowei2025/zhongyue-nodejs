@@ -1015,6 +1015,31 @@ Body: {
 ## 更新历史
 
 ### 2025-10-16
+- **薪资管理模块新增确认状态更新接口**：
+  - **功能概述**：新增专用接口用于更新薪资记录的 `isConfirmed`（确认状态）字段
+  - **接口路径**：`PATCH /api/salary/:id/confirmed`
+  - **权限控制**：仅限 `salary_admin` 和 `super_admin` 角色可以调用
+  - **请求参数**：
+    - 路径参数：`id` - 薪资记录ID
+    - 请求体：`{ "isConfirmed": true/false }`
+  - **响应数据**：返回更新后的完整薪资记录
+  - **新增文件**：
+    - `src/modules/salary/dto/update-confirmed.dto.ts` - 确认状态更新DTO
+  - **修改文件**：
+    - `src/modules/salary/salary.controller.ts` - 添加新路由和控制器方法
+    - `src/modules/salary/salary.service.ts` - 添加 `updateConfirmed` 业务逻辑方法
+  - **特性说明**：
+    - 独立的更新接口，只修改 `isConfirmed` 字段，不影响其他数据
+    - 完整的权限验证和参数校验
+    - 完整的Swagger API文档支持
+    - 统一的错误处理机制
+  - **使用场景**：管理员批量确认薪资发放、更正确认状态等
+  - **安全考虑**：
+    - 权限控制：只有管理员和超级管理员可以修改
+    - 参数验证：通过 DTO 和 class-validator 进行严格验证
+    - 记录存在性检查：确保记录存在后再执行更新
+  - **API文档**：已在Swagger中完整标注，包含请求示例和响应说明
+
 - **薪资管理模块字段删除 - cashPaid（已发现金）字段**：
   - **功能概述**：从薪资管理系统中移除不再使用的 cashPaid（已发现金）字段
   - **修改范围**：
