@@ -249,14 +249,14 @@ export class ReportsService {
           const customerParams: any = {};
 
           // 检查按区域查看权限
-          if (permissions.includes('customer_date_view_by_location') && user.department) {
+          if (permissions.includes('customer_data_view_by_location') && user.department) {
             customerConditions.push('customer.location = :customerUserLocation');
             customerParams.customerUserLocation = user.department.name;
             this.logger.warn(`[DEBUG] 应用客户区域权限过滤，区域: ${user.department.name}`);
           }
 
           // 检查查看自己负责客户的权限
-          if (permissions.includes('customer_date_view_own')) {
+          if (permissions.includes('customer_data_view_own')) {
             customerConditions.push('(customer.consultantAccountant = :customerUsername OR customer.bookkeepingAccountant = :customerUsername OR customer.invoiceOfficer = :customerUsername)');
             customerParams.customerUsername = user.username;
             this.logger.warn(`[DEBUG] 应用客户负责人权限过滤，用户名: ${user.username}`);

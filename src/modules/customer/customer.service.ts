@@ -164,7 +164,7 @@ export class CustomerService {
     // 创建查询构建器
     const queryBuilder = this.customerRepository.createQueryBuilder('customer');
 
-    // 首先检查用户是否是管理员或超级管理员
+    // 检查用户权限：只有拥有查看全部权限的用户才能查看流失和已注销的客户
     const user = await this.userRepository.findOne({
       where: { id: userId },
       select: ['id', 'username', 'roles'],
@@ -175,16 +175,26 @@ export class CustomerService {
       user.roles &&
       (user.roles.includes('admin') || user.roles.includes('super_admin'));
 
-    // 如果不是管理员，添加状态过滤条件
-    if (!isAdmin) {
-      queryBuilder.andWhere(
-        '(customer.businessStatus != :lostStatus OR customer.businessStatus IS NULL)',
-        { lostStatus: 'lost' },
-      );
-      queryBuilder.andWhere(
-        '(customer.enterpriseStatus != :cancelledStatus OR customer.enterpriseStatus IS NULL)',
-        { cancelledStatus: 'cancelled' },
-      );
+    // 检查用户是否有查看全部客户的权限
+    const hasViewAllPermission = await this.customerPermissionService.hasCustomerViewAllPermission(userId);
+
+    // 如果用户既不是管理员，也没有查看全部的权限，且用户没有明确指定状态查询条件时，自动排除流失和已注销的客户
+    if (!isAdmin && !hasViewAllPermission) {
+      // 只有在用户没有明确查询 businessStatus 时，才自动排除 lost 状态
+      if (businessStatus === undefined) {
+        queryBuilder.andWhere(
+          '(customer.businessStatus != :lostStatus OR customer.businessStatus IS NULL)',
+          { lostStatus: 'lost' },
+        );
+      }
+      
+      // 只有在用户没有明确查询 enterpriseStatus 时，才自动排除 cancelled 状态
+      if (enterpriseStatus === undefined) {
+        queryBuilder.andWhere(
+          '(customer.enterpriseStatus != :cancelledStatus OR customer.enterpriseStatus IS NULL)',
+          { cancelledStatus: 'cancelled' },
+        );
+      }
     }
 
     // 添加基础查询条件

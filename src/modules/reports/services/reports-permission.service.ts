@@ -158,14 +158,14 @@ export class ReportsPermissionService {
         const parameters: any = {};
 
         // 检查按区域查看权限
-        if (permissions.includes('customer_date_view_by_location') && user.department) {
+        if (permissions.includes('customer_data_view_by_location') && user.department) {
           conditions.push('customer.location = :userLocation');
           parameters.userLocation = user.department.name;
           this.logger.warn(`[DEBUG] 用户 ${userId} 拥有按区域查看客户权限，区域: ${user.department.name}`);
         }
 
         // 检查查看自己负责客户的权限
-        if (permissions.includes('customer_date_view_own')) {
+        if (permissions.includes('customer_data_view_own')) {
           conditions.push('(customer.consultantAccountant = :username OR customer.bookkeepingAccountant = :username OR customer.invoiceOfficer = :username)');
           parameters.username = user.username;
           this.logger.warn(`[DEBUG] 用户 ${userId} 拥有查看自己负责客户的权限，用户名: ${user.username}`);

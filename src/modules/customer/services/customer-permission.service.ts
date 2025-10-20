@@ -108,6 +108,12 @@ export class CustomerPermissionService {
     return permissions.includes('customer_action_export');
   }
 
+  // 检查用户是否有查看全部客户的权限
+  async hasCustomerViewAllPermission(userId: number): Promise<boolean> {
+    const permissions = await this.getUserPermissions(userId);
+    return permissions.includes('customer_data_view_all');
+  }
+
   /**
    * 用于批量操作的权限检查（如导入导出等），不关联特定客户ID
    * 此方法仅检查用户是否有相应权限，不会构建查询条件
@@ -163,9 +169,9 @@ export class CustomerPermissionService {
 
     // 检查是否有任何客户查看权限
     const hasViewPermission =
-      permissions.includes('customer_date_view_all') ||
-      permissions.includes('customer_date_view_by_location') ||
-      permissions.includes('customer_date_view_own');
+      permissions.includes('customer_data_view_all') ||
+      permissions.includes('customer_data_view_by_location') ||
+      permissions.includes('customer_data_view_own');
 
     // 如果没有任何查看权限，返回一个不可能满足的条件（确保查不到任何数据）
     if (!hasViewPermission) {
@@ -173,7 +179,7 @@ export class CustomerPermissionService {
     }
 
     // 处理查看所有权限
-    if (permissions.includes('customer_date_view_all')) {
+    if (permissions.includes('customer_data_view_all')) {
       conditions.push({}); // 空对象表示无限制条件
       return conditions; // 如果有查看所有权限，直接返回，不需要其他条件
     }
@@ -186,7 +192,7 @@ export class CustomerPermissionService {
     const roleCodes = roles.map((role) => role.code);
 
     // 处理按区域查看权限
-    if (permissions.includes('customer_date_view_by_location')) {
+    if (permissions.includes('customer_data_view_by_location')) {
       const department = await this.departmentRepository.findOne({
         where: { id: user.dept_id },
         relations: ['parent'],
@@ -204,7 +210,7 @@ export class CustomerPermissionService {
     }
 
     // 处理查看自己提交的权限
-    if (permissions.includes('customer_date_view_own')) {
+    if (permissions.includes('customer_data_view_own')) {
       const isSpecialRole =
         roleCodes.includes('consultantAccountant') ||
         roleCodes.includes('bookkeepingAccountant') ||

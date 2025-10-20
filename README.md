@@ -479,9 +479,9 @@ DELETE /api/reports/clear-role-change-cache/{userId}
       - `year`：统计指定年份的数据
       - 无参数：默认统计当前年份的数据
     - **权限控制**：基于客户数据权限控制数据访问范围：
-      - `customer_date_view_all`：查看全部客户数据（无过滤条件）
-      - `customer_date_view_by_location`：按区域查看，匹配 `customer.location = user.department.name`
-      - `customer_date_view_own`：查看自己负责的客户，匹配顾问会计/记账会计/开票员身份
+      - `customer_data_view_all`：查看全部客户数据（无过滤条件）
+      - `customer_data_view_by_location`：按区域查看，匹配 `customer.location = user.department.name`
+      - `customer_data_view_own`：查看自己负责的客户，匹配顾问会计/记账会计/开票员身份
   - `GET /api/reports/employee-performance`：员工业绩统计
     - 查询参数：`month` (YYYY-MM格式), `employeeName` (可选), `department` (可选)
     - **权限控制**：基于费用数据权限控制数据访问范围：
@@ -506,9 +506,9 @@ DELETE /api/reports/clear-role-change-cache/{userId}
       - `levelStats`：等级统计信息（不分页），包含各等级的数量、占比、收入统计
       - `summary`：汇总信息
     - **权限控制**：基于客户数据权限控制数据访问范围：
-      - `customer_date_view_all`：查看全部客户数据（无过滤条件）
-      - `customer_date_view_by_location`：按区域查看，匹配 `customer.location = user.department.name`
-      - `customer_date_view_own`：查看自己负责的客户，匹配顾问会计/记账会计/开票员身份
+      - `customer_data_view_all`：查看全部客户数据（无过滤条件）
+      - `customer_data_view_by_location`：按区域查看，匹配 `customer.location = user.department.name`
+      - `customer_data_view_own`：查看自己负责的客户，匹配顾问会计/记账会计/开票员身份
   - `GET /api/reports/customer-churn-stats`：客户流失统计（已修改）
     - 查询参数：
       - `year` (可选)：年份，如：2024
@@ -530,9 +530,9 @@ DELETE /api/reports/clear-role-change-cache/{userId}
       - `summary`：整体汇总信息
       - 分页信息：`total`、`page`、`pageSize`、`totalPages`
     - **权限控制**：基于客户数据权限控制数据访问范围：
-      - `customer_date_view_all`：查看全部客户数据（无过滤条件）
-      - `customer_date_view_by_location`：按区域查看，匹配 `customer.location = user.department.name`
-      - `customer_date_view_own`：查看自己负责的客户，匹配顾问会计/记账会计/开票员身份
+      - `customer_data_view_all`：查看全部客户数据（无过滤条件）
+      - `customer_data_view_by_location`：按区域查看，匹配 `customer.location = user.department.name`
+      - `customer_data_view_own`：查看自己负责的客户，匹配顾问会计/记账会计/开票员身份
       - 状态变更原因分布
       - 客户状态详情（包含当前企业状态和业务状态）
     - **返回格式**：
