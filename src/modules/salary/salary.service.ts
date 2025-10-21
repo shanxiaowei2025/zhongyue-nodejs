@@ -914,6 +914,11 @@ export class SalaryService {
       throw new NotFoundException(`ID为${id}的薪资记录不存在`);
     }
 
+    // 检查是否已发放 - 新增验证
+    if (existingSalary.isPaid) {
+      throw new ForbiddenException('该薪资已发放,不允许修改');
+    }
+
     // 标记是否已经计算过绩效佣金
     let skipPerformanceCalculation = false;
 
@@ -1001,6 +1006,11 @@ export class SalaryService {
       throw new NotFoundException(`ID为${id}的薪资记录不存在`);
     }
 
+    // 检查是否已发放 - 新增验证
+    if (existingSalary.isPaid) {
+      throw new ForbiddenException('该薪资已发放,不允许删除');
+    }
+
     await this.salaryRepository.delete(safeId);
   }
 
@@ -1037,6 +1047,11 @@ export class SalaryService {
 
     if (!existingSalary) {
       throw new NotFoundException(`ID为${id}的薪资记录不存在`);
+    }
+
+    // 检查是否已发放 - 新增验证
+    if (existingSalary.isPaid) {
+      throw new ForbiddenException('该薪资已发放,不允许取消确认');
     }
 
     // 只更新 isConfirmed 字段
@@ -1213,6 +1228,11 @@ export class SalaryService {
     const existingSalary = await this.findOne(safeId, userId);
     if (!existingSalary) {
       throw new NotFoundException(`ID为${id}的薪资记录不存在`);
+    }
+
+    // 检查是否已发放 - 新增验证(只在取消确认时检查)
+    if (existingSalary.isPaid && !confirmSalaryDto.isConfirmed) {
+      throw new ForbiddenException('该薪资已发放,不允许取消确认');
     }
 
     // 更新确认状态和确认时间
