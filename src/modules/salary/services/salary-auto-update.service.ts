@@ -1424,6 +1424,15 @@ export class SalaryAutoUpdateService {
         const processedSalaryData = this.calculateDerivedFields(salaryData);
 
         if (existingSalary) {
+          // 检查是否已发放 - 已发放的薪资不允许自动更新
+          if (existingSalary.isPaid) {
+            this.logger.warn(
+              `跳过员工 ${employee.name} 的薪资记录更新 - 该薪资已发放，不允许修改`,
+            );
+            // 跳过这条记录，继续处理下一个员工
+            continue;
+          }
+          
           // 更新现有记录
           await this.salaryRepository.update(
             existingSalary.id,

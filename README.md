@@ -1022,11 +1022,13 @@ Body: {
     - `PATCH /api/salary/:id/confirmed` - 更新薪资确认状态接口
     - `DELETE /api/salary/:id` - 删除薪资记录接口
     - `PATCH /api/salary/:id/confirm` - 员工确认薪资记录接口
+    - **自动计算薪资功能** - 自动生成/更新薪资数据时跳过已发放的记录
   - **验证逻辑**：
     - 更新薪资记录：已发放的薪资不允许任何修改
     - 取消确认状态：已发放的薪资不允许取消确认
     - 删除薪资记录：已发放的薪资不允许删除
     - 员工确认/取消确认：已发放的薪资不允许取消确认(但允许确认)
+    - **自动计算薪资：已发放的薪资自动跳过，不会被自动更新功能修改**
   - **错误响应示例**：
     ```json
     {
@@ -1038,9 +1040,15 @@ Body: {
   - **技术实现**：
     - 在所有修改、删除操作前检查 `isPaid` 状态
     - 使用 `ForbiddenException` 返回403错误
+    - 自动计算薪资时使用 `continue` 跳过已发放记录,并记录警告日志
     - 保持与前端已有的防护措施一致
   - **修改文件**：
     - `src/modules/salary/salary.service.ts` - 在 `update`、`updateConfirmed`、`remove`、`confirmSalary` 方法中添加验证
+    - `src/modules/salary/services/salary-auto-update.service.ts` - 在 `generateMonthlySalaries` 方法中添加验证,跳过已发放的薪资
+  - **自动计算行为**：
+    - 未发放薪资(`isPaid = false`)：正常更新计算结果
+    - 已发放薪资(`isPaid = true`)：跳过更新,记录警告日志
+    - 日志示例：`跳过员工 张三 的薪资记录更新 - 该薪资已发放，不允许修改`
   - **前端适配**：前端已完成相应的UI禁用和提示功能,此次后端修改提供双重保护
   - **向后兼容**：不影响现有未发放薪资的操作,只对已发放薪资增加保护
 
