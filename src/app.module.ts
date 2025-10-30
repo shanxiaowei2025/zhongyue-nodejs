@@ -30,6 +30,7 @@ import { ReportsModule } from './modules/reports/reports.module'; // 新增报�
 import { VoucherRecordModule } from './modules/voucher-record/voucher-record.module'; // 新增凭证存放记录模块
 import { GroupsModule } from './modules/groups/groups.module'; // 新增群组管理模块
 import { Deposit } from './modules/salary/deposit/entities/deposit.entity'; // 新增保证金表实体
+import { BusinessOptionsModule } from './modules/business-options/business-options.module'; // 新增业务选项模块
 
 // 导入各种配置文件
 import appConfig from './config/app.config'; // 应用配置
@@ -75,6 +76,7 @@ import { CustomerStatusHistory } from './modules/reports/customer-status-history
 import { VoucherRecordYear } from './modules/voucher-record/entities/voucher-record-year.entity'; // 新增凭证记录年度实体
 import { VoucherRecordMonth } from './modules/voucher-record/entities/voucher-record-month.entity'; // 新增凭证记录月度实体
 import { Group } from './modules/groups/entities/group.entity'; // 新增群组实体
+import { BusinessOption } from './modules/business-options/entities/business-option.entity'; // 新增业务选项实体
 
 @Module({
   imports: [
@@ -159,6 +161,7 @@ import { Group } from './modules/groups/entities/group.entity'; // 新增群组�
           VoucherRecordYear, // 新增凭证记录年度实体
           VoucherRecordMonth, // 新增凭证记录月度实体
           Group, // 新增群组实体
+          BusinessOption, // 新增业务选项实体
         ],
         synchronize: configService.get('DB_SYNCHRONIZE', 'false') === 'true',
         logging: configService.get('DB_LOGGING', 'false') === 'true',
@@ -188,6 +191,7 @@ import { Group } from './modules/groups/entities/group.entity'; // 新增群组�
     VoucherRecordModule, // 凭证存放记录模块
     GroupsModule, // 群组管理模块：处理群组相关的功能
     NotificationsModule, // 通知模块
+    BusinessOptionsModule, // 业务选项模块：处理业务选项管理相关的功能
   ],
   controllers: [AppController], // 控制器：负责接收请求，像前台接待
   providers: [

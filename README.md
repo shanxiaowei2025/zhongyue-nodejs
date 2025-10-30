@@ -51,7 +51,8 @@ src/
 │   ├── permissions/       # 权限管理
 │   ├── notifications/     # 通知系统
 │   ├── reports/           # 报表分析
-│   └── groups/            # 群组管理（新增）
+│   ├── groups/            # 群组管理
+│   └── business-options/  # 业务选项管理（新增）
 └── database/              # 数据库相关
     └── migrations/        # 数据库迁移文件
 ```
@@ -1012,7 +1013,66 @@ Body: {
   - `PATCH /api/groups/:id/alert-settings`：更新群组提醒设置
   - `GET /api/groups/alerts/list`：获取需要提醒的群组列表
 
+### 13. 业务选项管理模块 (business-options)
+- **功能概述**：提供统一的业务选项管理功能，支持默认选项和自定义选项的完整生命周期管理
+- **业务类别**：
+  - `change_business`：变更业务（地址变更、名称变更、股东变更等）
+  - `administrative_license`：行政许可（食品经营许可证、卫生许可证等）
+  - `other_business_basic`：其他业务（基础）（工商注销、税务处理等）
+  - `other_business_outsourcing`：其他业务（外包）（代理注销、商标注册等）
+  - `other_business_special`：其他业务（特殊）（代办烟草证、出口退税等）
+- **核心功能**：
+  - 业务选项的CRUD操作（创建、查询、更新、删除）
+  - 支持按业务类别查询所有选项
+  - 支持按默认/自定义选项筛选
+  - 分页查询功能，默认每页10条记录
+  - 唯一性验证：同一类别下选项值唯一
+  - 默认选项保护：不允许删除默认选项
+- **权限控制**：
+  - 查询接口：所有登录用户可访问
+  - 创建/更新/删除接口：仅限管理员和超级管理员
+- **数据库设计**：
+  - 表名：`business_options`
+  - 唯一索引：`(category, option_value)` 确保同一类别下选项值唯一
+  - 支持字段：业务类别、选项值、是否默认、创建人、创建时间、更新时间
+- **API接口**：
+  - `GET /api/business-options`：获取业务选项列表（分页）
+  - `GET /api/business-options/category/:category`：根据类别获取业务选项
+  - `GET /api/business-options/:id`：根据ID获取业务选项详情
+  - `POST /api/business-options`：创建业务选项（需要管理员权限）
+  - `POST /api/business-options/batch`：批量创建业务选项（需要管理员权限）
+  - `PATCH /api/business-options/:id`：更新业务选项（需要管理员权限）
+  - `DELETE /api/business-options/:id`：删除业务选项（需要管理员权限，不能删除默认选项）
+- **业务规则**：
+  - 创建时自动验证 `category + optionValue` 的唯一性
+  - 更新选项值时需重新验证唯一性
+  - 删除操作禁止删除 `isDefault = true` 的选项
+  - 批量创建时自动跳过已存在的选项
+- **数据初始化**：
+  - 提供完整的默认数据初始化SQL脚本
+  - 支持5个业务类别共计80+个默认选项
+  - 使用 `ON DUPLICATE KEY UPDATE` 确保幂等性
+- **前端对接**：
+  - 前端可通过类别接口获取下拉选项列表
+  - 支持管理员在费用页面添加自定义选项
+  - 自定义选项在不同浏览器/设备间自动同步
+  - 前端保留默认选项作为兜底方案
+
 ## 更新历史
+
+### 2025-10-30
+- **业务选项管理模块新增**：
+  - 创建完整的业务选项管理模块，支持5个业务类别的选项管理
+  - 实现完整的CRUD操作和权限控制
+  - 提供数据库表创建脚本和默认数据初始化脚本
+  - 集成到主应用模块，注册所有必要的实体和路由
+  - 完整的API文档支持（Swagger）
+  - 默认选项保护机制，防止误删除
+  - 唯一性验证，防止重复数据
+  - 支持批量创建功能，方便数据初始化
+  - 数据库迁移脚本：
+    - `database/migrations/2025-10-30-create-business-options-table.sql`
+    - `database/migrations/2025-10-30-init-default-business-options.sql`
 
 ### 2025-10-21
 - **薪资已发放状态锁定功能**：
