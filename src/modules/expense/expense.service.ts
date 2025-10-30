@@ -34,6 +34,7 @@ import { CancelAuditDto } from './dto/cancel-audit.dto';
 import { ViewReceiptDto } from './dto/view-receipt.dto';
 import { Department } from '../department/entities/department.entity';
 import { DataSource } from 'typeorm';
+import { BusinessOption } from '../business-options/entities/business-option.entity';
 
 
 @Injectable()
@@ -48,8 +49,95 @@ export class ExpenseService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Department)
     private readonly departmentRepository: Repository<Department>,
+    @InjectRepository(BusinessOption)
+    private readonly businessOptionRepository: Repository<BusinessOption>,
     private readonly dataSource: DataSource,
   ) {}
+
+  /**
+   * 处理业务查询筛选逻辑
+   * @param businessInquiries 业务查询值数组
+   * @returns 返回查询条件数组和参数对象
+   */
+  private async buildBusinessInquiryConditions(
+    businessInquiries: string[],
+  ): Promise<{ conditions: string[]; params: Record<string, any> }> {
+    // 定义费用类型映射表（字段非空且非0筛选）
+    const feeTypeMapping = {
+      '代理费': 'agencyFee',
+      '记账软件费': 'accountingSoftwareFee',
+      '开票软件费': 'invoiceSoftwareFee',
+      '地址费': 'addressFee',
+      '社保代理费': 'socialInsuranceAgencyFee',
+      '公积金代理费': 'housingFundAgencyFee',
+      '统计局报表费': 'statisticalReportFee',
+      '客户资料整理费': 'customerDataOrganizationFee',
+      '办照费用': 'licenseFee',
+      '牌子费': 'brandFee',
+      '备案章费用': 'recordSealFee',
+      '一般刻章费用': 'generalSealFee',
+    };
+
+    // category 字段到 sys_expense 表字段的映射
+    const categoryFieldMapping = {
+      'change_business': 'changeBusiness',
+      'administrative_license': 'administrativeLicense',
+      'other_business_outsourcing': 'otherBusinessOutsourcing',
+      'other_business_basic': 'otherBusiness',
+      'other_business_special': 'otherBusinessSpecial',
+    };
+
+    const allConditions: string[] = [];
+    const allParams: Record<string, any> = {};
+    let paramIndex = 0;
+
+    // 遍历每个业务查询值，构建对应的查询条件
+    for (const searchValue of businessInquiries) {
+      if (searchValue && searchValue.trim() !== '') {
+        const trimmedValue = searchValue.trim();
+
+        // 1. 先检查是否为费用类型
+        if (feeTypeMapping[trimmedValue]) {
+          const fieldName = feeTypeMapping[trimmedValue];
+          allConditions.push(
+            `(expense.${fieldName} IS NOT NULL AND expense.${fieldName} != 0)`
+          );
+          console.log(`业务查询 - 费用类型: ${trimmedValue} -> ${fieldName}`);
+        } else {
+          // 2. 不在费用类型中，查询 business_options 表
+          const businessOption = await this.businessOptionRepository.findOne({
+            where: { optionValue: trimmedValue },
+          });
+
+          if (businessOption) {
+            // 获取 category 字段对应的映射字段
+            const expenseField = categoryFieldMapping[businessOption.category];
+            
+            if (expenseField) {
+              const paramKey = `businessValue${paramIndex}`;
+              allConditions.push(
+                `JSON_CONTAINS(expense.${expenseField}, JSON_QUOTE(:${paramKey}))`
+              );
+              allParams[paramKey] = trimmedValue;
+              paramIndex++;
+              
+              console.log(
+                `业务查询 - 动态查询: ${trimmedValue} -> category: ${businessOption.category} -> field: ${expenseField}`
+              );
+            } else {
+              console.warn(
+                `业务查询 - 未找到category映射: ${businessOption.category}`
+              );
+            }
+          } else {
+            console.warn(`业务查询 - 未找到业务选项: ${trimmedValue}`);
+          }
+        }
+      }
+    }
+
+    return { conditions: allConditions, params: allParams };
+  }
 
   async create(createExpenseDto: CreateExpenseDto, username: string) {
     // 添加调试信息
@@ -775,123 +863,12 @@ export class ExpenseService {
         : [query.businessInquiry];
       
       if (businessInquiries.length > 0) {
-        // 定义业务类型映射表
-        const businessTypeMapping = {
-          '代理费': { field: 'agencyFee', type: 'fee' },
-          '记账软件费': { field: 'accountingSoftwareFee', type: 'fee' },
-          '开票软件费': { field: 'invoiceSoftwareFee', type: 'fee' },
-          '地址费': { field: 'addressFee', type: 'fee' },
-          '社保代理费': { field: 'socialInsuranceAgencyFee', type: 'fee' },
-          '公积金代理费': { field: 'housingFundAgencyFee', type: 'fee' },
-          '统计局报表费': { field: 'statisticalReportFee', type: 'fee' },
-          '客户资料整理费': { field: 'customerDataOrganizationFee', type: 'fee' },
-          '办照费用': { field: 'licenseFee', type: 'fee' },
-          '牌子费': { field: 'brandFee', type: 'fee' },
-          '备案章费用': { field: 'recordSealFee', type: 'fee' },
-          '一般刻章费用': { field: 'generalSealFee', type: 'fee' },
-        };
-        
-        // 定义变更业务列表（直接匹配）
-        const changeBusinessValues = [
-          '地址变更', '名称变更', '股东变更', '监事变更', '范围变更',
-          '注册资本变更', '跨区域变更', '法定代表人变更', '个升企'
-        ];
-        
-        // 定义行政许可列表（直接匹配）
-        const administrativeLicenseValues = [
-          '食品经营许可证', '卫生许可证', '酒类经营许可证', '道路运输许可证',
-          '医疗器械经营许可证', '建筑施工许可证', '特种行业许可证'
-        ];
-        
-        // 定义其他业务(基础)列表（直接匹配）
-        const otherBusinessValues = [
-          '非代理企业工商注销', '非代理企业税务注销', '非代理企业银行注销',
-          '税务处理逾期/补充申报', '工商年报/工商公示', '补执照', '报表编制',
-          '非代理企业行政许可注销', '银行开户', '银行变更'
-        ];
-        
-        // 定义其他业务(外包)列表（直接匹配）
-        const otherBusinessOutsourcingValues = [
-          '代理企业工商注销', '代理企业税务注销', '代理企业银行注销', '代理企业注销',
-          '解除工商异常', '解除税务异常', '代办条形码', '劳务派遣证年检', '民非证年检',
-          '公司转让', '建设项目环境影响登记表', '代办固定污染源排污', '登报',
-          '商标注册', '商标变更', '商标续展', '商标过户', '审计报告', '检测报告',
-          '验资报告', '出版物许可证', '著作权', '版权', '建筑资质证书', '3A信用认证',
-          '质量体系认证（环境、健康、职业）', '信用修复', '暂住证', '贷款业务',
-          '金融业务', '资产评估报告', '区块链', '招标投标代理', '工程审计/预算/决算',
-          '标书制作', '定位服务', '活动费用', '执行标准', '外包地址', '税务风险报告',
-          '代理企业行政许可注销', '公司合作业务'
-        ];
-        
-        // 定义其他业务(特殊)列表（直接匹配）
-        const otherBusinessSpecialValues = [
-          '代办烟草证', '出口退税', '建筑资质证书'
-        ];
-        
-        // 收集所有的查询条件
-        const allConditions = [];
-        const allParams = {};
-        let paramIndex = 0;
-        
-        // 遍历每个业务查询值，构建对应的查询条件
-        businessInquiries.forEach((searchValue) => {
-          if (searchValue && searchValue.trim() !== '') {
-            const trimmedValue = searchValue.trim();
-            
-            // 判断搜索值属于哪个类别并构建查询条件
-            if (businessTypeMapping[trimmedValue]) {
-              // 费用类型查询：字段非空非0
-              const config = businessTypeMapping[trimmedValue];
-              allConditions.push(
-                `(expense.${config.field} IS NOT NULL AND expense.${config.field} != 0)`
-              );
-            } else if (changeBusinessValues.includes(trimmedValue)) {
-              // 变更业务查询：JSON数组字段包含指定值（直接匹配）
-              const paramKey = `changeBusinessValue${paramIndex}`;
-              allConditions.push(
-                `JSON_CONTAINS(expense.changeBusiness, JSON_QUOTE(:${paramKey}))`
-              );
-              allParams[paramKey] = trimmedValue;
-              paramIndex++;
-            } else if (administrativeLicenseValues.includes(trimmedValue)) {
-              // 行政许可查询：JSON数组字段包含指定值
-              const paramKey = `administrativeLicenseValue${paramIndex}`;
-              allConditions.push(
-                `JSON_CONTAINS(expense.administrativeLicense, JSON_QUOTE(:${paramKey}))`
-              );
-              allParams[paramKey] = trimmedValue;
-              paramIndex++;
-            } else if (otherBusinessValues.includes(trimmedValue)) {
-              // 其他业务(基础)查询：JSON数组字段包含指定值
-              const paramKey = `otherBusinessValue${paramIndex}`;
-              allConditions.push(
-                `JSON_CONTAINS(expense.otherBusiness, JSON_QUOTE(:${paramKey}))`
-              );
-              allParams[paramKey] = trimmedValue;
-              paramIndex++;
-            } else if (otherBusinessOutsourcingValues.includes(trimmedValue)) {
-              // 其他业务(外包)查询：JSON数组字段包含指定值
-              const paramKey = `otherBusinessOutsourcingValue${paramIndex}`;
-              allConditions.push(
-                `JSON_CONTAINS(expense.otherBusinessOutsourcing, JSON_QUOTE(:${paramKey}))`
-              );
-              allParams[paramKey] = trimmedValue;
-              paramIndex++;
-            } else if (otherBusinessSpecialValues.includes(trimmedValue)) {
-              // 其他业务(特殊)查询：JSON数组字段包含指定值
-              const paramKey = `otherBusinessSpecialValue${paramIndex}`;
-              allConditions.push(
-                `JSON_CONTAINS(expense.otherBusinessSpecial, JSON_QUOTE(:${paramKey}))`
-              );
-              allParams[paramKey] = trimmedValue;
-              paramIndex++;
-            }
-          }
-        });
+        // 使用统一的方法构建查询条件
+        const { conditions, params } = await this.buildBusinessInquiryConditions(businessInquiries);
         
         // 如果有条件，使用OR连接所有条件（多选是或的关系）
-        if (allConditions.length > 0) {
-          queryBuilder.andWhere(`(${allConditions.join(' OR ')})`, allParams);
+        if (conditions.length > 0) {
+          queryBuilder.andWhere(`(${conditions.join(' OR ')})`, params);
         }
         
         console.log(`业务查询 - 搜索值: ${businessInquiries.join(', ')}`);
@@ -2077,123 +2054,12 @@ export class ExpenseService {
         : [query.businessInquiry];
       
       if (businessInquiries.length > 0) {
-        // 定义业务类型映射表
-        const businessTypeMapping = {
-          '代理费': { field: 'agencyFee', type: 'fee' },
-          '记账软件费': { field: 'accountingSoftwareFee', type: 'fee' },
-          '开票软件费': { field: 'invoiceSoftwareFee', type: 'fee' },
-          '地址费': { field: 'addressFee', type: 'fee' },
-          '社保代理费': { field: 'socialInsuranceAgencyFee', type: 'fee' },
-          '公积金代理费': { field: 'housingFundAgencyFee', type: 'fee' },
-          '统计局报表费': { field: 'statisticalReportFee', type: 'fee' },
-          '客户资料整理费': { field: 'customerDataOrganizationFee', type: 'fee' },
-          '办照费用': { field: 'licenseFee', type: 'fee' },
-          '牌子费': { field: 'brandFee', type: 'fee' },
-          '备案章费用': { field: 'recordSealFee', type: 'fee' },
-          '一般刻章费用': { field: 'generalSealFee', type: 'fee' },
-        };
-        
-        // 定义变更业务列表（直接匹配）
-        const changeBusinessValues = [
-          '地址变更', '名称变更', '股东变更', '监事变更', '范围变更',
-          '注册资本变更', '跨区域变更', '法定代表人变更', '个升企'
-        ];
-        
-        // 定义行政许可列表（直接匹配）
-        const administrativeLicenseValues = [
-          '食品经营许可证', '卫生许可证', '酒类经营许可证', '道路运输许可证',
-          '医疗器械经营许可证', '建筑施工许可证', '特种行业许可证'
-        ];
-        
-        // 定义其他业务(基础)列表（直接匹配）
-        const otherBusinessValues = [
-          '非代理企业工商注销', '非代理企业税务注销', '非代理企业银行注销',
-          '税务处理逾期/补充申报', '工商年报/工商公示', '补执照', '报表编制',
-          '非代理企业行政许可注销', '银行开户', '银行变更'
-        ];
-        
-        // 定义其他业务(外包)列表（直接匹配）
-        const otherBusinessOutsourcingValues = [
-          '代理企业工商注销', '代理企业税务注销', '代理企业银行注销', '代理企业注销',
-          '解除工商异常', '解除税务异常', '代办条形码', '劳务派遣证年检', '民非证年检',
-          '公司转让', '建设项目环境影响登记表', '代办固定污染源排污', '登报',
-          '商标注册', '商标变更', '商标续展', '商标过户', '审计报告', '检测报告',
-          '验资报告', '出版物许可证', '著作权', '版权', '建筑资质证书', '3A信用认证',
-          '质量体系认证（环境、健康、职业）', '信用修复', '暂住证', '贷款业务',
-          '金融业务', '资产评估报告', '区块链', '招标投标代理', '工程审计/预算/决算',
-          '标书制作', '定位服务', '活动费用', '执行标准', '外包地址', '税务风险报告',
-          '代理企业行政许可注销', '公司合作业务'
-        ];
-        
-        // 定义其他业务(特殊)列表（直接匹配）
-        const otherBusinessSpecialValues = [
-          '代办烟草证', '出口退税', '建筑资质证书'
-        ];
-        
-        // 收集所有的查询条件
-        const allConditions = [];
-        const allParams = {};
-        let paramIndex = 0;
-        
-        // 遍历每个业务查询值，构建对应的查询条件
-        businessInquiries.forEach((searchValue) => {
-          if (searchValue && searchValue.trim() !== '') {
-            const trimmedValue = searchValue.trim();
-            
-            // 判断搜索值属于哪个类别并构建查询条件
-            if (businessTypeMapping[trimmedValue]) {
-              // 费用类型查询：字段非空非0
-              const config = businessTypeMapping[trimmedValue];
-              allConditions.push(
-                `(expense.${config.field} IS NOT NULL AND expense.${config.field} != 0)`
-              );
-            } else if (changeBusinessValues.includes(trimmedValue)) {
-              // 变更业务查询：JSON数组字段包含指定值（直接匹配）
-              const paramKey = `changeBusinessValueExport${paramIndex}`;
-              allConditions.push(
-                `JSON_CONTAINS(expense.changeBusiness, JSON_QUOTE(:${paramKey}))`
-              );
-              allParams[paramKey] = trimmedValue;
-              paramIndex++;
-            } else if (administrativeLicenseValues.includes(trimmedValue)) {
-              // 行政许可查询：JSON数组字段包含指定值
-              const paramKey = `administrativeLicenseValueExport${paramIndex}`;
-              allConditions.push(
-                `JSON_CONTAINS(expense.administrativeLicense, JSON_QUOTE(:${paramKey}))`
-              );
-              allParams[paramKey] = trimmedValue;
-              paramIndex++;
-            } else if (otherBusinessValues.includes(trimmedValue)) {
-              // 其他业务(基础)查询：JSON数组字段包含指定值
-              const paramKey = `otherBusinessValueExport${paramIndex}`;
-              allConditions.push(
-                `JSON_CONTAINS(expense.otherBusiness, JSON_QUOTE(:${paramKey}))`
-              );
-              allParams[paramKey] = trimmedValue;
-              paramIndex++;
-            } else if (otherBusinessOutsourcingValues.includes(trimmedValue)) {
-              // 其他业务(外包)查询：JSON数组字段包含指定值
-              const paramKey = `otherBusinessOutsourcingValueExport${paramIndex}`;
-              allConditions.push(
-                `JSON_CONTAINS(expense.otherBusinessOutsourcing, JSON_QUOTE(:${paramKey}))`
-              );
-              allParams[paramKey] = trimmedValue;
-              paramIndex++;
-            } else if (otherBusinessSpecialValues.includes(trimmedValue)) {
-              // 其他业务(特殊)查询：JSON数组字段包含指定值
-              const paramKey = `otherBusinessSpecialValueExport${paramIndex}`;
-              allConditions.push(
-                `JSON_CONTAINS(expense.otherBusinessSpecial, JSON_QUOTE(:${paramKey}))`
-              );
-              allParams[paramKey] = trimmedValue;
-              paramIndex++;
-            }
-          }
-        });
+        // 使用统一的方法构建查询条件
+        const { conditions, params } = await this.buildBusinessInquiryConditions(businessInquiries);
         
         // 如果有条件，使用OR连接所有条件（多选是或的关系）
-        if (allConditions.length > 0) {
-          queryBuilder.andWhere(`(${allConditions.join(' OR ')})`, allParams);
+        if (conditions.length > 0) {
+          queryBuilder.andWhere(`(${conditions.join(' OR ')})`, params);
         }
         
         console.log(`导出业务查询 - 搜索值: ${businessInquiries.join(', ')}`);

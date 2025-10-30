@@ -9,6 +9,7 @@ import { Role } from '../roles/entities/role.entity';
 import { Permission } from '../permissions/entities/permission.entity';
 import { Department } from '../department/entities/department.entity';
 import { Customer } from '../customer/entities/customer.entity';
+import { BusinessOption } from '../business-options/entities/business-option.entity';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { Customer } from '../customer/entities/customer.entity';
       Permission,
       Department,
       Customer,
+      BusinessOption,
     ]),
   ],
   controllers: [ExpenseController],
