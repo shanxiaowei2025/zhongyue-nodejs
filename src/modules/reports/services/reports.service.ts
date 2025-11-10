@@ -1160,7 +1160,8 @@ export class ReportsService {
       const currentYear = currentDate.getFullYear();
       const currentMonth = currentDate.getMonth() + 1; // JavaScript月份从0开始
 
-      const expenseFilter = await this.permissionService.getExpenseDataFilter(userId);
+      // 使用客户权限过滤，而不是费用权限过滤
+      const customerFilter = await this.permissionService.getCustomerDataFilter(userId);
 
       // 查询每个公司代理费非空且agencyEndDate最大的记录
       const subQueryBuilder = this.expenseRepository
@@ -1173,8 +1174,9 @@ export class ReportsService {
         .andWhere('expense_sub.agencyEndDate IS NOT NULL')
         .groupBy('expense_sub.companyName');
 
-      const queryBuilder = this.expenseRepository
-        .createQueryBuilder('expense')
+      // 从customer表开始查询，以便应用客户权限过滤
+      const queryBuilder = this.customerRepository
+        .createQueryBuilder('customer')
         .select([
           'customer.id as customerId',
           'customer.companyName as companyName',
@@ -1183,16 +1185,18 @@ export class ReportsService {
           'YEAR(expense.agencyEndDate) as endYear',
           'MONTH(expense.agencyEndDate) as endMonth'
         ])
-        .innerJoin(Customer, 'customer', 'customer.companyName = expense.companyName')
+        .innerJoin(
+          Expense,
+          'expense',
+          'expense.companyName = customer.companyName AND expense.agencyFee IS NOT NULL AND expense.agencyEndDate IS NOT NULL'
+        )
         .innerJoin(
           `(${subQueryBuilder.getQuery()})`,
           'latest',
           'latest.companyName = expense.companyName AND latest.maxAgencyEndDate = expense.agencyEndDate'
         )
-        .where('expense.agencyFee IS NOT NULL')
-        .andWhere('expense.agencyEndDate IS NOT NULL')
         // 排除流失户公司 - 企业状态不为已注销且业务状态不为已流失
-        .andWhere('customer.enterpriseStatus != :cancelledStatus', { cancelledStatus: 'cancelled' })
+        .where('customer.enterpriseStatus != :cancelledStatus', { cancelledStatus: 'cancelled' })
         .andWhere('customer.businessStatus != :lostStatus', { lostStatus: 'lost' });
 
       // 添加企业名称筛选
@@ -1202,8 +1206,8 @@ export class ReportsService {
         });
       }
 
-      // 应用权限过滤
-      await expenseFilter(queryBuilder);
+      // 应用客户权限过滤（超级管理员和管理员可查看全部，普通用户只能查看自己负责的客户）
+      await customerFilter(queryBuilder);
 
       // 设置子查询的参数
       queryBuilder.setParameters(subQueryBuilder.getParameters());
