@@ -448,6 +448,36 @@ export class CreateCustomerDto {
   @IsOptional()
   businessStatus?: string;
 
+  @ApiPropertyOptional({ description: '客户群' })
+  @IsString()
+  @IsOptional()
+  customerGroup?: string;
+
+  @ApiPropertyOptional({ description: '客户群备注' })
+  @IsString()
+  @IsOptional()
+  customerGroupRemark?: string;
+
+  @ApiPropertyOptional({ description: '维护代理端' })
+  @IsString()
+  @IsOptional()
+  maintenanceAgent?: string;
+
+  @ApiPropertyOptional({ description: '维护代理端备注' })
+  @IsString()
+  @IsOptional()
+  maintenanceAgentRemark?: string;
+
+  @ApiPropertyOptional({ description: '记账软件' })
+  @IsString()
+  @IsOptional()
+  accountingSoftware?: string;
+
+  @ApiPropertyOptional({ description: '记账软件备注' })
+  @IsString()
+  @IsOptional()
+  accountingSoftwareRemark?: string;
+
   @ApiPropertyOptional({ description: '创建或最后修改该记录的用户' })
   @IsString()
   @IsOptional()

@@ -75,6 +75,24 @@ export class CustomerResponseDto {
   @ApiProperty({ description: '客户级别', required: false })
   customerLevel?: string;
 
+  @ApiProperty({ description: '客户群', required: false })
+  customerGroup?: string;
+
+  @ApiProperty({ description: '客户群备注', required: false })
+  customerGroupRemark?: string;
+
+  @ApiProperty({ description: '维护代理端', required: false })
+  maintenanceAgent?: string;
+
+  @ApiProperty({ description: '维护代理端备注', required: false })
+  maintenanceAgentRemark?: string;
+
+  @ApiProperty({ description: '记账软件', required: false })
+  accountingSoftware?: string;
+
+  @ApiProperty({ description: '记账软件备注', required: false })
+  accountingSoftwareRemark?: string;
+
   @ApiProperty({ description: '行业大类', required: false })
   industryCategory?: string;
 

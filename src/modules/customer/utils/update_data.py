@@ -279,6 +279,12 @@ def update_excel_data(file_path):
                 '企业状态': 'enterpriseStatus',
                 '客户分级': 'customerLevel',
                 '业务状态': 'businessStatus',
+                '客户群': 'customerGroup',
+                '客户群备注': 'customerGroupRemark',
+                '维护代理端': 'maintenanceAgent',
+                '维护代理端备注': 'maintenanceAgentRemark',
+                '记账软件': 'accountingSoftware',
+                '记账软件备注': 'accountingSoftwareRemark',
                 '备注信息': 'remarks'
             }
             

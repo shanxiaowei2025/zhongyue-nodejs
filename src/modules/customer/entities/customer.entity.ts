@@ -325,6 +325,24 @@ export class Customer {
   })
   businessStatus: string;
 
+  @Column({ nullable: true, comment: '客户群' })
+  customerGroup: string;
+
+  @Column({ nullable: true, type: 'text', comment: '客户群备注' })
+  customerGroupRemark: string;
+
+  @Column({ nullable: true, comment: '维护代理端' })
+  maintenanceAgent: string;
+
+  @Column({ nullable: true, type: 'text', comment: '维护代理端备注' })
+  maintenanceAgentRemark: string;
+
+  @Column({ nullable: true, comment: '记账软件' })
+  accountingSoftware: string;
+
+  @Column({ nullable: true, type: 'text', comment: '记账软件备注' })
+  accountingSoftwareRemark: string;
+
   @CreateDateColumn({
     nullable: true,
     comment: '记录的创建时间',

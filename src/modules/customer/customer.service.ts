@@ -817,8 +817,16 @@ export class CustomerService {
       );
     }
 
+    // 移除 undefined 值，但保留 null 和空字符串，以确保字段能够被正确更新
+    const cleanedUpdateDto = Object.keys(finalUpdateDto).reduce((acc, key) => {
+      if (finalUpdateDto[key] !== undefined) {
+        acc[key] = finalUpdateDto[key];
+      }
+      return acc;
+    }, {} as any);
+
     // 更新客户信息
-    await this.customerRepository.update(id, finalUpdateDto);
+    await this.customerRepository.update(id, cleanedUpdateDto);
 
     // 获取更新后的客户信息
     const updatedCustomer = await this.findOne(id, userId);
