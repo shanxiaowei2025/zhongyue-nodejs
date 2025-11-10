@@ -54,7 +54,7 @@ export class AttendanceDeductionController {
   }
 
   @Post('import')
-  @Roles('salary_admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin', 'salary_uploader')
   @ApiOperation({ summary: '导入考勤扣款数据(CSV/XLSX)' })
   @ApiResponse({
     status: 201,

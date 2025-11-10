@@ -52,7 +52,7 @@ export class SubsidySummaryController {
   }
 
   @Post('import')
-  @Roles('salary_admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin', 'salary_uploader')
   @ApiOperation({ summary: '导入补贴合计数据(CSV/XLSX)' })
   @ApiResponse({
     status: 201,

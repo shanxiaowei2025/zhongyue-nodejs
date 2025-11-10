@@ -57,7 +57,7 @@ export class DepositController {
   }
 
   @Post('upload')
-  @Roles('salary_admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin', 'salary_uploader')
   @ApiOperation({ summary: '通过Excel文件导入保证金记录' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({

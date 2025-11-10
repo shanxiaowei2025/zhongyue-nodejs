@@ -58,7 +58,7 @@ export class FriendCirclePaymentController {
   }
 
   @Post('import')
-  @Roles('salary_admin', 'super_admin')
+  @Roles('salary_admin', 'super_admin', 'salary_uploader')
   @ApiOperation({ summary: '导入朋友圈扣款数据(CSV/XLSX)' })
   @ApiResponse({
     status: 201,
