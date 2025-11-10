@@ -28,6 +28,7 @@ import { ReviewerApprovalDto } from './dto/reviewer-approval.dto';
 import { RejectDto } from './dto/reject.dto';
 import { ReviewerRejectDto } from './dto/reviewer-reject.dto';
 import { CommunicationRecordDto, AddCommunicationRecordDto } from './dto/communication-record.dto';
+import { FinancialSelfInspectionListResponseDto } from './dto/financial-self-inspection-list-response.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
@@ -77,6 +78,11 @@ export class FinancialSelfInspectionController {
     summary:
       '查询我提交的记录（抽查人是当前用户）, 管理员和超级管理员可查看所有记录',
   })
+  @ApiResponse({
+    status: 200,
+    description: '查询成功',
+    type: FinancialSelfInspectionListResponseDto,
+  })
   findMySubmitted(
     @Query() queryDto: QueryFinancialSelfInspectionDto,
     @Request() req,
@@ -96,6 +102,11 @@ export class FinancialSelfInspectionController {
     summary:
       '查询我负责的记录（记账会计或顾问会计是当前用户）, 管理员和超级管理员可查看所有记录',
   })
+  @ApiResponse({
+    status: 200,
+    description: '查询成功',
+    type: FinancialSelfInspectionListResponseDto,
+  })
   findMyResponsible(
     @Query() queryDto: QueryFinancialSelfInspectionDto,
     @Request() req,
@@ -113,6 +124,11 @@ export class FinancialSelfInspectionController {
   @Get('my-reviewed')
   @Roles('admin', 'super_admin') // 只有管理员和超级管理员可以调用
   @ApiOperation({ summary: '查询我复查的记录【仅管理员】' })
+  @ApiResponse({
+    status: 200,
+    description: '查询成功',
+    type: FinancialSelfInspectionListResponseDto,
+  })
   findMyReviewed(
     @Query() queryDto: QueryFinancialSelfInspectionDto,
     @Request() req,

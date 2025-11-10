@@ -634,12 +634,151 @@ export class FinancialSelfInspectionService {
     // 执行查询
     const [items, total] = await queryBuilder.getManyAndCount();
 
+    // 构建统计查询（使用相同的查询条件，但不分页）
+    const statsQueryBuilder =
+      this.financialSelfInspectionRepository.createQueryBuilder('record');
+    
+    // 复制所有查询条件
+    let statsHasWhereCondition = false;
+    if (!isAdmin) {
+      statsQueryBuilder.where('record.inspector = :username', { username });
+      statsHasWhereCondition = true;
+    }
+    
+    if (inspector && isAdmin) {
+      if (statsHasWhereCondition) {
+        statsQueryBuilder.andWhere('record.inspector LIKE :inspector', {
+          inspector: `%${inspector}%`,
+        });
+      } else {
+        statsQueryBuilder.where('record.inspector LIKE :inspector', {
+          inspector: `%${inspector}%`,
+        });
+        statsHasWhereCondition = true;
+      }
+    }
+    
+    if (companyName) {
+      if (statsHasWhereCondition) {
+        statsQueryBuilder.andWhere('record.companyName LIKE :companyName', {
+          companyName: `%${companyName}%`,
+        });
+      } else {
+        statsQueryBuilder.where('record.companyName LIKE :companyName', {
+          companyName: `%${companyName}%`,
+        });
+        statsHasWhereCondition = true;
+      }
+    }
+    
+    if (unifiedSocialCreditCode) {
+      if (statsHasWhereCondition) {
+        statsQueryBuilder.andWhere('record.unifiedSocialCreditCode LIKE :code', {
+          code: `%${unifiedSocialCreditCode}%`,
+        });
+      } else {
+        statsQueryBuilder.where('record.unifiedSocialCreditCode LIKE :code', {
+          code: `%${unifiedSocialCreditCode}%`,
+        });
+        statsHasWhereCondition = true;
+      }
+    }
+    
+    if (bookkeepingAccountant) {
+      if (statsHasWhereCondition) {
+        statsQueryBuilder.andWhere('record.bookkeepingAccountant LIKE :accountant', {
+          accountant: `%${bookkeepingAccountant}%`,
+        });
+      } else {
+        statsQueryBuilder.where('record.bookkeepingAccountant LIKE :accountant', {
+          accountant: `%${bookkeepingAccountant}%`,
+        });
+        statsHasWhereCondition = true;
+      }
+    }
+    
+    if (consultantAccountant) {
+      if (statsHasWhereCondition) {
+        statsQueryBuilder.andWhere('record.consultantAccountant LIKE :consultant', {
+          consultant: `%${consultantAccountant}%`,
+        });
+      } else {
+        statsQueryBuilder.where('record.consultantAccountant LIKE :consultant', {
+          consultant: `%${consultantAccountant}%`,
+        });
+        statsHasWhereCondition = true;
+      }
+    }
+    
+    if (problemImageDescription) {
+      if (statsHasWhereCondition) {
+        statsQueryBuilder.andWhere('record.problemImageDescription LIKE :problemImageDesc', {
+          problemImageDesc: `%${problemImageDescription}%`,
+        });
+      } else {
+        statsQueryBuilder.where('record.problemImageDescription LIKE :problemImageDesc', {
+          problemImageDesc: `%${problemImageDescription}%`,
+        });
+        statsHasWhereCondition = true;
+      }
+    }
+    
+    if (inspectionDateStart && inspectionDateEnd) {
+      if (statsHasWhereCondition) {
+        statsQueryBuilder.andWhere('record.inspectionDate BETWEEN :start AND :end', {
+          start: inspectionDateStart,
+          end: inspectionDateEnd,
+        });
+      } else {
+        statsQueryBuilder.where('record.inspectionDate BETWEEN :start AND :end', {
+          start: inspectionDateStart,
+          end: inspectionDateEnd,
+        });
+        statsHasWhereCondition = true;
+      }
+    } else if (inspectionDateStart) {
+      if (statsHasWhereCondition) {
+        statsQueryBuilder.andWhere('record.inspectionDate >= :start', {
+          start: inspectionDateStart,
+        });
+      } else {
+        statsQueryBuilder.where('record.inspectionDate >= :start', {
+          start: inspectionDateStart,
+        });
+        statsHasWhereCondition = true;
+      }
+    } else if (inspectionDateEnd) {
+      if (statsHasWhereCondition) {
+        statsQueryBuilder.andWhere('record.inspectionDate <= :end', {
+          end: inspectionDateEnd,
+        });
+      } else {
+        statsQueryBuilder.where('record.inspectionDate <= :end', {
+          end: inspectionDateEnd,
+        });
+        statsHasWhereCondition = true;
+      }
+    }
+    
+    // 注意：统计查询不包含status过滤，因为我们需要统计所有状态的数据
+    
+    // 获取所有符合条件的数据用于统计
+    const allItems = await statsQueryBuilder.getMany();
+    
+    // 计算统计信息
+    const createdCount = allItems.length; // 创建数量：总数量
+    const pendingRectificationCount = allItems.filter(item => item.status === 0).length; // 待整改数量：status=0
+    const inspectorApprovedCount = allItems.filter(item => item.status === 2).length; // 抽查人确认数量：status=2
+
     return {
       items,
       total,
       page,
       pageSize,
       totalPages: Math.ceil(total / pageSize),
+      createdCount,
+      pendingRectificationCount,
+      inspectorApprovedCount,
     };
   }
 
@@ -819,12 +958,154 @@ export class FinancialSelfInspectionService {
     // 执行查询
     const [items, total] = await queryBuilder.getManyAndCount();
 
+    // 构建统计查询（使用相同的查询条件，但不分页）
+    const statsQueryBuilder =
+      this.financialSelfInspectionRepository.createQueryBuilder('record');
+    
+    // 复制所有查询条件
+    let statsHasWhereCondition = false;
+    if (!isAdmin) {
+      statsQueryBuilder.where(
+        '(record.bookkeepingAccountant = :username OR record.consultantAccountant = :username)',
+        { username },
+      );
+      statsHasWhereCondition = true;
+    }
+    
+    if (companyName) {
+      if (statsHasWhereCondition) {
+        statsQueryBuilder.andWhere('record.companyName LIKE :companyName', {
+          companyName: `%${companyName}%`,
+        });
+      } else {
+        statsQueryBuilder.where('record.companyName LIKE :companyName', {
+          companyName: `%${companyName}%`,
+        });
+        statsHasWhereCondition = true;
+      }
+    }
+    
+    if (unifiedSocialCreditCode) {
+      if (statsHasWhereCondition) {
+        statsQueryBuilder.andWhere('record.unifiedSocialCreditCode LIKE :code', {
+          code: `%${unifiedSocialCreditCode}%`,
+        });
+      } else {
+        statsQueryBuilder.where('record.unifiedSocialCreditCode LIKE :code', {
+          code: `%${unifiedSocialCreditCode}%`,
+        });
+        statsHasWhereCondition = true;
+      }
+    }
+    
+    if (inspector) {
+      if (statsHasWhereCondition) {
+        statsQueryBuilder.andWhere('record.inspector LIKE :inspector', {
+          inspector: `%${inspector}%`,
+        });
+      } else {
+        statsQueryBuilder.where('record.inspector LIKE :inspector', {
+          inspector: `%${inspector}%`,
+        });
+        statsHasWhereCondition = true;
+      }
+    }
+    
+    if (bookkeepingAccountant) {
+      if (statsHasWhereCondition) {
+        statsQueryBuilder.andWhere('record.bookkeepingAccountant LIKE :accountant', {
+          accountant: `%${bookkeepingAccountant}%`,
+        });
+      } else {
+        statsQueryBuilder.where('record.bookkeepingAccountant LIKE :accountant', {
+          accountant: `%${bookkeepingAccountant}%`,
+        });
+        statsHasWhereCondition = true;
+      }
+    }
+    
+    if (consultantAccountant) {
+      if (statsHasWhereCondition) {
+        statsQueryBuilder.andWhere('record.consultantAccountant LIKE :consultant', {
+          consultant: `%${consultantAccountant}%`,
+        });
+      } else {
+        statsQueryBuilder.where('record.consultantAccountant LIKE :consultant', {
+          consultant: `%${consultantAccountant}%`,
+        });
+        statsHasWhereCondition = true;
+      }
+    }
+    
+    if (problemImageDescription) {
+      if (statsHasWhereCondition) {
+        statsQueryBuilder.andWhere('record.problemImageDescription LIKE :problemImageDesc', {
+          problemImageDesc: `%${problemImageDescription}%`,
+        });
+      } else {
+        statsQueryBuilder.where('record.problemImageDescription LIKE :problemImageDesc', {
+          problemImageDesc: `%${problemImageDescription}%`,
+        });
+        statsHasWhereCondition = true;
+      }
+    }
+    
+    if (inspectionDateStart && inspectionDateEnd) {
+      if (statsHasWhereCondition) {
+        statsQueryBuilder.andWhere('record.inspectionDate BETWEEN :start AND :end', {
+          start: inspectionDateStart,
+          end: inspectionDateEnd,
+        });
+      } else {
+        statsQueryBuilder.where('record.inspectionDate BETWEEN :start AND :end', {
+          start: inspectionDateStart,
+          end: inspectionDateEnd,
+        });
+        statsHasWhereCondition = true;
+      }
+    } else if (inspectionDateStart) {
+      if (statsHasWhereCondition) {
+        statsQueryBuilder.andWhere('record.inspectionDate >= :start', {
+          start: inspectionDateStart,
+        });
+      } else {
+        statsQueryBuilder.where('record.inspectionDate >= :start', {
+          start: inspectionDateStart,
+        });
+        statsHasWhereCondition = true;
+      }
+    } else if (inspectionDateEnd) {
+      if (statsHasWhereCondition) {
+        statsQueryBuilder.andWhere('record.inspectionDate <= :end', {
+          end: inspectionDateEnd,
+        });
+      } else {
+        statsQueryBuilder.where('record.inspectionDate <= :end', {
+          end: inspectionDateEnd,
+        });
+        statsHasWhereCondition = true;
+      }
+    }
+    
+    // 注意：统计查询不包含status过滤，因为我们需要统计所有状态的数据
+    
+    // 获取所有符合条件的数据用于统计
+    const allItems = await statsQueryBuilder.getMany();
+    
+    // 计算统计信息
+    const createdCount = allItems.length; // 创建数量：总数量
+    const pendingRectificationCount = allItems.filter(item => item.status === 0).length; // 待整改数量：status=0
+    const inspectorApprovedCount = allItems.filter(item => item.status === 2).length; // 抽查人确认数量：status=2
+
     return {
       items,
       total,
       page,
       pageSize,
       totalPages: Math.ceil(total / pageSize),
+      createdCount,
+      pendingRectificationCount,
+      inspectorApprovedCount,
     };
   }
 
@@ -1170,12 +1451,154 @@ export class FinancialSelfInspectionService {
     // 执行查询
     const [items, total] = await queryBuilder.getManyAndCount();
 
+    // 构建统计查询（使用相同的查询条件，但不分页）
+    const statsQueryBuilder =
+      this.financialSelfInspectionRepository.createQueryBuilder('record');
+    
+    // 复制所有查询条件
+    let statsHasWhereCondition = false;
+    
+    if (reviewer) {
+      statsQueryBuilder.where('record.reviewer LIKE :reviewer', {
+        reviewer: `%${reviewer}%`,
+      });
+      statsHasWhereCondition = true;
+    }
+    
+    if (companyName) {
+      if (statsHasWhereCondition) {
+        statsQueryBuilder.andWhere('record.companyName LIKE :companyName', {
+          companyName: `%${companyName}%`,
+        });
+      } else {
+        statsQueryBuilder.where('record.companyName LIKE :companyName', {
+          companyName: `%${companyName}%`,
+        });
+        statsHasWhereCondition = true;
+      }
+    }
+    
+    if (unifiedSocialCreditCode) {
+      if (statsHasWhereCondition) {
+        statsQueryBuilder.andWhere('record.unifiedSocialCreditCode LIKE :code', {
+          code: `%${unifiedSocialCreditCode}%`,
+        });
+      } else {
+        statsQueryBuilder.where('record.unifiedSocialCreditCode LIKE :code', {
+          code: `%${unifiedSocialCreditCode}%`,
+        });
+        statsHasWhereCondition = true;
+      }
+    }
+    
+    if (bookkeepingAccountant) {
+      if (statsHasWhereCondition) {
+        statsQueryBuilder.andWhere('record.bookkeepingAccountant LIKE :bookkeeper', {
+          bookkeeper: `%${bookkeepingAccountant}%`,
+        });
+      } else {
+        statsQueryBuilder.where('record.bookkeepingAccountant LIKE :bookkeeper', {
+          bookkeeper: `%${bookkeepingAccountant}%`,
+        });
+        statsHasWhereCondition = true;
+      }
+    }
+    
+    if (consultantAccountant) {
+      if (statsHasWhereCondition) {
+        statsQueryBuilder.andWhere('record.consultantAccountant LIKE :consultant', {
+          consultant: `%${consultantAccountant}%`,
+        });
+      } else {
+        statsQueryBuilder.where('record.consultantAccountant LIKE :consultant', {
+          consultant: `%${consultantAccountant}%`,
+        });
+        statsHasWhereCondition = true;
+      }
+    }
+    
+    if (inspector) {
+      if (statsHasWhereCondition) {
+        statsQueryBuilder.andWhere('record.inspector LIKE :inspector', {
+          inspector: `%${inspector}%`,
+        });
+      } else {
+        statsQueryBuilder.where('record.inspector LIKE :inspector', {
+          inspector: `%${inspector}%`,
+        });
+        statsHasWhereCondition = true;
+      }
+    }
+    
+    if (problemImageDescription) {
+      if (statsHasWhereCondition) {
+        statsQueryBuilder.andWhere('record.problemImageDescription LIKE :problemImageDesc', {
+          problemImageDesc: `%${problemImageDescription}%`,
+        });
+      } else {
+        statsQueryBuilder.where('record.problemImageDescription LIKE :problemImageDesc', {
+          problemImageDesc: `%${problemImageDescription}%`,
+        });
+        statsHasWhereCondition = true;
+      }
+    }
+    
+    if (inspectionDateStart && inspectionDateEnd) {
+      if (statsHasWhereCondition) {
+        statsQueryBuilder.andWhere('record.inspectionDate BETWEEN :start AND :end', {
+          start: inspectionDateStart,
+          end: inspectionDateEnd,
+        });
+      } else {
+        statsQueryBuilder.where('record.inspectionDate BETWEEN :start AND :end', {
+          start: inspectionDateStart,
+          end: inspectionDateEnd,
+        });
+        statsHasWhereCondition = true;
+      }
+    } else if (inspectionDateStart) {
+      if (statsHasWhereCondition) {
+        statsQueryBuilder.andWhere('record.inspectionDate >= :start', {
+          start: inspectionDateStart,
+        });
+      } else {
+        statsQueryBuilder.where('record.inspectionDate >= :start', {
+          start: inspectionDateStart,
+        });
+        statsHasWhereCondition = true;
+      }
+    } else if (inspectionDateEnd) {
+      if (statsHasWhereCondition) {
+        statsQueryBuilder.andWhere('record.inspectionDate <= :end', {
+          end: inspectionDateEnd,
+        });
+      } else {
+        statsQueryBuilder.where('record.inspectionDate <= :end', {
+          end: inspectionDateEnd,
+        });
+        statsHasWhereCondition = true;
+      }
+    }
+    
+    // 注意：统计查询不包含status过滤，因为我们需要统计所有状态的数据
+    
+    // 获取所有符合条件的数据用于统计
+    const allItems = await statsQueryBuilder.getMany();
+    
+    // 计算统计信息
+    const createdCount = allItems.length; // 创建数量：总数量
+    const pendingRectificationCount = allItems.filter(item => item.status === 0).length; // 待整改数量：status=0
+    const inspectorApprovedCount = allItems.filter(item => item.status === 2).length; // 抽查人确认数量：status=2
+
     return {
       items,
       total,
       page,
       pageSize,
       totalPages: Math.ceil(total / pageSize),
+      createdCount,
+      pendingRectificationCount,
+      inspectorApprovedCount,
     };
   }
 
