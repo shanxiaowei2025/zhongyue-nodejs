@@ -29,6 +29,7 @@ import { RejectDto } from './dto/reject.dto';
 import { ReviewerRejectDto } from './dto/reviewer-reject.dto';
 import { CommunicationRecordDto, AddCommunicationRecordDto } from './dto/communication-record.dto';
 import { FinancialSelfInspectionListResponseDto } from './dto/financial-self-inspection-list-response.dto';
+import { UpdateNeedAccountantCommunicationDto } from './dto/update-need-accountant-communication.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
@@ -293,6 +294,25 @@ export class FinancialSelfInspectionController {
       +id,
       dto,
       username,
+    );
+  }
+
+  @Patch(':id/need-accountant-communication')
+  @ApiOperation({ summary: '由顾问会计确认是否需要会计沟通' })
+  @ApiParam({ name: 'id', description: '记录ID' })
+  async updateNeedAccountantCommunication(
+    @Param('id') id: string,
+    @Body() dto: UpdateNeedAccountantCommunicationDto,
+    @Request() req,
+  ) {
+    const username = req.user.username;
+    const roles = req.user.roles || [];
+    const isAdmin = roles.includes('admin') || roles.includes('super_admin');
+    return this.financialSelfInspectionService.updateNeedAccountantCommunication(
+      +id,
+      dto.needAccountantCommunication,
+      username,
+      isAdmin,
     );
   }
 

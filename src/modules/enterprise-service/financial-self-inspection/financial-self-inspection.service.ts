@@ -151,8 +151,15 @@ export class FinancialSelfInspectionService {
       }
     }
 
+    if (createDto.needAccountantCommunication !== undefined) {
+      this.logger.debug(
+        '创建请求中包含needAccountantCommunication字段，已忽略，等待顾问会计确认',
+      );
+    }
+
     const record = this.financialSelfInspectionRepository.create({
       ...createDto,
+      needAccountantCommunication: 0,
       status: 0, // 默认状态：已提交未整改
     });
 
@@ -377,6 +384,59 @@ export class FinancialSelfInspectionService {
     // 更新状态为"复查人退回"
     record.status = 5;
     this.logger.log(`更新记录状态为: 复查人退回(5)`);
+
+    return this.financialSelfInspectionRepository.save(record);
+  }
+
+  /**
+   * 由顾问会计更新是否需要会计沟通
+   */
+  async updateNeedAccountantCommunication(
+    id: number,
+    needAccountantCommunication: boolean,
+    username: string,
+    isAdmin: boolean = false,
+  ): Promise<FinancialSelfInspection> {
+    const record = await this.financialSelfInspectionRepository.findOne({
+      where: { id },
+    });
+    if (!record) {
+      throw new NotFoundException(`ID为${id}的账务自查记录不存在`);
+    }
+
+    // 仅允许顾问会计或管理员更新
+    if (!isAdmin && record.consultantAccountant !== username) {
+      this.logger.warn(
+        `用户${username}尝试更新记录${id}的会计沟通标记，但其并非顾问会计${record.consultantAccountant}`,
+      );
+      throw new ForbiddenException('只有顾问会计可以确认是否需要会计沟通');
+    }
+
+    const editableStatuses = [0, 3, 5];
+    if (!editableStatuses.includes(record.status)) {
+      this.logger.warn(
+        `用户${username}尝试在状态${record.status}下更新记录${id}的会计沟通标记，该状态不允许修改`,
+      );
+      throw new BadRequestException(
+        '当前状态不允许修改会计沟通情况，仅待整改、抽查人退回、复查人退回状态可修改',
+      );
+    }
+
+    const normalizedValue = needAccountantCommunication ? 1 : 0;
+
+    if (record.needAccountantCommunication === normalizedValue) {
+      this.logger.debug(
+        `记录${id}的会计沟通标记已为${normalizedValue}，无需更新`,
+      );
+      return record;
+    }
+
+    record.needAccountantCommunication = normalizedValue;
+    record.updatedAt = new Date();
+
+    this.logger.log(
+      `用户${username}将记录${id}的会计沟通标记更新为${normalizedValue}`,
+    );
 
     return this.financialSelfInspectionRepository.save(record);
   }
