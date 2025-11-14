@@ -432,6 +432,7 @@ export class SalaryAutoUpdateService {
         ) ? Number(expense.socialInsuranceAgencyFee || 0) 
           : 0;
         
+        const addressFee = Number(expense.addressFee || 0);
         const basicFee =
           Number(expense.licenseFee || 0) +
           Number(expense.agencyFee || 0) +
@@ -441,14 +442,14 @@ export class SalaryAutoUpdateService {
           Number(expense.changeFee || 0) +
           Number(expense.administrativeLicenseFee || 0) +
           Number(expense.otherBusinessFee || 0) +
-          Number(expense.customerDataOrganizationFee || 0);
+          Number(expense.customerDataOrganizationFee || 0) +
+          addressFee;
 
         // 外包业务费用总和
         const outsourceFee =
           Number(expense.brandFee || 0) +
           Number(expense.generalSealFee || 0) +
           Number(expense.accountingSoftwareFee || 0) +
-          Number(expense.addressFee || 0) +
           Number(expense.invoiceSoftwareFee || 0) +
           Number(expense.otherBusinessOutsourcingFee || 0);
 
@@ -504,6 +505,8 @@ export class SalaryAutoUpdateService {
             ) ? Number(expense.socialInsuranceAgencyFee || 0) 
               : 0;
             
+            const addressFee = Number(expense.addressFee || 0);
+            const addressFeeCommission = addressFee * 0.1;
             const basicFee =
               Number(expense.licenseFee || 0) +
               Number(expense.agencyFee || 0) +
@@ -513,16 +516,17 @@ export class SalaryAutoUpdateService {
               Number(expense.changeFee || 0) +
               Number(expense.administrativeLicenseFee || 0) +
               Number(expense.otherBusinessFee || 0) +
-              Number(expense.customerDataOrganizationFee || 0);
+              Number(expense.customerDataOrganizationFee || 0) +
+              addressFee;
 
             // 外包业务费用
             const outsourceFee =
               Number(expense.brandFee || 0) +
               Number(expense.generalSealFee || 0) +
               Number(expense.accountingSoftwareFee || 0) +
-              Number(expense.addressFee || 0) +
               Number(expense.invoiceSoftwareFee || 0) +
               Number(expense.otherBusinessOutsourcingFee || 0);
+            const outsourceFeeCommission = outsourceFee * 0.1;
 
             // 计算基础业务提成
             let basicBusinessCommission = 0;
@@ -550,22 +554,23 @@ export class SalaryAutoUpdateService {
                 Number(expense.administrativeLicenseFee || 0) +
                 Number(expense.otherBusinessFee || 0) +
                 Number(expense.customerDataOrganizationFee || 0);
-                
-              const otherBasicCommission = otherBasicFee * commissionRate;
               
-              // 合并特殊处理的代理费提成和其他基础业务提成
+              const otherBasicCommission = otherBasicFee * commissionRate;
+              // 合并特殊处理的代理费提成与其他基础业务提成（地址费单独计入外包提成）
               basicBusinessCommission = specialAgencyCommission + otherBasicCommission;
               
               this.logger.debug(
                 `费用记录 ID:${expense.id} 特殊处理"两年赠一年": 代理费=${agencyFee}, 特殊提成率=${commissionRate + 0.05}, 特殊代理费提成=${specialAgencyCommission}`
               );
             } else {
-              // 常规计算基础业务提成 - 使用统一的提成比率
-              basicBusinessCommission = basicFee * commissionRate;
+              // 常规计算基础业务提成：地址费固定10%，其余费用使用统一的提成比率
+              const basicFeeExcludingAddress = basicFee - addressFee;
+              basicBusinessCommission = basicFeeExcludingAddress * commissionRate;
             }
 
             // 计算外包业务提成 (固定10%)
-            const outsourceBusinessCommission = outsourceFee * 0.1;
+            const outsourceBusinessCommission =
+              outsourceFeeCommission + addressFeeCommission;
             
             // 计算特殊业务提成（直接使用手工设置的金额）
             const specialCommission = Number(expense.specialBusinessCommission || 0);
@@ -600,17 +605,18 @@ export class SalaryAutoUpdateService {
 
           // 计算业务提成（可能包括特殊处理的代理费提成和外包业务提成）
           for (const expense of expenseResults) {
+            const addressFee = Number(expense.addressFee || 0);
             // 计算外包业务提成
             const outsourceFee =
               Number(expense.brandFee || 0) +
               Number(expense.generalSealFee || 0) +
               Number(expense.accountingSoftwareFee || 0) +
-              Number(expense.addressFee || 0) +
               Number(expense.invoiceSoftwareFee || 0) +
               Number(expense.otherBusinessOutsourcingFee || 0);
-
-            // 外包业务按10%计算
-            const outsourceBusinessCommission = outsourceFee * 0.1;
+            const addressFeeCommission = addressFee * 0.1;
+            // 外包业务按10%计算，并额外叠加地址费提成
+            const outsourceBusinessCommission =
+              outsourceFee * 0.1 + addressFeeCommission;
             
             // 初始化基础业务提成为0
             let basicBusinessCommission = 0;
@@ -630,7 +636,8 @@ export class SalaryAutoUpdateService {
             const specialCommission = Number(expense.specialBusinessCommission || 0);
             
             // 计算总业务提成
-            const totalBusinessCommission = basicBusinessCommission + outsourceBusinessCommission + specialCommission;
+            const totalBusinessCommission =
+              basicBusinessCommission + outsourceBusinessCommission + specialCommission;
 
             // 计算基础业务费用总和（用于业绩字段）
             const socialInsuranceAgencyFeeForPerformance = (
@@ -649,7 +656,8 @@ export class SalaryAutoUpdateService {
               Number(expense.changeFee || 0) +
               Number(expense.administrativeLicenseFee || 0) +
               Number(expense.otherBusinessFee || 0) +
-              Number(expense.customerDataOrganizationFee || 0);
+              Number(expense.customerDataOrganizationFee || 0) +
+              addressFee;
 
             // 更新费用表中的业务提成字段和业绩字段
             await this.dataSource.query(
@@ -676,16 +684,17 @@ export class SalaryAutoUpdateService {
       } else {
         // 如果没有提成比率职位，主要计算外包业务提成，但特殊情况下也处理代理费
         for (const expense of expenseResults) {
+          const addressFee = Number(expense.addressFee || 0);
           const outsourceFee =
             Number(expense.brandFee || 0) +
             Number(expense.generalSealFee || 0) +
             Number(expense.accountingSoftwareFee || 0) +
-            Number(expense.addressFee || 0) +
             Number(expense.invoiceSoftwareFee || 0) +
             Number(expense.otherBusinessOutsourcingFee || 0);
-
-          // 外包业务按10%计算
-          const outsourceBusinessCommission = outsourceFee * 0.1;
+          const addressFeeCommission = addressFee * 0.1;
+          // 外包业务按10%计算，并额外叠加地址费提成
+          const outsourceBusinessCommission =
+            outsourceFee * 0.1 + addressFeeCommission;
           
           // 初始化基础业务提成为0
           let basicBusinessCommission = 0;
@@ -705,7 +714,8 @@ export class SalaryAutoUpdateService {
           const specialCommission = Number(expense.specialBusinessCommission || 0);
           
           // 计算总业务提成
-          const totalBusinessCommission = basicBusinessCommission + outsourceBusinessCommission + specialCommission;
+          const totalBusinessCommission =
+            basicBusinessCommission + outsourceBusinessCommission + specialCommission;
 
           // 计算基础业务费用总和（用于业绩字段）
           const socialInsuranceAgencyFeeForPerformance = (
@@ -724,7 +734,8 @@ export class SalaryAutoUpdateService {
             Number(expense.changeFee || 0) +
             Number(expense.administrativeLicenseFee || 0) +
             Number(expense.otherBusinessFee || 0) +
-            Number(expense.customerDataOrganizationFee || 0);
+            Number(expense.customerDataOrganizationFee || 0) +
+            addressFee;
 
           // 更新费用表中的业务提成字段和业绩字段
           await this.dataSource.query(

@@ -1243,6 +1243,11 @@ Body: {
     - **触发时机**：执行薪资自动更新时（调用 `generateMonthlySalaries` 方法）
     - **更新位置**：`SalaryAutoUpdateService.calculateBusinessCommission` 方法
     - **清空机制**：执行薪资生成前会清空指定日期范围内的业绩字段，确保数据一致性
+- **FAQ**：
+  - **基础业务费用总和由哪些费用构成？** 系统在 `SalaryAutoUpdateService.calculateBusinessCommission` 中将办照费(`licenseFee`)、代理费(`agencyFee`)、符合条件的社保代理费(`socialInsuranceAgencyFee`，仅限业务类型为“新增”或空值)、公积金代理费(`housingFundAgencyFee`)、统计局报表费(`statisticalReportFee`)、变更费(`changeFee`)、行政许可费(`administrativeLicenseFee`)、其他业务费(`otherBusinessFee`，基础类)、客户资料整理费(`customerDataOrganizationFee`)以及地址费(`addressFee`)累加成基础业务费用总和，用于匹配提成区间。
+  - **基础业务业绩是否包含地址费？** 包含。`SalaryAutoUpdateService.calculateBusinessCommission` 会将地址费一并计入 `basicBusinessPerformance`，并在计算提成时对地址部分单独按10%固定比例计提；`outsourcingBusinessPerformance` 仅包含品牌费、一般刻章费、记账软件费、开票软件费及其他外包业务费。
+  - **地址费的提成归属在哪个提成科目？** 地址费产生的提成现在按10%比例计入 `businessCommissionOutsource`（外包业务提成），不再进入 `businessCommissionOwn`。地址费仍然参与基础业务费用总和与 `basicBusinessPerformance` 统计，以保证提成区间和业绩数据不变，但实际提成金额会并入外包业务提成字段，便于与其他外包类费用统一分析。
+  - **收费额区间如何判定？** 自动计算薪资时会先求出指定员工在统计周期内的基础业务费用总和(`totalBasicFee`)，然后根据员工的提成比率岗位选择对应的提成表（顾问、销售、其它）。系统使用 `feeRange` 字段（形如 `5000-10000`）的起止值作为区间，通过 `? BETWEEN SUBSTRING_INDEX(feeRange,'-',1) AND SUBSTRING_INDEX(feeRange,'-',-1)` 的SQL条件自动匹配所属区间，从而确定应使用的提成比率。
   - **技术实现**：
     - TypeORM实体字段定义完整，包含类型、精度、注释等
     - DTO验证使用 `@IsOptional()` 和 `@IsNumber()` 装饰器
