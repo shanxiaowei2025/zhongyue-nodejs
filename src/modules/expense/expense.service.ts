@@ -347,7 +347,8 @@ export class ExpenseService {
             MAX(socialInsuranceEndDate) as maxSocialInsuranceEndDate,
             MAX(housingFundEndDate) as maxHousingFundEndDate,
             MAX(statisticalEndDate) as maxStatisticalEndDate,
-            MAX(addressEndDate) as maxAddressEndDate
+            MAX(addressEndDate) as maxAddressEndDate,
+            MAX(onlineBankingCustodyEndDate) as maxOnlineBankingCustodyEndDate
           FROM sys_expense 
           WHERE ${fieldName} = ? AND status = 1`;
 
@@ -366,6 +367,7 @@ export class ExpenseService {
           maxHousingFundEndDate: 'housingFundStartDate',
           maxStatisticalEndDate: 'statisticalStartDate',
           maxAddressEndDate: 'addressStartDate',
+          maxOnlineBankingCustodyEndDate: 'onlineBankingCustodyStartDate',
         };
 
         for (const [dbField, dtoField] of Object.entries(dateFields)) {
@@ -1629,6 +1631,12 @@ export class ExpenseService {
           endDateField: 'addressEndDate',
         },
         {
+          name: '网银托管费',
+          amountField: 'onlineBankingCustodyFee',
+          startDateField: 'onlineBankingCustodyStartDate',
+          endDateField: 'onlineBankingCustodyEndDate',
+        },
+        {
           name: '开票软件费',
           amountField: 'invoiceSoftwareFee',
           startDateField: 'invoiceSoftwareStartDate',
@@ -2315,6 +2323,7 @@ export class ExpenseService {
       'housingFundEndDate',
       'statisticalEndDate',
       'addressEndDate',
+      'onlineBankingCustodyEndDate',
     ];
 
     // 结果对象

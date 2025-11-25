@@ -115,6 +115,21 @@ export class Expense {
   @Column({ type: 'date', nullable: true, comment: '地址费结束日期' })
   addressEndDate: string;
 
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    comment: '网银托管费',
+  })
+  onlineBankingCustodyFee: number;
+
+  @Column({ type: 'date', nullable: true, comment: '网银托管开始日期' })
+  onlineBankingCustodyStartDate: string;
+
+  @Column({ type: 'date', nullable: true, comment: '网银托管结束日期' })
+  onlineBankingCustodyEndDate: string;
+
   @Column({ type: 'date', nullable: true, comment: '代理开始日期' })
   agencyStartDate: string;
 

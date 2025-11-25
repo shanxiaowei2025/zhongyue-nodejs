@@ -134,14 +134,16 @@ export class SalaryAutoUpdateService {
     try {
       // 1. 筛选sys_expense表中chargeDate为上个月的记录（不限制businessType，因为所有类型的费用都可能产生提成）
       // socialInsuranceAgencyFee 只有在 socialInsuranceBusinessType = '续费' 时才参与计算
-      // accountingSoftwareFee、invoiceSoftwareFee 和 addressFee 只有在 businessType = '续费' 时才参与计算
+      // agencyFee、onlineBankingCustodyFee 按1%提成计算
+      // accountingSoftwareFee、invoiceSoftwareFee、addressFee 只有在 businessType = '续费' 时才参与10%提成计算
       const expenseQuery = `
         SELECT 
           SUM(CASE WHEN businessType = '续费' THEN agencyFee ELSE 0 END) as totalAgencyFee, 
           SUM(CASE WHEN socialInsuranceBusinessType = '续费' THEN socialInsuranceAgencyFee ELSE 0 END) as totalSocialInsuranceAgencyFee,
           SUM(CASE WHEN businessType = '续费' THEN accountingSoftwareFee ELSE 0 END) as totalAccountingSoftwareFee,
           SUM(CASE WHEN businessType = '续费' THEN invoiceSoftwareFee ELSE 0 END) as totalInvoiceSoftwareFee,
-          SUM(CASE WHEN businessType = '续费' THEN addressFee ELSE 0 END) as totalAddressFee
+          SUM(CASE WHEN businessType = '续费' THEN addressFee ELSE 0 END) as totalAddressFee,
+          SUM(CASE WHEN businessType = '续费' THEN onlineBankingCustodyFee ELSE 0 END) as totalOnlineBankingCustodyFee
         FROM sys_expense 
         WHERE 
           salesperson = ? AND 
@@ -168,10 +170,13 @@ export class SalaryAutoUpdateService {
       const totalSocialInsuranceAgencyFee = Number(
         expenseResults[0].totalSocialInsuranceAgencyFee || 0,
       );
-      const agencyTotalFee = totalAgencyFee + totalSocialInsuranceAgencyFee;
+      const totalOnlineBankingCustodyFee = Number(
+        expenseResults[0].totalOnlineBankingCustodyFee || 0,
+      );
+      const agencyTotalFee = totalAgencyFee + totalSocialInsuranceAgencyFee + totalOnlineBankingCustodyFee;
 
       // 计算软件费用总和（提成比例10%）
-      // 记账软件费、开票软件费和地址费只有在 businessType = '续费' 时才计算10%提成
+      // 记账软件费、开票软件费、地址费只有在 businessType = '续费' 时才计算10%提成
       const totalAccountingSoftwareFee = Number(
         expenseResults[0].totalAccountingSoftwareFee || 0,
       );
@@ -191,6 +196,7 @@ export class SalaryAutoUpdateService {
         员工 ${employeeName} 的费用明细：
         代理费(续费): ${totalAgencyFee}，
         社保代理费(续费): ${totalSocialInsuranceAgencyFee}，
+        网银托管费(续费): ${totalOnlineBankingCustodyFee}，
         记账软件费(续费): ${totalAccountingSoftwareFee}，
         开票软件费(续费): ${totalInvoiceSoftwareFee}，
         地址费(续费): ${totalAddressFee}
@@ -433,6 +439,7 @@ export class SalaryAutoUpdateService {
           : 0;
         
         const addressFee = Number(expense.addressFee || 0);
+        const onlineBankingCustodyFee = Number(expense.onlineBankingCustodyFee || 0);
         const basicFee =
           Number(expense.licenseFee || 0) +
           Number(expense.agencyFee || 0) +
@@ -443,7 +450,8 @@ export class SalaryAutoUpdateService {
           Number(expense.administrativeLicenseFee || 0) +
           Number(expense.otherBusinessFee || 0) +
           Number(expense.customerDataOrganizationFee || 0) +
-          addressFee;
+          addressFee +
+          onlineBankingCustodyFee;
 
         // 外包业务费用总和
         const outsourceFee =
@@ -507,6 +515,7 @@ export class SalaryAutoUpdateService {
             
             const addressFee = Number(expense.addressFee || 0);
             const addressFeeCommission = addressFee * 0.1;
+            const onlineBankingCustodyFee = Number(expense.onlineBankingCustodyFee || 0);
             const basicFee =
               Number(expense.licenseFee || 0) +
               Number(expense.agencyFee || 0) +
@@ -517,7 +526,8 @@ export class SalaryAutoUpdateService {
               Number(expense.administrativeLicenseFee || 0) +
               Number(expense.otherBusinessFee || 0) +
               Number(expense.customerDataOrganizationFee || 0) +
-              addressFee;
+              addressFee +
+              onlineBankingCustodyFee;
 
             // 外包业务费用
             const outsourceFee =
@@ -553,17 +563,18 @@ export class SalaryAutoUpdateService {
                 Number(expense.changeFee || 0) +
                 Number(expense.administrativeLicenseFee || 0) +
                 Number(expense.otherBusinessFee || 0) +
-                Number(expense.customerDataOrganizationFee || 0);
+                Number(expense.customerDataOrganizationFee || 0) +
+                onlineBankingCustodyFee;
               
               const otherBasicCommission = otherBasicFee * commissionRate;
-              // 合并特殊处理的代理费提成与其他基础业务提成（地址费单独计入外包提成）
+              // 合并特殊处理的代理费提成与其他基础业务提成（地址费单独计算固定10%提成，网银托管费按提成比率计算）
               basicBusinessCommission = specialAgencyCommission + otherBasicCommission;
               
               this.logger.debug(
                 `费用记录 ID:${expense.id} 特殊处理"两年赠一年": 代理费=${agencyFee}, 特殊提成率=${commissionRate + 0.05}, 特殊代理费提成=${specialAgencyCommission}`
               );
             } else {
-              // 常规计算基础业务提成：地址费固定10%，其余费用使用统一的提成比率
+              // 常规计算基础业务提成：地址费固定10%，网银托管费按提成比率，其余费用使用统一的提成比率
               const basicFeeExcludingAddress = basicFee - addressFee;
               basicBusinessCommission = basicFeeExcludingAddress * commissionRate;
             }

@@ -108,6 +108,21 @@ export class CreateExpenseDto {
   @IsString()
   addressEndDate?: string;
 
+  @ApiProperty({ description: '网银托管费', required: false })
+  @IsOptional()
+  @IsNumber()
+  onlineBankingCustodyFee?: number;
+
+  @ApiProperty({ description: '网银托管开始日期', required: false })
+  @IsOptional()
+  @IsString()
+  onlineBankingCustodyStartDate?: string;
+
+  @ApiProperty({ description: '网银托管结束日期', required: false })
+  @IsOptional()
+  @IsString()
+  onlineBankingCustodyEndDate?: string;
+
   @ApiProperty({ description: '代理开始日期', required: false })
   @IsOptional()
   @IsString()
