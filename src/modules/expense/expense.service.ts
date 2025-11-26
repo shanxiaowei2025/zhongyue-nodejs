@@ -2322,6 +2322,7 @@ export class ExpenseService {
       'socialInsuranceEndDate',
       'housingFundEndDate',
       'statisticalEndDate',
+      'organizationEndDate',
       'addressEndDate',
       'onlineBankingCustodyEndDate',
     ];
