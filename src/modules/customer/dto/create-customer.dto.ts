@@ -90,6 +90,34 @@ export class FollowUpRecordItemDto {
   text: string;
 }
 
+// 做账所需资料数据结构
+export class AccountingRequiredFileDto {
+  @ApiPropertyOptional({ 
+    description: '文件名称', 
+    example: '营业执照.pdf' 
+  })
+  @IsString()
+  @IsOptional()
+  fileName?: string;
+
+  @ApiPropertyOptional({ 
+    description: '文件URL地址', 
+    example: 'https://minio.example.com/bucket/营业执照.pdf' 
+  })
+  @IsString()
+  @IsOptional()
+  url?: string;
+
+  @ApiPropertyOptional({ 
+    description: '上传时间（ISO 8601格式）', 
+    example: '2025-12-03T10:30:00.000Z',
+    format: 'date-time'
+  })
+  @IsString()
+  @IsOptional()
+  uploadTime?: string;
+}
+
 export class CreateCustomerDto {
   @ApiProperty({
     description: '企业名称（必须唯一，系统会检查是否已存在）',
@@ -536,4 +564,18 @@ export class CreateCustomerDto {
   @Type(() => FollowUpRecordItemDto)
   @IsOptional()
   followUpRecords?: FollowUpRecordItemDto[];
+
+  @ApiPropertyOptional({
+    description: '做账所需资料，数组对象格式：[{"fileName": "文件名", "url": "文件URL", "uploadTime": "上传时间"}]',
+    type: [AccountingRequiredFileDto],
+    example: [
+      { fileName: '营业执照.pdf', url: 'https://minio.example.com/bucket/营业执照.pdf', uploadTime: '2025-12-03T10:30:00.000Z' },
+      { fileName: '税务登记证.jpg', url: 'https://minio.example.com/bucket/税务登记证.jpg', uploadTime: '2025-12-03T10:35:00.000Z' }
+    ]
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AccountingRequiredFileDto)
+  @IsOptional()
+  accountingRequiredFiles?: AccountingRequiredFileDto[];
 }

@@ -382,4 +382,15 @@ export class Customer {
     datetime: string;
     text: string;
   }>;
+
+  @Column({
+    nullable: true,
+    type: 'json',
+    comment: '做账所需资料，数组对象格式：[{"fileName": "文件名", "url": "文件URL", "uploadTime": "上传时间"}]',
+  })
+  accountingRequiredFiles: Array<{
+    fileName?: string;
+    url?: string;
+    uploadTime?: string;
+  }>;
 }

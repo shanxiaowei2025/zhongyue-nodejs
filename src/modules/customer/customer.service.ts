@@ -817,6 +817,61 @@ export class CustomerService {
       );
     }
 
+    // 处理做账所需资料的逻辑
+    if (updateCustomerDto.accountingRequiredFiles !== undefined) {
+      // 获取现有的做账所需资料
+      const existingAccountingFiles = existingCustomer.accountingRequiredFiles || [];
+      
+      // 处理新的做账资料：为没有uploadTime的文件自动填充当前时间
+      const processedAccountingFiles = updateCustomerDto.accountingRequiredFiles.map(file => {
+        if (file.fileName && !file.uploadTime) {
+          return {
+            ...file,
+            uploadTime: new Date().toISOString()
+          };
+        }
+        return file;
+      });
+      
+      // 找出真正的新文件（不在现有文件中的文件）
+      const newFiles = processedAccountingFiles.filter(newFile => {
+        return !existingAccountingFiles.some(existingFile =>
+          existingFile.url === newFile.url && existingFile.fileName === newFile.fileName
+        );
+      });
+      
+      // 如果有新文件，才进行追加
+      if (newFiles.length > 0) {
+        finalUpdateDto.accountingRequiredFiles = [
+          ...existingAccountingFiles,
+          ...newFiles
+        ];
+        
+        this.logger.log(
+          `为客户 ${existingCustomer.companyName} 追加 ${newFiles.length} 个新的做账所需资料文件`
+        );
+      } else if (processedAccountingFiles.length === 0 && existingAccountingFiles.length > 0) {
+        // 如果前端发送的是空数组，且现有文件不为空，说明用户删除了所有文件
+        finalUpdateDto.accountingRequiredFiles = [];
+        this.logger.log(
+          `客户 ${existingCustomer.companyName} 的所有做账所需资料文件已被删除`
+        );
+      } else if (processedAccountingFiles.length > 0 && newFiles.length === 0) {
+        // 如果没有新文件但有处理后的文件，说明用户删除了部分文件
+        // 这种情况下，前端发送的是删除后的完整列表，我们应该直接使用
+        finalUpdateDto.accountingRequiredFiles = processedAccountingFiles;
+        this.logger.log(
+          `客户 ${existingCustomer.companyName} 的做账所需资料已更新`
+        );
+      } else {
+        // 保持现有文件不变
+        finalUpdateDto.accountingRequiredFiles = existingAccountingFiles;
+        this.logger.log(
+          `客户 ${existingCustomer.companyName} 的做账所需资料没有变化`
+        );
+      }
+    }
+
     // 移除 undefined 值，但保留 null 和空字符串，以确保字段能够被正确更新
     const cleanedUpdateDto = Object.keys(finalUpdateDto).reduce((acc, key) => {
       if (finalUpdateDto[key] !== undefined) {
