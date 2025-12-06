@@ -87,7 +87,7 @@ import { BusinessOption } from './modules/business-options/entities/business-opt
       validationSchema: Joi.object({
         // 验证配置的规则
         // 应用配置
-        APP_PORT: Joi.number().default(3000), // 端口号，默认3000
+        APP_PORT: Joi.number().default(3001), // 端口号，默认3001
         APP_ENV: Joi.string()
           .valid('development', 'production', 'test') // 环境只能是这三种
           .default('development'), // 默认是开发环境

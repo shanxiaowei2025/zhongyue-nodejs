@@ -4,11 +4,11 @@ import { registerAs } from '@nestjs/config';
 // 导出一个名为 'app' 的配置对象
 export default registerAs('app', () => ({
   // 设置应用端口
-  port: parseInt(process.env.APP_PORT, 10) || 3000,
+  port: parseInt(process.env.APP_PORT, 10) || 3001,
   // 含义：
   // 1. 尝试读取环境变量 APP_PORT
   // 2. parseInt 将字符串转为数字，10表示十进制
-  // 3. || 3000 表示如果没有设置，就使用默认值3000
+  // 3. || 3001 表示如果没有设置，就使用默认值3001
 
   // 设置运行环境
   env: process.env.APP_ENV || 'development',
