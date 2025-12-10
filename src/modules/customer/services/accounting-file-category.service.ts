@@ -7,7 +7,6 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
 import { AccountingFileCategory } from '../entities/accounting-file-category.entity';
-import { Customer } from '../entities/customer.entity';
 import {
   CreateAccountingFileCategoryDto,
   UpdateAccountingFileCategoryDto,
@@ -20,8 +19,6 @@ export class AccountingFileCategoryService {
   constructor(
     @InjectRepository(AccountingFileCategory)
     private readonly categoryRepository: Repository<AccountingFileCategory>,
-    @InjectRepository(Customer)
-    private readonly customerRepository: Repository<Customer>,
   ) {}
 
   /**
@@ -169,9 +166,7 @@ export class AccountingFileCategoryService {
 
     // 为每个顶级分类构建树结构
     const tree = await Promise.all(
-      topLevelCategories.map((category) =>
-        this.buildCategoryTree(category),
-      ),
+      topLevelCategories.map((category) => this.buildCategoryTree(category)),
     );
 
     this.logger.log(`构建完成的分类树数量: ${tree.length}`);
@@ -222,7 +217,7 @@ export class AccountingFileCategoryService {
   /**
    * 获取分类下的所有文件ID
    */
-  async getCategoryFileIds(_categoryId: number): Promise<string[]> {
+  async getCategoryFileIds(): Promise<string[]> {
     // 这个方法需要在Customer Service中实现，因为文件存储在customer表的accountingRequiredFiles字段中
     // 这里只是定义接口
     return [];

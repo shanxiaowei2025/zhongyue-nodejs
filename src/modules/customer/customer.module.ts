@@ -23,7 +23,6 @@ import { AccountingFileCategoryController } from './controllers/accounting-file-
 import { MulterModule } from '@nestjs/platform-express';
 import { join } from 'path';
 import * as fs from 'fs';
-import { diskStorage } from 'multer';
 import { memoryStorage } from 'multer';
 import { PermissionsModule } from '../permissions/permissions.module';
 import { StorageModule } from '../storage/storage.module';
