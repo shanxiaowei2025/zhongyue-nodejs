@@ -10,6 +10,7 @@ import { CustomerService } from './customer.service';
 import { CustomerController } from './customer.controller';
 import { Customer } from './entities/customer.entity';
 import { Clan } from './entities/clan.entity';
+import { AccountingFileCategory } from './entities/accounting-file-category.entity';
 import { User } from '../users/entities/user.entity';
 import { Role } from '../roles/entities/role.entity';
 import { Permission } from '../permissions/entities/permission.entity';
@@ -17,6 +18,8 @@ import { Department } from '../department/entities/department.entity';
 import { CustomerPermissionService } from './services/customer-permission.service';
 import { ClanService } from './services/clan.service';
 import { ClanController } from './clan.controller';
+import { AccountingFileCategoryService } from './services/accounting-file-category.service';
+import { AccountingFileCategoryController } from './controllers/accounting-file-category.controller';
 import { MulterModule } from '@nestjs/platform-express';
 import { join } from 'path';
 import * as fs from 'fs';
@@ -30,7 +33,15 @@ import { CustomerStatusHistoryModule } from '../reports/customer-status-history/
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Customer, Clan, User, Role, Permission, Department]),
+    TypeOrmModule.forFeature([
+      Customer,
+      Clan,
+      AccountingFileCategory,
+      User,
+      Role,
+      Permission,
+      Department,
+    ]),
     MulterModule.register({
       storage: memoryStorage(), // 使用内存存储而不是磁盘存储，确保file.buffer可用
     }),
@@ -40,9 +51,18 @@ import { CustomerStatusHistoryModule } from '../reports/customer-status-history/
     CustomerLevelHistoryModule,
     CustomerStatusHistoryModule,
   ],
-  controllers: [CustomerController, ClanController],
-  providers: [CustomerService, ClanService, CustomerPermissionService],
-  exports: [CustomerService, ClanService],
+  controllers: [
+    CustomerController,
+    ClanController,
+    AccountingFileCategoryController,
+  ],
+  providers: [
+    CustomerService,
+    ClanService,
+    CustomerPermissionService,
+    AccountingFileCategoryService,
+  ],
+  exports: [CustomerService, ClanService, AccountingFileCategoryService],
 })
 export class CustomerModule {
   constructor() {

@@ -386,11 +386,13 @@ export class Customer {
   @Column({
     nullable: true,
     type: 'json',
-    comment: '做账所需资料，数组对象格式：[{"fileName": "文件名", "url": "文件URL", "uploadTime": "上传时间"}]',
+    comment: '做账所需资料，数组对象格式：[{"fileName": "文件名", "url": "文件URL", "uploadTime": "上传时间", "categoryId": "分类ID", "categoryPath": "分类路径"}]',
   })
   accountingRequiredFiles: Array<{
     fileName?: string;
     url?: string;
     uploadTime?: string;
+    categoryId?: number;
+    categoryPath?: string;
   }>;
 }

@@ -116,6 +116,22 @@ export class AccountingRequiredFileDto {
   @IsString()
   @IsOptional()
   uploadTime?: string;
+
+  @ApiPropertyOptional({ 
+    description: '分类ID', 
+    example: 1 
+  })
+  @IsNumber()
+  @IsOptional()
+  categoryId?: number;
+
+  @ApiPropertyOptional({ 
+    description: '分类路径', 
+    example: '财务报表/2024年' 
+  })
+  @IsString()
+  @IsOptional()
+  categoryPath?: string;
 }
 
 export class CreateCustomerDto {

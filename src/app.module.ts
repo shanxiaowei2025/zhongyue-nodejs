@@ -77,6 +77,7 @@ import { VoucherRecordYear } from './modules/voucher-record/entities/voucher-rec
 import { VoucherRecordMonth } from './modules/voucher-record/entities/voucher-record-month.entity'; // 新增凭证记录月度实体
 import { Group } from './modules/groups/entities/group.entity'; // 新增群组实体
 import { BusinessOption } from './modules/business-options/entities/business-option.entity'; // 新增业务选项实体
+import { AccountingFileCategory } from './modules/customer/entities/accounting-file-category.entity'; // 新增做账所需资料分类实体
 
 @Module({
   imports: [
@@ -162,6 +163,7 @@ import { BusinessOption } from './modules/business-options/entities/business-opt
           VoucherRecordMonth, // 新增凭证记录月度实体
           Group, // 新增群组实体
           BusinessOption, // 新增业务选项实体
+          AccountingFileCategory, // 新增做账所需资料分类实体
         ],
         synchronize: configService.get('DB_SYNCHRONIZE', 'false') === 'true',
         logging: configService.get('DB_LOGGING', 'false') === 'true',
