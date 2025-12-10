@@ -346,13 +346,24 @@ def import_excel_data(file_path):
             if not db_data.empty:
                 db_data = db_data.replace({np.nan: None})
             
-            # 查询数据库中已存在的统一社会信用代码
+            # 查询数据库中已存在的统一社会信用代码和企业名称
             existing_codes = []
-            with engine.connect() as conn:
-                result = conn.execute(text("SELECT unifiedSocialCreditCode FROM sys_customer WHERE unifiedSocialCreditCode IS NOT NULL"))
-                existing_codes = [row[0] for row in result if row[0]]
+            existing_company_names = []
+            try:
+                with engine.connect() as conn:
+                    # 查询统一社会信用代码
+                    result = conn.execute(text("SELECT unifiedSocialCreditCode FROM sys_customer WHERE unifiedSocialCreditCode IS NOT NULL AND unifiedSocialCreditCode != ''"))
+                    existing_codes = [row[0] for row in result if row[0]]
+                    
+                    # 查询企业名称
+                    result = conn.execute(text("SELECT companyName FROM sys_customer WHERE companyName IS NOT NULL AND companyName != ''"))
+                    existing_company_names = [row[0] for row in result if row[0]]
+            except Exception as e:
+                debug_print(f"查询数据库失败: {str(e)}")
+                print(f"查询数据库失败: {str(e)}")
             
             debug_print(f"数据库中已存在 {len(existing_codes)} 个统一社会信用代码记录")
+            debug_print(f"数据库中已存在 {len(existing_company_names)} 个企业名称记录")
             
             # 筛选出重复的记录和非重复的记录
             duplicate_records = []
@@ -361,14 +372,30 @@ def import_excel_data(file_path):
             if not db_data.empty:
                 for index, row in db_data.iterrows():
                     code = row.get('unifiedSocialCreditCode')
-                    # 只检查非空的统一社会信用代码
-                    if code and code in existing_codes:
+                    company_name = row.get('companyName', '')
+                    is_duplicate = False
+                    duplicate_reason = ''
+                    
+                    # 检查统一社会信用代码是否重复
+                    if code and not pd.isna(code) and code in existing_codes:
+                        is_duplicate = True
+                        duplicate_reason = '统一社会信用代码重复'
+                    
+                    # 检查企业名称是否重复
+                    if company_name and not pd.isna(company_name) and company_name in existing_company_names:
+                        is_duplicate = True
+                        if duplicate_reason:
+                            duplicate_reason += '，企业名称重复'
+                        else:
+                            duplicate_reason = '企业名称重复'
+                    
+                    if is_duplicate:
                         duplicate_records.append({
                             'index': index,
                             'row': index + 2,  # Excel行号从1开始，且有标题行
-                            'companyName': row.get('companyName', '未知企业'),
-                            'unifiedSocialCreditCode': code,
-                            'reason': '统一社会信用代码重复'
+                            'companyName': company_name if not pd.isna(company_name) else '',
+                            'unifiedSocialCreditCode': code if code and not pd.isna(code) else '',
+                            'reason': duplicate_reason
                         })
                     else:
                         non_duplicate_records.append(row)
@@ -495,7 +522,7 @@ def import_excel_data(file_path):
             }
             
             # 输出JSON格式结果，便于Node.js解析
-            print(f"IMPORT_RESULT_JSON: {json.dumps(result)}")
+            print(f"IMPORT_RESULT_JSON: {json.dumps(result, ensure_ascii=False)}")
             
             return result
 
@@ -505,14 +532,15 @@ def import_excel_data(file_path):
             print(f"错误类型: {type(e).__name__}")
             traceback.print_exc()
             
-            # 返回详细错误信息
-            error_info = {
-                "success": False,
-                "error_type": "processing_error",
-                "error_message": error_msg,
-                "failed_records": []
+            # 返回详细错误信息 - 也使用 IMPORT_RESULT_JSON 格式
+            error_result = {
+                'success': False,
+                'imported_count': 0,
+                'failed_count': 0,
+                'failed_records': [],
+                'error_message': error_msg
             }
-            print(f"ERROR_INFO_JSON: {json.dumps(error_info)}")
+            print(f"IMPORT_RESULT_JSON: {json.dumps(error_result, ensure_ascii=False)}")
             return False
     
     except Exception as outer_error:
@@ -604,9 +632,9 @@ def main():
                     print(f"有 {result.get('failed_count')} 条记录导入失败")
                 sys.exit(0)
             else:
-                # 检查是否所有记录都是因为重复导致的失败
+                # 检查是否所有记录都是因为重复导致的失败（包括企业名称重复和统一社会信用代码重复）
                 failed_records = result.get('failed_records', [])
-                all_duplicates = all(record.get('reason') == '统一社会信用代码重复' 
+                all_duplicates = all(record.get('reason') and '重复' in record.get('reason', '') 
                                     for record in failed_records) if failed_records else False
                 
                 if all_duplicates and failed_records:

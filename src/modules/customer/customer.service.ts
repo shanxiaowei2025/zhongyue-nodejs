@@ -1631,7 +1631,7 @@ export class CustomerService {
       let importResult: any = null;
       try {
         // 查找并解析导入结果JSON
-        const importResultMatch = stdout.match(/IMPORT_RESULT_JSON: (\{.*\})/);
+        const importResultMatch = stdout.match(/IMPORT_RESULT_JSON: (\{[\s\S]*?\})\s*$/m);
         if (importResultMatch && importResultMatch[1]) {
           importResult = JSON.parse(importResultMatch[1]);
           this.logger.log(`成功解析导入结果: ${JSON.stringify(importResult)}`);
@@ -1655,13 +1655,11 @@ export class CustomerService {
           `导入结果: 成功=${success}, 导入=${imported_count}, 失败=${failed_count}`,
         );
 
-        // 检查是否所有失败记录都是因为重复
+        // 检查是否所有失败记录都是因为重复（包括企业名称重复和统一社会信用代码重复）
         const allDuplicates =
           failed_records &&
           failed_records.length > 0 &&
-          failed_records.every(
-            (record) => record.reason === '统一社会信用代码重复',
-          );
+          failed_records.every((record) => record.reason.includes('重复'));
 
         // 构造返回消息
         let message = '';
@@ -1673,9 +1671,9 @@ export class CustomerService {
             message += `，${failed_count}条记录导入失败`;
           }
         } else if (allDuplicates) {
-          // 如果所有失败都是因为重复，视为成功但无新增记录
-          message = `所有记录(${failed_count}条)均为重复数据，无需导入`;
-          resultSuccess = true; // 虽然Python返回false，但我们视为业务上的"成功"
+          // 如果所有失败都是因为重复，返回失败状态并返回重复的记录
+          message = `导入失败，${failed_count}条记录因为企业名称或统一社会信用代码重复而无法导入`;
+          resultSuccess = false; // 返回失败状态，让前端弹窗提示
         } else {
           message = error_message || '导入失败，未能导入任何记录';
           if (failed_count > 0) {
