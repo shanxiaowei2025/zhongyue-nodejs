@@ -819,11 +819,12 @@ export class SalaryAutoUpdateService {
    */
   async checkAndUpdateAccountantPerformance(
     lastMonth: moment.Moment,
-  ): Promise<void> {
+  ): Promise<Record<string, number[]>> {
     try {
       this.logger.warn(
         '██████████ 开始检查记账会计账务自查记录并更新绩效扣除... ██████████',
       );
+      const performanceDeductionMap: Record<string, number[]> = {};
 
       // 获取上个月的第一天和最后一天
       const firstDayOfLastMonth = lastMonth
@@ -847,7 +848,7 @@ export class SalaryAutoUpdateService {
 
       if (!accountants || accountants.length === 0) {
         this.logger.warn('⚠️⚠️⚠️ 未找到任何记账会计，跳过绩效扣除调整 ⚠️⚠️⚠️');
-        return;
+        return {};
       }
 
       this.logger.warn(`找到${accountants.length}名记账会计`);
@@ -1019,15 +1020,8 @@ export class SalaryAutoUpdateService {
           },
         });
 
-        if (!salaryRecord) {
-          this.logger.warn(`未找到记账会计${name}的薪资记录，跳过绩效扣除调整`);
-          continue;
-        }
-
         // 获取或初始化performanceDeductions数组
-        const performanceDeductions = Array.isArray(
-          salaryRecord.performanceDeductions,
-        )
+        const performanceDeductions = salaryRecord?.performanceDeductions
           ? [...salaryRecord.performanceDeductions]
           : Array(15).fill(0);
 
@@ -1114,7 +1108,10 @@ export class SalaryAutoUpdateService {
         }
 
         // 如果需要更新绩效扣除，则更新数据库
-        if (shouldUpdate) {
+        // 记录当前计算结果，便于后续生成薪资时使用（即使当前没有薪资记录）
+        performanceDeductionMap[name] = performanceDeductions;
+
+        if (shouldUpdate && salaryRecord) {
           // 记录更新前的状态
           this.logger.warn(
             `${name} 更新前: performanceDeductions = [${salaryRecord.performanceDeductions ? salaryRecord.performanceDeductions.join(', ') : ''}], performanceCommission = ${salaryRecord.performanceCommission}`,
@@ -1140,17 +1137,23 @@ export class SalaryAutoUpdateService {
           this.logger.warn(
             `索引位置13的值: ${performanceDeductions[13]} (${performanceDeductions[13] > 0 ? '已扣除' : '无扣除'})`,
           );
+        } else if (!salaryRecord) {
+          this.logger.warn(
+            `未找到记账会计${name}的薪资记录，暂存绩效扣除，后续生成薪资时应用`,
+          );
         } else {
           this.logger.warn(`${name} 无需更新绩效扣除`);
         }
       }
 
       this.logger.warn('记账会计绩效扣除检查更新完成');
+      return performanceDeductionMap;
     } catch (error) {
       this.logger.error(
         `检查记账会计绩效扣除时出错: ${error.message}`,
         error.stack,
       );
+      return {};
     }
   }
 
@@ -1220,7 +1223,8 @@ export class SalaryAutoUpdateService {
     );
 
     // 先检查和更新记账会计绩效扣除
-    await this.checkAndUpdateAccountantPerformance(lastMonth);
+    const accountantPerformanceMap =
+      await this.checkAndUpdateAccountantPerformance(lastMonth);
 
     // 第一步：清空指定日期范围内费用记录的提成字段
     this.logger.log(
@@ -1402,6 +1406,9 @@ export class SalaryAutoUpdateService {
           );
         }
 
+        const performanceDeductionsFromCheck =
+          accountantPerformanceMap?.[employee.name];
+
         // 准备薪资数据
         const salaryData: any = {
           name: employee.name,
@@ -1425,7 +1432,10 @@ export class SalaryAutoUpdateService {
           seniority: (employee.workYears || 0) * 100,
           agencyFeeCommission: agencyFeeCommission,
           performanceCommission: performanceCommission,
-          performanceDeductions: existingSalary?.performanceDeductions || [],
+          performanceDeductions:
+            performanceDeductionsFromCheck ??
+            existingSalary?.performanceDeductions ??
+            [],
           businessCommission: businessCommissionResult.businessCommission,
           otherDeductions: friendCirclePayment?.payment || existingSalary?.otherDeductions || 0,
           personalMedical: socialInsurance?.personalMedical || existingSalary?.personalMedical || 0,

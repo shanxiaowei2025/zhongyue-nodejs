@@ -175,6 +175,10 @@ export class CustomerService {
       user.roles &&
       (user.roles.includes('admin') || user.roles.includes('super_admin'));
 
+    // 允许拥有查看全部权限的用户（如档案管理员）查看所有客户状态
+    const hasViewAllPermission =
+      await this.customerPermissionService.hasCustomerViewAllPermission(userId);
+
     // 检查用户是否有查看全部客户的权限
     const hasViewAllPermission = await this.customerPermissionService.hasCustomerViewAllPermission(userId);
 
@@ -665,6 +669,7 @@ export class CustomerService {
     // 如果不是管理员，检查是否可以查看该状态的客户
     if (
       !isAdmin &&
+      !hasViewAllPermission &&
       (customer.businessStatus === 'lost' ||
         customer.enterpriseStatus === 'cancelled')
     ) {
