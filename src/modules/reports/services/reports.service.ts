@@ -7,7 +7,6 @@ import { User } from '../../users/entities/user.entity';
 import { CustomerLevelHistory } from '../customer-level-history/entities/customer-level-history.entity';
 import { CustomerStatusHistory } from '../customer-status-history/entities/customer-status-history.entity';
 import { ReportsPermissionService } from './reports-permission.service';
-import { ReportsCacheService } from './reports-cache.service';
 import { CustomerLevelHistoryService } from '../customer-level-history/customer-level-history.service';
 import { CustomerStatusHistoryService } from '../customer-status-history/customer-status-history.service';
 import {
@@ -46,7 +45,6 @@ export class ReportsService {
     @InjectRepository(CustomerStatusHistory)
     private customerStatusHistoryRepository: Repository<CustomerStatusHistory>,
     private permissionService: ReportsPermissionService,
-    private cacheService: ReportsCacheService,
     private levelHistoryService: CustomerLevelHistoryService,
     private statusHistoryService: CustomerStatusHistoryService,
   ) {}
@@ -167,29 +165,9 @@ export class ReportsService {
         throw new Error('您没有权限查看代理费收费变化分析报表');
       }
 
-      // 获取用户权限信息，用于生成更精确的缓存键
+      // 获取用户权限信息
       const userPermissions = await this.permissionService.getUserPermissions(userId);
       const isAdmin = await this.permissionService.isAdmin(userId);
-      
-      // 生成包含权限信息的缓存键，确保不同权限的用户有不同的缓存
-      const cacheKey = this.cacheService.generateCacheKey({
-        ...query,
-        userId: userId, // 始终使用具体的用户ID
-        permissions: userPermissions.sort(), // 添加权限信息到缓存键
-        isAdmin: isAdmin, // 添加管理员标识
-        userRoles: (await this.permissionService.getUserInfo(userId))?.roles?.sort() || [] // 添加角色信息
-      });
-
-      // 尝试从缓存获取
-      const cachedData = await this.cacheService.getCache(
-        'agency_fee_analysis',
-        cacheKey,
-        userId
-      );
-      if (cachedData) {
-        this.logger.log(`用户 ${userId} 命中缓存，返回缓存数据`);
-        return cachedData;
-      }
 
       const currentYear = query.year;
       const previousYear = currentYear - 1;
@@ -317,19 +295,7 @@ export class ReportsService {
         summary,
       };
 
-      // 缓存结果（30分钟）
-      try {
-        await this.cacheService.setCache(
-          'agency_fee_analysis',
-          cacheKey,
-          result,
-          1800,
-          userId
-        );
-        this.logger.log(`用户 ${userId} 生成新数据并缓存成功`);
-      } catch (cacheError) {
-        this.logger.warn(`用户 ${userId} 缓存设置失败，但不影响数据返回: ${cacheError.message}`);
-      }
+      // 不使用缓存，直接返回最新数据
       return result;
     } catch (error) {
       this.logger.error(`代理费收费变化分析失败: ${error.message}`, error.stack);
@@ -356,29 +322,9 @@ export class ReportsService {
         throw new Error('您没有权限查看新增客户统计报表');
       }
 
-      // 获取用户权限信息，用于生成更精确的缓存键
+      // 获取用户权限信息
       const userPermissions = await this.permissionService.getUserPermissions(userId);
       const isAdmin = await this.permissionService.isAdmin(userId);
-      
-      // 生成包含权限信息的缓存键，确保不同权限的用户有不同的缓存
-      const cacheKey = this.cacheService.generateCacheKey({
-        ...query,
-        userId: userId, // 始终使用具体的用户ID
-        permissions: userPermissions.sort(), // 添加权限信息到缓存键
-        isAdmin: isAdmin, // 添加管理员标识
-        userRoles: (await this.permissionService.getUserInfo(userId))?.roles?.sort() || [] // 添加角色信息
-      });
-
-      // 尝试从缓存获取
-      const cachedData = await this.cacheService.getCache(
-        'new_customer_stats',
-        cacheKey,
-        userId
-      );
-      if (cachedData) {
-        this.logger.log(`用户 ${userId} 命中缓存，返回缓存数据`);
-        return cachedData;
-      }
 
       // 构建查询条件
       let startDate: Date;
@@ -465,20 +411,7 @@ export class ReportsService {
         },
       };
 
-      // 缓存结果（1小时）
-      try {
-        await this.cacheService.setCache(
-          'new_customer_stats',
-          cacheKey,
-          result,
-          3600,
-          userId
-        );
-        this.logger.log(`新增客户统计缓存设置成功`);
-      } catch (cacheError) {
-        this.logger.warn(`新增客户统计缓存设置失败，但不影响数据返回: ${cacheError.message}`);
-      }
-
+      // 不使用缓存，直接返回最新数据
       return result;
     } catch (error) {
       this.logger.error(`新增客户统计失败: ${error.message}`, error.stack);
@@ -505,29 +438,9 @@ export class ReportsService {
         throw new Error('您没有权限查看员工业绩统计报表');
       }
 
-      // 获取用户权限信息，用于生成更精确的缓存键
+      // 获取用户权限信息
       const userPermissions = await this.permissionService.getUserPermissions(userId);
       const isAdmin = await this.permissionService.isAdmin(userId);
-      
-      // 生成包含权限信息的缓存键，确保不同权限的用户有不同的缓存
-      const cacheKey = this.cacheService.generateCacheKey({
-        ...query,
-        userId: userId, // 始终使用具体的用户ID
-        permissions: userPermissions.sort(), // 添加权限信息到缓存键
-        isAdmin: isAdmin, // 添加管理员标识
-        userRoles: (await this.permissionService.getUserInfo(userId))?.roles?.sort() || [] // 添加角色信息
-      });
-
-      // 尝试从缓存获取
-      const cachedData = await this.cacheService.getCache(
-        'employee_performance',
-        cacheKey,
-        userId
-      );
-      if (cachedData) {
-        this.logger.log(`用户 ${userId} 命中缓存，返回缓存数据`);
-        return cachedData;
-      }
 
       // 确定查询月份
       let targetDate: Date;
@@ -687,20 +600,7 @@ export class ReportsService {
         },
       };
 
-      // 缓存结果（30分钟）
-      try {
-        await this.cacheService.setCache(
-          'employee_performance',
-          cacheKey,
-          result,
-          1800,
-          userId
-        );
-        this.logger.log(`员工业绩统计缓存设置成功`);
-      } catch (cacheError) {
-        this.logger.warn(`员工业绩统计缓存设置失败，但不影响数据返回: ${cacheError.message}`);
-      }
-
+      // 不使用缓存，直接返回最新数据
       return result;
     } catch (error) {
       this.logger.error(`员工业绩统计失败: ${error.message}`, error.stack);
@@ -744,25 +644,7 @@ export class ReportsService {
         sortOrder: query.sortOrder || 'DESC',
       };
       
-      // 生成包含权限信息的缓存键，确保不同权限的用户有不同的缓存
-      const cacheKey = this.cacheService.generateCacheKey({
-        ...normalizedQuery,
-        userId: userId, // 始终使用具体的用户ID
-        permissions: userPermissions.sort(), // 添加权限信息到缓存键
-        isAdmin: isAdmin, // 添加管理员标识
-        userRoles: (await this.permissionService.getUserInfo(userId))?.roles?.sort() || [] // 添加角色信息
-      });
-
-      // 尝试从缓存获取
-      const cachedData = await this.cacheService.getCache(
-        'customer_level_distribution',
-        cacheKey,
-        userId
-      );
-      if (cachedData) {
-        this.logger.log(`用户 ${userId} 命中缓存，返回缓存数据`);
-        return cachedData;
-      }
+      // 获取用户权限信息已完成上面，这里直接继续执行查询逻辑
 
       // 确定查询的截止日期
       const targetDate = this.getTargetDateForHistory(query.year, query.month);
@@ -838,20 +720,7 @@ export class ReportsService {
         },
       };
 
-      // 缓存结果（2小时）
-      try {
-        await this.cacheService.setCache(
-          'customer_level_distribution',
-          cacheKey,
-          result,
-          7200,
-          userId
-        );
-        this.logger.log(`客户等级分布统计缓存设置成功`);
-      } catch (cacheError) {
-        this.logger.warn(`客户等级分布统计缓存设置失败，但不影响数据返回: ${cacheError.message}`);
-      }
-
+      // 不使用缓存，直接返回最新数据
       return result;
     } catch (error) {
       this.logger.error(`客户等级分布统计失败: ${error.message}`, error.stack);
@@ -882,24 +751,7 @@ export class ReportsService {
       const userPermissions = await this.permissionService.getUserPermissions(userId);
       const isAdmin = await this.permissionService.isAdmin(userId);
       
-      // 生成包含权限信息和查询参数的缓存键，确保不同权限的用户和不同查询参数有不同的缓存
-      const cacheKey = this.cacheService.generateCacheKey({
-        ...query, // 包含所有查询参数，包括 sortField 和 sortOrder
-        userId: userId, // 始终使用具体的用户ID
-        permissions: userPermissions.sort(), // 添加权限信息到缓存键
-        isAdmin: isAdmin, // 添加管理员标识
-        userRoles: (await this.permissionService.getUserInfo(userId))?.roles?.sort() || [] // 添加角色信息
-      });
-
-      // 尝试从缓存获取
-      const cachedData = await this.cacheService.getCache(
-        'customer_churn_stats',
-        cacheKey,
-        userId
-      );
-      if (cachedData) {
-        return cachedData;
-      }
+      // 直接计算并返回最新数据（不使用缓存）
 
       // 确定查询的截止日期（与客户等级分布统计相同的逻辑）
       const targetDate = this.getTargetDateForHistory(query.year, query.month);
@@ -1055,21 +907,62 @@ export class ReportsService {
           ).length,
         },
       };
-
-      // 缓存结果（2小时，与客户等级分布统计保持一致）
+      // 计算按会计类型的流失分布（顾问会计 / 记账会计 / 开票员）
       try {
-        await this.cacheService.setCache(
-          'customer_churn_stats',
-          cacheKey,
-          result,
-          7200,
-          userId
-        );
-        this.logger.log(`客户流失统计缓存设置成功`);
-      } catch (cacheError) {
-        this.logger.warn(`客户流失统计缓存设置失败，但不影响数据返回: ${cacheError.message}`);
+        const churnedIds = Array.from(uniqueChurnedCustomers);
+        if (churnedIds.length > 0) {
+          const churnedCustomers = await this.customerRepository
+            .createQueryBuilder('customer')
+            .select([
+              'customer.id',
+              'customer.consultantAccountant',
+              'customer.bookkeepingAccountant',
+              'customer.invoiceOfficer'
+            ])
+            .where('customer.id IN (:...ids)', { ids: churnedIds })
+            .getMany();
+
+          const consMap = new Map<string, number>();
+          const bookMap = new Map<string, number>();
+          const invMap = new Map<string, number>();
+
+          churnedCustomers.forEach(c => {
+            const ca = c.consultantAccountant && c.consultantAccountant.trim() ? c.consultantAccountant.trim() : null;
+            const ba = c.bookkeepingAccountant && c.bookkeepingAccountant.trim() ? c.bookkeepingAccountant.trim() : null;
+            const io = c.invoiceOfficer && c.invoiceOfficer.trim() ? c.invoiceOfficer.trim() : null;
+
+            if (ca) consMap.set(ca, (consMap.get(ca) || 0) + 1);
+            if (ba) bookMap.set(ba, (bookMap.get(ba) || 0) + 1);
+            if (io) invMap.set(io, (invMap.get(io) || 0) + 1);
+          });
+
+          const toArray = (m: Map<string, number>) =>
+            Array.from(m.entries())
+              .map(([name, count]) => ({ accountantName: name, churnedClientCount: count }))
+              .sort((a, b) => b.churnedClientCount - a.churnedClientCount);
+
+          result.churnDistributionByType = {
+            consultantAccountant: toArray(consMap),
+            bookkeepingAccountant: toArray(bookMap),
+            invoiceOfficer: toArray(invMap),
+          };
+        } else {
+          result.churnDistributionByType = {
+            consultantAccountant: [],
+            bookkeepingAccountant: [],
+            invoiceOfficer: [],
+          };
+        }
+      } catch (err) {
+        this.logger.warn(`计算按会计类型的流失分布失败: ${err.message}`);
+        result.churnDistributionByType = {
+          consultantAccountant: [],
+          bookkeepingAccountant: [],
+          invoiceOfficer: [],
+        };
       }
 
+      // 不使用缓存，直接返回最新数据
       return result;
     } catch (error) {
       this.logger.error(`客户流失统计失败: ${error.message}`, error.stack);
@@ -1136,24 +1029,7 @@ export class ReportsService {
       const userPermissions = await this.permissionService.getUserPermissions(userId);
       const isAdmin = await this.permissionService.isAdmin(userId);
       
-      // 生成包含权限信息和查询参数的缓存键，确保不同权限的用户和不同查询参数有不同的缓存
-      const cacheKey = this.cacheService.generateCacheKey({
-        ...query, // 包含所有查询参数，包括 sortField 和 sortOrder
-        userId: userId, // 始终使用具体的用户ID
-        permissions: userPermissions.sort(), // 添加权限信息到缓存键
-        isAdmin: isAdmin, // 添加管理员标识
-        userRoles: (await this.permissionService.getUserInfo(userId))?.roles?.sort() || [] // 添加角色信息
-      });
-
-      // 尝试从缓存获取
-      const cachedData = await this.cacheService.getCache(
-        'service_expiry_stats',
-        cacheKey,
-        userId
-      );
-      if (cachedData) {
-        return cachedData;
-      }
+      // 直接计算并返回最新数据（不使用缓存）
 
       // 获取当前年月
       const currentDate = new Date();
@@ -1257,20 +1133,7 @@ export class ReportsService {
         },
       };
 
-      // 缓存结果（30分钟）
-      try {
-        await this.cacheService.setCache(
-          'service_expiry_stats',
-          cacheKey,
-          result,
-          1800,
-          userId
-        );
-        this.logger.log(`代理服务到期统计缓存设置成功`);
-      } catch (cacheError) {
-        this.logger.warn(`代理服务到期统计缓存设置失败，但不影响数据返回: ${cacheError.message}`);
-      }
-
+      // 不使用缓存，直接返回最新数据
       return result;
     } catch (error) {
       this.logger.error(`代理服务到期客户统计失败: ${error.message}`, error.stack);
@@ -1301,24 +1164,7 @@ export class ReportsService {
       const userPermissions = await this.permissionService.getUserPermissions(userId);
       const isAdmin = await this.permissionService.isAdmin(userId);
       
-      // 生成包含权限信息的缓存键，确保不同权限的用户有不同的缓存
-      const cacheKey = this.cacheService.generateCacheKey({
-        ...query,
-        userId: userId, // 始终使用具体的用户ID
-        permissions: userPermissions.sort(), // 添加权限信息到缓存键
-        isAdmin: isAdmin, // 添加管理员标识
-        userRoles: (await this.permissionService.getUserInfo(userId))?.roles?.sort() || [] // 添加角色信息
-      });
-
-      // 尝试从缓存获取
-      const cachedData = await this.cacheService.getCache(
-        'accountant_client_stats',
-        cacheKey,
-        userId
-      );
-      if (cachedData) {
-        return cachedData;
-      }
+      // 直接计算并返回最新数据（不使用缓存）
 
       const customerFilter = await this.permissionService.getCustomerDataFilter(userId);
 
@@ -1334,8 +1180,14 @@ export class ReportsService {
           ])
           .where('customer.consultantAccountant IS NOT NULL')
           .andWhere('customer.consultantAccountant != ""')
-          .andWhere('customer.enterpriseStatus != :status', { status: '已注销' })
-          .andWhere('customer.businessStatus != :businessStatus', { businessStatus: '已流失' })
+        // 排除流失/已注销客户（同时兼容英文/中文标识）
+        // 保证 NULL / 空字符串 被视为“非流失”，因此使用显式的 NOT IN 或 IS NULL/empty 判断
+        .andWhere('(customer.enterpriseStatus NOT IN (:...cancelledStatuses) OR customer.enterpriseStatus IS NULL OR customer.enterpriseStatus = \'\')', {
+          cancelledStatuses: ['cancelled', '已注销'],
+        })
+        .andWhere('(customer.businessStatus NOT IN (:...lostStatuses) OR customer.businessStatus IS NULL OR customer.businessStatus = \'\')', {
+          lostStatuses: ['lost', '已流失'],
+        })
           .groupBy('customer.consultantAccountant, customer.customerLevel');
 
         if (query.accountantName) {
@@ -1388,8 +1240,13 @@ export class ReportsService {
           ])
           .where('customer.bookkeepingAccountant IS NOT NULL')
           .andWhere('customer.bookkeepingAccountant != ""')
-          .andWhere('customer.enterpriseStatus != :status', { status: '已注销' })
-          .andWhere('customer.businessStatus != :businessStatus', { businessStatus: '已流失' })
+        // 保证 NULL / 空字符串 被视为“非流失”
+        .andWhere('(customer.enterpriseStatus NOT IN (:...cancelledStatuses) OR customer.enterpriseStatus IS NULL OR customer.enterpriseStatus = \'\')', {
+          cancelledStatuses: ['cancelled', '已注销'],
+        })
+        .andWhere('(customer.businessStatus NOT IN (:...lostStatuses) OR customer.businessStatus IS NULL OR customer.businessStatus = \'\')', {
+          lostStatuses: ['lost', '已流失'],
+        })
           .groupBy('customer.bookkeepingAccountant, customer.customerLevel');
 
         if (query.accountantName) {
@@ -1442,8 +1299,13 @@ export class ReportsService {
           ])
           .where('customer.invoiceOfficer IS NOT NULL')
           .andWhere('customer.invoiceOfficer != ""')
-          .andWhere('customer.enterpriseStatus != :status', { status: '已注销' })
-          .andWhere('customer.businessStatus != :businessStatus', { businessStatus: '已流失' })
+        // 保证 NULL / 空字符串 被视为“非流失”
+        .andWhere('(customer.enterpriseStatus NOT IN (:...cancelledStatuses) OR customer.enterpriseStatus IS NULL OR customer.enterpriseStatus = \'\')', {
+          cancelledStatuses: ['cancelled', '已注销'],
+        })
+        .andWhere('(customer.businessStatus NOT IN (:...lostStatuses) OR customer.businessStatus IS NULL OR customer.businessStatus = \'\')', {
+          lostStatuses: ['lost', '已流失'],
+        })
           .groupBy('customer.invoiceOfficer, customer.customerLevel');
 
         if (query.accountantName) {
@@ -1517,6 +1379,57 @@ export class ReportsService {
       const offset = (page - 1) * pageSize;
       const paginatedAccountants = sortedAccountants.slice(offset, offset + pageSize);
 
+      // 计算仅包含流失户的会计分布（用于页面中单独展示流失户分布图）
+      const churnDistribution: Array<{
+        accountantName: string;
+        accountantType: 'consultantAccountant' | 'bookkeepingAccountant' | 'invoiceOfficer';
+        churnedClientCount: number;
+      }> = [];
+
+      const cancelledStatuses = ['cancelled', '已注销'];
+      const lostStatuses = ['lost', '已流失'];
+
+      // Helper to build and run churn query per accountant type
+      const buildChurnQuery = async (field: string, type: 'consultantAccountant' | 'bookkeepingAccountant' | 'invoiceOfficer') => {
+        const qb = this.customerRepository.createQueryBuilder('customer')
+          .select([`customer.${field} as accountantName`, 'COUNT(*) as count'])
+          .where(`customer.${field} IS NOT NULL`)
+          .andWhere(`customer.${field} != ''`)
+          .andWhere('(customer.enterpriseStatus IN (:...cancelledStatuses) OR customer.businessStatus IN (:...lostStatuses))', {
+            cancelledStatuses,
+            lostStatuses
+          })
+          .groupBy(`customer.${field}`);
+
+        if (query.accountantName) {
+          qb.andWhere(`customer.${field} LIKE :name`, { name: `%${query.accountantName}%` });
+        }
+
+        // 应用权限过滤
+        await customerFilter(qb);
+
+        const rows = await qb.getRawMany();
+        rows.forEach((r: any) => {
+          if (r.accountantName) {
+            churnDistribution.push({
+              accountantName: r.accountantName,
+              accountantType: type,
+              churnedClientCount: parseInt(r.count) || 0
+            });
+          }
+        });
+      };
+
+      if (query.accountantType === 'all' || query.accountantType === 'consultantAccountant') {
+        await buildChurnQuery('consultantAccountant', 'consultantAccountant');
+      }
+      if (query.accountantType === 'all' || query.accountantType === 'bookkeepingAccountant') {
+        await buildChurnQuery('bookkeepingAccountant', 'bookkeepingAccountant');
+      }
+      if (query.accountantType === 'all' || query.accountantType === 'invoiceOfficer') {
+        await buildChurnQuery('invoiceOfficer', 'invoiceOfficer');
+      }
+
       const result: AccountantClientStatsResponse = {
         list: paginatedAccountants,
         total,
@@ -1526,34 +1439,22 @@ export class ReportsService {
         summary: {
           totalAccountants: sortedAccountants.length,
           totalClients: sortedAccountants.reduce((sum, acc) => sum + acc.clientCount, 0),
-          averageClientsPerAccountant: sortedAccountants.length > 0 
-            ? sortedAccountants.reduce((sum, acc) => sum + acc.clientCount, 0) / sortedAccountants.length 
+          averageClientsPerAccountant: sortedAccountants.length > 0
+            ? sortedAccountants.reduce((sum, acc) => sum + acc.clientCount, 0) / sortedAccountants.length
             : 0,
           topPerformer: {
-            name: sortedAccountants.length > 0 
+            name: sortedAccountants.length > 0
               ? sortedAccountants.reduce((max, acc) => acc.clientCount > max.clientCount ? acc : max).accountantName
               : '',
-            clientCount: sortedAccountants.length > 0 
+            clientCount: sortedAccountants.length > 0
               ? sortedAccountants.reduce((max, acc) => acc.clientCount > max.clientCount ? acc : max).clientCount
               : 0,
           },
         },
+        churnDistribution
       };
 
-      // 缓存结果（2小时）
-      try {
-        await this.cacheService.setCache(
-          'accountant_client_stats',
-          cacheKey,
-          result,
-          7200,
-          userId
-        );
-        this.logger.log(`会计负责客户统计缓存设置成功`);
-      } catch (cacheError) {
-        this.logger.warn(`会计负责客户统计缓存设置失败，但不影响数据返回: ${cacheError.message}`);
-      }
-
+      // 不使用缓存，直接返回最新数据
       return result;
     } catch (error) {
       this.logger.error(`会计负责客户数量统计失败: ${error.message}`, error.stack);
@@ -1861,7 +1762,8 @@ export class ReportsService {
       // 主查询：获取每个公司的最新状态记录，并连接客户表获取lastServiceDate
       const queryBuilder = this.customerStatusHistoryRepository
         .createQueryBuilder('csh')
-        .leftJoin('customer', 'c', 'c.id = csh.customerId')
+        // 使用实体引用以确保 TypeORM 使用正确的表名映射（sys_customer）
+        .leftJoin(Customer, 'c', 'c.id = csh.customerId')
         .select([
           'csh.customerId as customerId',
           'csh.companyName as companyName', 

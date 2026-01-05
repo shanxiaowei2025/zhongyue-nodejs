@@ -4,9 +4,8 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ReportsController } from './reports.controller';
 import { ReportsService } from './services/reports.service';
 import { ReportsPermissionService } from './services/reports-permission.service';
-import { ReportsCacheService } from './services/reports-cache.service';
 // import { ReportsExportService } from './services/reports-export.service'; // 临时注释掉导出服务
-import { ReportCache } from './entities/report-cache.entity';
+// ReportCache entity and ReportsCacheService removed (caching via DB disabled)
 
 // 导入相关实体
 import { Customer } from '../customer/entities/customer.entity';
@@ -26,7 +25,6 @@ import { CustomerStatusHistoryModule } from './customer-status-history/customer-
 @Module({
   imports: [
     TypeOrmModule.forFeature([
-      ReportCache,
       Customer, 
       Expense,
       User,
@@ -45,7 +43,7 @@ import { CustomerStatusHistoryModule } from './customer-status-history/customer-
   providers: [
     ReportsService,
     ReportsPermissionService,
-    ReportsCacheService,
+    // ReportsCacheService removed (caching via DB disabled)
     // ReportsExportService, // 临时注释掉导出服务
   ],
   exports: [ReportsService, ReportsPermissionService],

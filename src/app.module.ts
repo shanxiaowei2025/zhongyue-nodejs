@@ -70,7 +70,7 @@ import {
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { Notification } from './modules/notifications/entities/notification.entity';
 import { NotificationRecipient } from './modules/notifications/entities/notification-recipient.entity';
-import { ReportCache } from './modules/reports/entities/report-cache.entity'; // 新增报表缓存实体
+// import { ReportCache } from './modules/reports/entities/report-cache.entity'; // 报表缓存实体已移除
 import { CustomerLevelHistory } from './modules/reports/customer-level-history/entities/customer-level-history.entity'; // 新增客户等级历史实体
 import { CustomerStatusHistory } from './modules/reports/customer-status-history/entities/customer-status-history.entity'; // 新增客户状态历史实体
 import { VoucherRecordYear } from './modules/voucher-record/entities/voucher-record-year.entity'; // 新增凭证记录年度实体
@@ -156,7 +156,6 @@ import { AccountingFileCategory } from './modules/customer/entities/accounting-f
           PerformanceCommission, // 新增绩效提成表实体
           Notification,
           NotificationRecipient,
-          ReportCache, // 新增报表缓存实体
           CustomerLevelHistory, // 新增客户等级历史实体
           CustomerStatusHistory, // 新增客户状态历史实体
           VoucherRecordYear, // 新增凭证记录年度实体

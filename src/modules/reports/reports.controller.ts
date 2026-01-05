@@ -18,7 +18,6 @@ import { ApiTags, ApiOperation, ApiQuery, ApiResponse, ApiBearerAuth, ApiParam }
 import { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ReportsService } from './services/reports.service';
-import { ReportsCacheService } from './services/reports-cache.service';
 // import { ReportsExportService } from './services/reports-export.service'; // 临时注释掉导出服务
 import {
   AgencyFeeAnalysisDto,
@@ -49,7 +48,6 @@ export class ReportsController {
 
   constructor(
     private readonly reportsService: ReportsService,
-    private readonly cacheService: ReportsCacheService,
     // private readonly exportService: ReportsExportService, // 临时注释掉导出服务
   ) {}
 
@@ -543,8 +541,8 @@ export class ReportsController {
       }
       
       this.logger.log(`用户 ${userIdNum} 请求清除缓存`);
-      await this.cacheService.clearUserCache(userIdNum);
-      this.logger.log(`用户 ${userIdNum} 缓存已清除`);
+      // 报表缓存已移除；此接口不再执行任何操作
+      this.logger.log(`报表缓存表已禁用，跳过清除操作`);
     } catch (error) {
       this.logger.error(`清除用户缓存失败: ${error.message}`, error.stack);
       throw new HttpException(
@@ -573,8 +571,8 @@ export class ReportsController {
       }
       
       this.logger.log(`用户 ${userIdNum} 角色变更，清除相关缓存`);
-      await this.cacheService.clearUserRoleChangeCache(userIdNum);
-      this.logger.log(`用户 ${userIdNum} 角色变更缓存已清除`);
+      // 报表缓存已移除；此接口不再执行任何操作
+      this.logger.log(`报表缓存表已禁用，跳过清除操作`);
     } catch (error) {
       this.logger.error(`清除用户角色变更缓存失败: ${error.message}`, error.stack);
       throw new HttpException(
@@ -599,10 +597,8 @@ export class ReportsController {
   ): Promise<{ message: string }> {
     try {
       this.logger.log(`用户 ${req.user.id} 请求清除用户 ${targetUserId} 的客户等级分布缓存`);
-      
-      await this.cacheService.clearUserCache(targetUserId);
-      
-      return { message: `用户 ${targetUserId} 的客户等级分布缓存已清除` };
+      // 报表缓存已移除；此接口不再执行任何操作
+      return { message: `报表缓存表已禁用，未执行清理操作` };
     } catch (error) {
       this.logger.error(`清除缓存失败: ${error.message}`, error.stack);
       throw new HttpException(

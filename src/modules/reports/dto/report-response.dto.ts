@@ -293,6 +293,19 @@ export class CustomerChurnStatsResponse extends PaginatedResponseDto<ChurnedCust
     churnRate: number;
     recoveryOpportunities: number;
   };
+  @ApiProperty({
+    description: '按会计类型分布的流失客户统计（分别统计顾问会计、记账会计、开票员）',
+    example: {
+      consultantAccountant: [{ accountantName: '张三', churnedClientCount: 5 }],
+      bookkeepingAccountant: [{ accountantName: '李四', churnedClientCount: 3 }],
+      invoiceOfficer: [{ accountantName: '王五', churnedClientCount: 2 }]
+    }
+  })
+  churnDistributionByType?: {
+    consultantAccountant?: Array<{ accountantName: string; churnedClientCount: number }>;
+    bookkeepingAccountant?: Array<{ accountantName: string; churnedClientCount: number }>;
+    invoiceOfficer?: Array<{ accountantName: string; churnedClientCount: number }>;
+  };
 }
 
 /**
@@ -363,4 +376,13 @@ export class AccountantClientStatsResponse extends PaginatedResponseDto<Accounta
       clientCount: number;
     };
   };
+  @ApiProperty({
+    description: '流失客户按会计分布（仅包含 enterpriseStatus=cancelled 或 businessStatus=lost 的客户）',
+    example: [{ accountantName: '张三', accountantType: 'consultantAccountant', churnedClientCount: 5 }]
+  })
+  churnDistribution?: Array<{
+    accountantName: string;
+    accountantType: 'consultantAccountant' | 'bookkeepingAccountant' | 'invoiceOfficer';
+    churnedClientCount: number;
+  }>;
 } 
