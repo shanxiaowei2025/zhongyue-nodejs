@@ -31,6 +31,7 @@ import { VoucherRecordModule } from './modules/voucher-record/voucher-record.mod
 import { GroupsModule } from './modules/groups/groups.module'; // 新增群组管理模块
 import { Deposit } from './modules/salary/deposit/entities/deposit.entity'; // 新增保证金表实体
 import { BusinessOptionsModule } from './modules/business-options/business-options.module'; // 新增业务选项模块
+import { BusinessStatisticsModule } from './modules/business-statistics/business-statistics.module'; // 新增业务统计模块
 
 // 导入各种配置文件
 import appConfig from './config/app.config'; // 应用配置
@@ -193,6 +194,7 @@ import { AccountingFileCategory } from './modules/customer/entities/accounting-f
     GroupsModule, // 群组管理模块：处理群组相关的功能
     NotificationsModule, // 通知模块
     BusinessOptionsModule, // 业务选项模块：处理业务选项管理相关的功能
+    BusinessStatisticsModule, // 业务统计模块：处理业务统计相关的功能
   ],
   controllers: [AppController], // 控制器：负责接收请求，像前台接待
   providers: [
