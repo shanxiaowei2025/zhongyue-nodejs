@@ -892,6 +892,46 @@ export class CustomerService {
     // 获取更新后的客户信息
     const updatedCustomer = await this.findOne(id, userId);
 
+    // 如果记账会计或顾问会计字段有变化，同步更新账务自查记录
+    const fieldsToUpdate: any = {};
+    if (
+      updateCustomerDto.bookkeepingAccountant !== undefined &&
+      updateCustomerDto.bookkeepingAccountant !== existingCustomer.bookkeepingAccountant
+    ) {
+      fieldsToUpdate.bookkeepingAccountant = updateCustomerDto.bookkeepingAccountant;
+    }
+
+    if (
+      updateCustomerDto.consultantAccountant !== undefined &&
+      updateCustomerDto.consultantAccountant !== existingCustomer.consultantAccountant
+    ) {
+      fieldsToUpdate.consultantAccountant = updateCustomerDto.consultantAccountant;
+    }
+
+    if (Object.keys(fieldsToUpdate).length > 0) {
+      try {
+        // 使用manager.getRepository来操作账务自查表，避免循环依赖
+        const financialInspectionRepository =
+          this.customerRepository.manager.getRepository('sys_financial_self_inspection');
+
+        // 仅更新处于「待整改」状态的记录（status = 0）
+        const updateResult = await financialInspectionRepository.update(
+          { unifiedSocialCreditCode: existingCustomer.unifiedSocialCreditCode, status: 0 },
+          fieldsToUpdate
+        );
+
+        this.logger.log(
+          `同步更新账务自查记录（仅status=0）的会计字段: ${JSON.stringify(fieldsToUpdate)}，影响 ${updateResult.affected} 条记录`
+        );
+      } catch (error) {
+        this.logger.error(
+          `同步更新账务自查记录失败: ${error.message}`,
+          error.stack,
+        );
+        // 不阻止更新主流程，即使同步更新失败
+      }
+    }
+
     // 如果关键字段有变化，创建服务历程记录
     if (needCreateServiceHistory) {
       try {
