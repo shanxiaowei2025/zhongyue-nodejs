@@ -26,4 +26,20 @@ export class BusinessStatisticsController {
   ): Promise<BusinessStatisticsResponseDto> {
     return this.businessStatisticsService.getBusinessStatistics(query);
   }
+
+  @Get('by-location')
+  @ApiOperation({
+    summary: '获取按公司地点统计的业务统计数据',
+    description: '根据时间段和业务员筛选，按公司地点分组统计各个业务费用的总计',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '获取统计数据成功',
+    type: BusinessStatisticsResponseDto,
+  })
+  async getBusinessStatisticsByLocation(
+    @Query() query: QueryBusinessStatisticsDto,
+  ): Promise<BusinessStatisticsResponseDto> {
+    return this.businessStatisticsService.getBusinessStatisticsByLocation(query);
+  }
 }
