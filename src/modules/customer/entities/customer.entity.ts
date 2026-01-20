@@ -155,6 +155,14 @@ export class Customer {
   bankAccountLicenseImages: Record<string, any>;
 
   @Column({
+    name: 'legal_person_id_images_with_id',
+    nullable: true,
+    type: 'json',
+    comment: '法人手持身份证照片地址',
+  })
+  legalPersonIdImagesWithId: Record<string, any>;
+
+  @Column({
     nullable: true,
     type: 'json',
     comment: '其他补充的扫描件或照片地址',
@@ -270,8 +278,11 @@ export class Customer {
   @Column({ nullable: true, length: 100, comment: '三方协议扣款账户' })
   tripartiteAgreementAccount: string;
 
-  @Column({ nullable: true, comment: '个税密码' })
-  personalIncomeTaxPassword: string;
+  @Column({ nullable: true, comment: '实名密码', name: 'real_name_password' })
+  realNamePassword: string;
+
+  @Column({ nullable: true, comment: '网报密码', name: 'net_report_password' })
+  netReportPassword: string;
 
   @Column({ nullable: true, type: 'text', comment: '个税申报人员' })
   personalIncomeTaxStaff: string;

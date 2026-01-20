@@ -441,10 +441,15 @@ export class CreateCustomerDto {
   @IsOptional()
   tripartiteAgreementAccount?: string;
 
-  @ApiPropertyOptional({ description: '个税密码' })
+  @ApiPropertyOptional({ description: '实名密码' })
   @IsString()
   @IsOptional()
-  personalIncomeTaxPassword?: string;
+  realNamePassword?: string;
+
+  @ApiPropertyOptional({ description: '网报密码' })
+  @IsString()
+  @IsOptional()
+  netReportPassword?: string;
 
   @ApiPropertyOptional({ description: '个税申报人员' })
   @IsString()
@@ -561,6 +566,11 @@ export class CreateCustomerDto {
   @IsObject()
   @IsOptional()
   bankAccountLicenseImages?: Record<string, any>;
+
+  @ApiPropertyOptional({ description: '法人手持身份证照片地址' })
+  @IsObject()
+  @IsOptional()
+  legalPersonIdImagesWithId?: Record<string, any>;
 
   @ApiPropertyOptional({ description: '其他补充的扫描件或照片地址' })
   @IsObject()
