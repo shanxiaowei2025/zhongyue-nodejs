@@ -16,6 +16,7 @@ export class BusinessStatisticsService {
     const startDate = (query as any).startDate;
     const endDate = (query as any).endDate;
     const salespersonRaw = (query as any).salesperson;
+    const businessStatus = (query as any).businessStatus;
 
     // 构建查询条件
     let whereConditions = ['status = 1']; // 只统计已审核的数据
@@ -51,6 +52,18 @@ export class BusinessStatisticsService {
         whereConditions.push(`salesperson IN (${placeholders})`);
         params.push(...salesArray);
       }
+    }
+
+    // 业务状态筛选逻辑
+    if (businessStatus === '续费') {
+      // 当业务状态为"续费"时，只统计 businessType 或者 socialInsuranceBusinessType 为"续费"的数据
+      whereConditions.push('(businessType = ? OR socialInsuranceBusinessType = ?)');
+      params.push('续费', '续费');
+    } else if (businessStatus === '新增') {
+      // 当业务状态为"新增"时，只统计 businessType 和 socialInsuranceBusinessType 全部不为"续费"的数据
+      whereConditions.push('(businessType IS NULL OR businessType = "" OR businessType != ?)');
+      whereConditions.push('(socialInsuranceBusinessType IS NULL OR socialInsuranceBusinessType = "" OR socialInsuranceBusinessType != ?)');
+      params.push('续费', '续费');
     }
 
     const whereClause = whereConditions.join(' AND ');
@@ -171,6 +184,7 @@ export class BusinessStatisticsService {
     const startDate = (query as any).startDate;
     const endDate = (query as any).endDate;
     const salespersonRaw = (query as any).salesperson;
+    const businessStatus = (query as any).businessStatus;
 
     // 构建查询条件
     let whereConditions = ['status = 1']; // 只统计已审核的数据
@@ -206,6 +220,18 @@ export class BusinessStatisticsService {
         whereConditions.push(`salesperson IN (${placeholders})`);
         params.push(...salesArray);
       }
+    }
+
+    // 业务状态筛选逻辑
+    if (businessStatus === '续费') {
+      // 当业务状态为"续费"时，只统计 businessType 或者 socialInsuranceBusinessType 为"续费"的数据
+      whereConditions.push('(businessType = ? OR socialInsuranceBusinessType = ?)');
+      params.push('续费', '续费');
+    } else if (businessStatus === '新增') {
+      // 当业务状态为"新增"时，只统计 businessType 和 socialInsuranceBusinessType 全部不为"续费"的数据
+      whereConditions.push('(businessType IS NULL OR businessType = "" OR businessType != ?)');
+      whereConditions.push('(socialInsuranceBusinessType IS NULL OR socialInsuranceBusinessType = "" OR socialInsuranceBusinessType != ?)');
+      params.push('续费', '续费');
     }
 
     const whereClause = whereConditions.join(' AND ');
