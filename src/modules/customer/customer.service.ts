@@ -2506,4 +2506,117 @@ export class CustomerService {
       throw new BadRequestException('查询客户档案信息失败');
     }
   }
+
+  /**
+   * 获取企业名称搜索建议
+   * 方案A（关键词拆分）+ 方案C（智能排序）
+   * @param keyword 搜索关键词
+   * @param limit 返回结果数量限制
+   */
+  async searchSuggestions(
+    keyword: string,
+    limit: number = 10,
+  ): Promise<Array<{ id: number; companyName: string; unifiedSocialCreditCode: string }>> {
+    try {
+      // 方案A：智能关键词拆分
+      // 1. 先按空格拆分
+      let keywords = keyword.trim().split(/\s+/);
+      
+      // 2. 如果没有空格，尝试智能拆分（提取关键词）
+      if (keywords.length === 1) {
+        const singleKeyword = keywords[0];
+        // 检测是否包含"分店"、"店"等关键词
+        const storePatterns = [
+          /(.+?)(一|二|三|四|五|六|七|八|九|十|百|千)+(分店|店)/,  // 匹配：宏春二分店
+          /(.+?)(第?\d+)(分店|店)/,  // 匹配：宏春第2分店、宏春2店
+          /(.+?)(分店|店)/,  // 匹配：宏春分店
+        ];
+        
+        for (const pattern of storePatterns) {
+          const match = singleKeyword.match(pattern);
+          if (match) {
+            // 提取主体名称和分店标识
+            const mainName = match[1];  // 如：宏春
+            const storeIdentifier = match[2] ? match[2] + match[3] : match[2] || match[3];  // 如：二分店
+            keywords = [mainName, storeIdentifier].filter(k => k && k.length > 0);
+            this.logger.log(`智能拆分关键词: "${singleKeyword}" -> [${keywords.join(', ')}]`);
+            break;
+          }
+        }
+      }
+
+      // 构建查询
+      const queryBuilder = this.customerRepository.createQueryBuilder('customer');
+
+      // 每个关键词都要匹配（AND 关系）
+      keywords.forEach((kw, index) => {
+        queryBuilder.andWhere(`customer.companyName LIKE :keyword${index}`, {
+          [`keyword${index}`]: `%${kw}%`,
+        });
+      });
+
+      // 只选择需要的字段
+      queryBuilder.select([
+        'customer.id',
+        'customer.companyName',
+        'customer.unifiedSocialCreditCode',
+      ]);
+
+      // 获取所有匹配结果
+      const results = await queryBuilder.getMany();
+      
+      this.logger.log(`搜索关键词: "${keyword}", 拆分后: [${keywords.join(', ')}], 找到 ${results.length} 条结果`);
+
+      // 方案C：智能排序
+      const sortedResults = results.sort((a, b) => {
+        const aName = a.companyName || '';
+        const bName = b.companyName || '';
+
+        // 1. 完全匹配优先（整个关键词作为子串出现）
+        const aExactMatch = aName.includes(keyword);
+        const bExactMatch = bName.includes(keyword);
+        if (aExactMatch && !bExactMatch) return -1;
+        if (!aExactMatch && bExactMatch) return 1;
+
+        // 2. 关键词出现位置越靠前越优先
+        const aIndex = aName.indexOf(keyword);
+        const bIndex = bName.indexOf(keyword);
+        if (aIndex !== -1 && bIndex !== -1 && aIndex !== bIndex) {
+          return aIndex - bIndex;
+        }
+
+        // 3. 所有关键词都匹配的情况下，计算匹配度
+        // 匹配度 = 所有关键词在名称中的最早出现位置之和（越小越好）
+        const aMatchScore = keywords.reduce((score, kw) => {
+          const index = aName.indexOf(kw);
+          return score + (index !== -1 ? index : 1000);
+        }, 0);
+        const bMatchScore = keywords.reduce((score, kw) => {
+          const index = bName.indexOf(kw);
+          return score + (index !== -1 ? index : 1000);
+        }, 0);
+        if (aMatchScore !== bMatchScore) {
+          return aMatchScore - bMatchScore;
+        }
+
+        // 4. 名称长度越短越优先（更精确）
+        if (aName.length !== bName.length) {
+          return aName.length - bName.length;
+        }
+
+        // 5. 按字母顺序排序
+        return aName.localeCompare(bName, 'zh-CN');
+      });
+
+      // 返回限制数量的结果
+      return sortedResults.slice(0, limit).map((customer) => ({
+        id: customer.id,
+        companyName: customer.companyName || '',
+        unifiedSocialCreditCode: customer.unifiedSocialCreditCode || '',
+      }));
+    } catch (error) {
+      this.logger.error(`获取搜索建议失败: ${error.message}`, error.stack);
+      throw new BadRequestException('获取搜索建议失败');
+    }
+  }
 }

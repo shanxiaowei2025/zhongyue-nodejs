@@ -95,6 +95,61 @@ export class CustomerController {
     return this.customerService.create(createCustomerDto, req.user.id);
   }
 
+  @Get('search-suggestions')
+  @ApiOperation({
+    summary: '获取企业名称搜索建议',
+    description: '根据关键词返回匹配的企业名称列表，支持智能排序',
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: '成功获取搜索建议',
+    schema: {
+      type: 'object',
+      properties: {
+        code: { type: 'number', example: 0 },
+        message: { type: 'string', example: '操作成功' },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', example: 1 },
+              companyName: { type: 'string', example: '保定宏春医药销售连锁有限责任公司二分店' },
+              unifiedSocialCreditCode: { type: 'string', example: '91130000MA0XXXXX' },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiQuery({ 
+    name: 'keyword', 
+    required: true, 
+    description: '搜索关键词，至少2个字符',
+    example: '宏春二分店'
+  })
+  @ApiQuery({ 
+    name: 'limit', 
+    required: false, 
+    description: '返回结果数量限制，默认10条',
+    example: 10
+  })
+  async getSearchSuggestions(
+    @Query('keyword') keyword: string,
+    @Query('limit') limit?: number,
+  ) {
+    if (!keyword || keyword.trim().length < 2) {
+      return [];
+    }
+
+    const suggestions = await this.customerService.searchSuggestions(
+      keyword.trim(),
+      limit ? parseInt(limit.toString(), 10) : 10,
+    );
+
+    return suggestions;
+  }
+
   @Get()
   @ApiOperation({
     summary: '获取客户列表',
