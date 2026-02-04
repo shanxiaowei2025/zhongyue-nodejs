@@ -2401,6 +2401,44 @@ export class CustomerService {
   }
 
   /**
+   * 获取客户分级的唯一值列表
+   * @param userId 用户ID
+   * @returns 客户分级唯一值数组
+   */
+  async getUniqueCustomerLevels(userId: number) {
+    this.logger.log(`用户 ${userId} 请求获取客户分级唯一值列表`);
+
+    try {
+      // 使用原生查询获取不重复的客户分级值
+      const result = await this.customerRepository
+        .createQueryBuilder('customer')
+        .select('DISTINCT customer.customerLevel', 'customerLevel')
+        .where('customer.customerLevel IS NOT NULL')
+        .andWhere("customer.customerLevel != ''")
+        .orderBy('customer.customerLevel', 'ASC')
+        .getRawMany();
+
+      // 提取客户分级值
+      const customerLevels = result
+        .map((item) => item.customerLevel)
+        .filter((level) => level && level.trim() !== '');
+
+      this.logger.log(
+        `成功获取 ${customerLevels.length} 个客户分级唯一值`,
+      );
+
+      // 直接返回数组，让拦截器包装
+      return customerLevels;
+    } catch (error) {
+      this.logger.error(
+        `获取客户分级唯一值失败: ${error.message}`,
+        error.stack,
+      );
+      throw new BadRequestException('获取客户分级唯一值失败');
+    }
+  }
+
+  /**
    * 根据企业名称或统一社会信用代码查询客户档案信息（公开接口）
    * @param searchDto 查询条件，必须提供企业名称或统一社会信用代码中的至少一个参数
    * @returns 客户档案信息列表

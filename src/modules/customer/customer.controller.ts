@@ -150,6 +150,35 @@ export class CustomerController {
     return this.customerService.findAll(query, req.user.id);
   }
 
+  @Get('unique-values/customer-level')
+  @ApiOperation({
+    summary: '获取客户分级的唯一值列表',
+    description: '返回数据库中所有不重复的客户分级值，用于筛选下拉列表',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '成功获取客户分级唯一值列表',
+    schema: {
+      type: 'object',
+      properties: {
+        code: { type: 'number', example: 0 },
+        message: { type: 'string', example: '获取成功' },
+        data: {
+          type: 'array',
+          items: { type: 'string' },
+          example: ['AA', 'AB', 'AC', 'BA', 'BB'],
+        },
+      },
+    },
+  })
+  async getUniqueCustomerLevels(@Request() req) {
+    if (!req.user || !req.user.id) {
+      throw new ForbiddenException('未能获取有效的用户身份');
+    }
+
+    return this.customerService.getUniqueCustomerLevels(req.user.id);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: '获取客户详情' })
   @ApiResponse({ 
