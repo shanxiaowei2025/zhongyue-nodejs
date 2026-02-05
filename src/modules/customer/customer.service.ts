@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not } from 'typeorm';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { Customer } from './entities/customer.entity';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
@@ -1790,6 +1791,277 @@ export class CustomerService {
       return {
         success: false,
         message: `导入客户数据失败: ${error.message}`,
+      };
+    }
+  }
+
+  /**
+   * 定时任务：每天凌晨00:00检查行政许可到期情况
+   * 自动发送通知给相关顾问会计
+   */
+  @Cron('0 0 * * *', {
+    name: 'checkAdministrativeLicenseExpiry',
+    timeZone: 'Asia/Shanghai',
+  })
+  async scheduledCheckAdministrativeLicenseExpiry() {
+    this.logger.log('定时任务开始：检查行政许可到期情况');
+    
+    try {
+      // 使用系统用户ID（假设为1）作为创建者
+      // 你可以根据实际情况修改这个ID
+      const systemUserId = 1;
+      
+      const result = await this.checkAdministrativeLicenseExpiry(systemUserId);
+      
+      this.logger.log(
+        `定时任务完成：${result.message}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `定时任务执行失败: ${error.message}`,
+        error.stack,
+      );
+    }
+  }
+
+  /**
+   * 检查行政许可到期情况并发送通知
+   * 检查所有客户的行政许可，如果在60天内到期，则给对应的顾问会计发送通知
+   */
+  async checkAdministrativeLicenseExpiry(userId: number): Promise<{
+    success: boolean;
+    message: string;
+    expiringCount: number;
+  }> {
+    try {
+      this.logger.log(`用户 ${userId} 触发行政许可到期检查`);
+
+      // 计算60天后的日期
+      const sixtyDaysLater = new Date();
+      sixtyDaysLater.setDate(sixtyDaysLater.getDate() + 60);
+      
+      // 查询所有客户
+      const customers = await this.customerRepository.find({
+        select: [
+          'id',
+          'companyName',
+          'unifiedSocialCreditCode',
+          'consultantAccountant',
+          'administrativeLicense',
+        ],
+      });
+
+      this.logger.log(`共查询到 ${customers.length} 个客户`);
+
+      // 存储需要通知的信息
+      const expiringLicenses: Array<{
+        customer: Customer;
+        license: any;
+        daysUntilExpiry: number;
+      }> = [];
+
+      // 检查每个客户的行政许可
+      for (const customer of customers) {
+        if (!customer.administrativeLicense || customer.administrativeLicense.length === 0) {
+          continue;
+        }
+
+        // 检查每个行政许可
+        for (const license of customer.administrativeLicense) {
+          if (!license.expiryDate) {
+            continue;
+          }
+
+          const expiryDate = new Date(license.expiryDate);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          expiryDate.setHours(0, 0, 0, 0);
+
+          // 计算距离到期的天数
+          const daysUntilExpiry = Math.ceil(
+            (expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+          );
+
+          // 只提醒60天内到期的（包括今天到期的），不提醒已过期的
+          // daysUntilExpiry >= 0: 今天或未来到期的
+          // daysUntilExpiry <= 60: 60天内到期的
+          if (daysUntilExpiry >= 0 && daysUntilExpiry <= 60) {
+            expiringLicenses.push({
+              customer,
+              license,
+              daysUntilExpiry,
+            });
+            
+            if (daysUntilExpiry === 0) {
+              this.logger.log(
+                `发现今天到期的行政许可: ${customer.companyName} - ${license.licenseType || '未知类型'}`,
+              );
+            } else {
+              this.logger.log(
+                `发现即将到期的行政许可: ${customer.companyName} - ${license.licenseType || '未知类型'} (${daysUntilExpiry}天后到期)`,
+              );
+            }
+          }
+        }
+      }
+
+      this.logger.log(`发现 ${expiringLicenses.length} 个即将到期的行政许可`);
+
+      // 按顾问会计分组
+      const notificationsByAccountant = new Map<string, Array<any>>();
+
+      for (const item of expiringLicenses) {
+        const accountant = item.customer.consultantAccountant;
+        if (!accountant) {
+          this.logger.warn(
+            `客户 ${item.customer.companyName} 没有指定顾问会计，跳过通知`,
+          );
+          continue;
+        }
+
+        if (!notificationsByAccountant.has(accountant)) {
+          notificationsByAccountant.set(accountant, []);
+        }
+
+        notificationsByAccountant.get(accountant).push(item);
+      }
+
+      this.logger.log(`需要通知 ${notificationsByAccountant.size} 个顾问会计`);
+
+      // 打印所有需要通知的顾问会计名单
+      for (const [accountant, items] of notificationsByAccountant.entries()) {
+        this.logger.log(`顾问会计: ${accountant}, 负责 ${items.length} 个即将到期的行政许可`);
+      }
+
+      // 发送通知
+      let notificationCount = 0;
+      const notifiedUserIds: number[] = [];
+
+      for (const [accountant, items] of notificationsByAccountant.entries()) {
+        // 构建通知内容
+        const licenseList = items
+          .map((item) => {
+            const expiryDateStr = new Date(item.license.expiryDate).toLocaleDateString('zh-CN');
+            
+            // 根据天数显示不同的提示信息
+            let statusText = '';
+            if (item.daysUntilExpiry === 0) {
+              statusText = '今天到期';
+            } else {
+              statusText = `还有${item.daysUntilExpiry}天`;
+            }
+            
+            return `• ${item.customer.companyName}（${item.license.licenseType || '未知类型'}）- 到期日期：${expiryDateStr}（${statusText}）`;
+          })
+          .join('\n');
+
+        const content = `您负责的以下客户的行政许可即将在60天内到期，请及时处理：\n\n${licenseList}`;
+
+        try {
+          this.logger.log(`正在查找顾问会计 "${accountant}" 对应的用户...`);
+          
+          // 查找顾问会计对应的用户（精确匹配用户名）
+          let accountantUser = await this.userRepository.findOne({
+            where: { username: accountant },
+          });
+
+          // 如果精确匹配失败，尝试查询所有用户并打印，帮助调试
+          if (!accountantUser) {
+            this.logger.warn(`精确匹配失败，未找到用户名为 "${accountant}" 的用户`);
+            
+            // 查询所有用户，看看是否有相似的
+            const allUsers = await this.userRepository.find({
+              select: ['id', 'username'],
+            });
+            
+            this.logger.log(`系统中共有 ${allUsers.length} 个用户`);
+            
+            // 尝试模糊匹配（去除空格后比较）
+            const normalizedAccountant = accountant.trim().replace(/\s+/g, '');
+            accountantUser = allUsers.find(user => {
+              const normalizedUsername = user.username.trim().replace(/\s+/g, '');
+              return normalizedUsername === normalizedAccountant;
+            });
+            
+            if (accountantUser) {
+              this.logger.log(`通过模糊匹配找到用户: ${accountantUser.username} (ID: ${accountantUser.id})`);
+            } else {
+              // 打印前10个用户名供参考
+              const sampleUsernames = allUsers.slice(0, 10).map(u => u.username).join(', ');
+              this.logger.warn(`模糊匹配也失败了。系统中的用户名示例: ${sampleUsernames}`);
+              this.logger.warn(`请检查客户表中的顾问会计字段 "${accountant}" 是否与用户表中的用户名匹配`);
+              continue;
+            }
+          } else {
+            this.logger.log(`找到顾问会计 ${accountant} 对应的用户ID: ${accountantUser.id}`);
+          }
+
+          // 动态导入通知实体
+          const { Notification } = await import(
+            '../notifications/entities/notification.entity'
+          );
+          const { NotificationRecipient } = await import(
+            '../notifications/entities/notification-recipient.entity'
+          );
+
+          // 使用实体类获取Repository
+          const notificationRepo = this.customerRepository.manager.getRepository(Notification);
+          const recipientRepo = this.customerRepository.manager.getRepository(NotificationRecipient);
+
+          // 创建通知记录（每次调用都创建新通知）
+          const notification = notificationRepo.create({
+            title: '行政许可到期提醒',
+            content: content,
+            type: '行政到期',
+            createdBy: userId,
+          });
+
+          const savedNotification = await notificationRepo.save(notification);
+          this.logger.log(`创建通知记录成功，通知ID: ${savedNotification.id}`);
+
+          // 创建接收者记录
+          const recipient = recipientRepo.create({
+            notificationId: savedNotification.id,
+            userId: accountantUser.id,
+            readStatus: 0,
+            readAt: null,
+          });
+
+          await recipientRepo.save(recipient);
+          this.logger.log(`创建接收者记录成功，用户ID: ${accountantUser.id}`);
+
+          notificationCount++;
+          notifiedUserIds.push(accountantUser.id);
+          this.logger.log(`已向顾问会计 ${accountant} (用户ID: ${accountantUser.id}) 发送通知`);
+        } catch (error) {
+          this.logger.error(
+            `向顾问会计 ${accountant} 发送通知失败: ${error.message}`,
+            error.stack,
+          );
+        }
+      }
+
+      // 通过WebSocket推送通知（可选，如果失败不影响主流程）
+      if (notifiedUserIds.length > 0) {
+        this.logger.log(`准备通过WebSocket推送通知给 ${notifiedUserIds.length} 个用户`);
+        // WebSocket推送由前端轮询或刷新页面时自动获取新通知
+        // 这里不强制推送，避免复杂的依赖注入问题
+      }
+
+      return {
+        success: true,
+        message: `检查完成，发现 ${expiringLicenses.length} 个即将到期的行政许可，已发送 ${notificationCount} 条通知`,
+        expiringCount: expiringLicenses.length,
+      };
+    } catch (error) {
+      this.logger.error(
+        `检查行政许可到期失败: ${error.message}`,
+        error.stack,
+      );
+      return {
+        success: false,
+        message: `检查失败: ${error.message}`,
+        expiringCount: 0,
       };
     }
   }

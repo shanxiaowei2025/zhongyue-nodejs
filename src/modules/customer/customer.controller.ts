@@ -493,4 +493,33 @@ export class CustomerController {
   async searchCustomerArchive(@Query() searchDto: SearchCustomerArchiveDto) {
     return this.customerService.searchCustomerArchive(searchDto);
   }
+
+  @Post('check-license-expiry')
+  @ApiOperation({
+    summary: '检查行政许可到期情况',
+    description: '检查所有客户的行政许可，如果在60天内到期，则给对应的顾问会计发送通知',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '检查完成',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: '检查完成，发现 3 个即将到期的行政许可，已发送 2 条通知' },
+        expiringCount: { type: 'number', example: 3 },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: '没有权限执行此操作',
+  })
+  async checkLicenseExpiry(@Request() req) {
+    if (!req.user || !req.user.id) {
+      throw new ForbiddenException('未能获取有效的用户身份');
+    }
+
+    return this.customerService.checkAdministrativeLicenseExpiry(req.user.id);
+  }
 }
