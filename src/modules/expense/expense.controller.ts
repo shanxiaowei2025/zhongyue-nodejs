@@ -316,6 +316,18 @@ export class ExpenseController {
     多选示例：businessInquiry=代理费&businessInquiry=记账软件费`,
     example: '代理费',
   })
+  @ApiQuery({
+    name: 'agencyEndDateStart',
+    required: false,
+    description: '代理费结束日期开始（年月格式：YYYY-MM）',
+    example: '2024-01',
+  })
+  @ApiQuery({
+    name: 'agencyEndDateEnd',
+    required: false,
+    description: '代理费结束日期结束（年月格式：YYYY-MM）',
+    example: '2024-12',
+  })
   @ApiQuery({ name: 'page', required: false, description: '页码', example: 1 })
   @ApiQuery({
     name: 'pageSize',

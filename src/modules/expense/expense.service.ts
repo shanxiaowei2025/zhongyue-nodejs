@@ -857,6 +857,45 @@ export class ExpenseService {
       });
     }
 
+    // 代理费结束日期范围筛选（年月格式：YYYY-MM）
+    if (query.agencyEndDateStart && query.agencyEndDateEnd) {
+      // 将年月格式转换为日期范围
+      // 开始日期：YYYY-MM-01
+      const startDate = `${query.agencyEndDateStart}-01`;
+      // 结束日期：YYYY-MM的最后一天
+      const [endYear, endMonth] = query.agencyEndDateEnd.split('-');
+      const lastDay = new Date(parseInt(endYear), parseInt(endMonth), 0).getDate();
+      const endDate = `${query.agencyEndDateEnd}-${lastDay}`;
+
+      queryBuilder.andWhere(
+        'expense.agencyEndDate BETWEEN :agencyEndDateStart AND :agencyEndDateEnd',
+        {
+          agencyEndDateStart: startDate,
+          agencyEndDateEnd: endDate,
+        },
+      );
+
+      console.log(
+        `代理费结束日期查询范围: ${startDate} - ${endDate}`,
+      );
+    } else if (query.agencyEndDateStart) {
+      // 只有开始日期：从该月第一天开始
+      const startDate = `${query.agencyEndDateStart}-01`;
+      queryBuilder.andWhere('expense.agencyEndDate >= :agencyEndDateStart', {
+        agencyEndDateStart: startDate,
+      });
+      console.log(`代理费结束日期查询开始: ${startDate}`);
+    } else if (query.agencyEndDateEnd) {
+      // 只有结束日期：到该月最后一天
+      const [endYear, endMonth] = query.agencyEndDateEnd.split('-');
+      const lastDay = new Date(parseInt(endYear), parseInt(endMonth), 0).getDate();
+      const endDate = `${query.agencyEndDateEnd}-${lastDay}`;
+      queryBuilder.andWhere('expense.agencyEndDate <= :agencyEndDateEnd', {
+        agencyEndDateEnd: endDate,
+      });
+      console.log(`代理费结束日期查询结束: ${endDate}`);
+    }
+
     // 业务查询筛选逻辑（支持多选）
     if (query.businessInquiry !== undefined && query.businessInquiry !== '') {
       // 处理多选业务查询筛选

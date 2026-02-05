@@ -124,6 +124,24 @@ export class QueryExpenseDto {
   @IsOptional()
   businessInquiry?: string | string[];
 
+  @ApiProperty({
+    description: '代理费结束日期开始（年月格式：YYYY-MM）',
+    required: false,
+    example: '2024-01',
+  })
+  @IsOptional()
+  @IsString()
+  agencyEndDateStart?: string;
+
+  @ApiProperty({
+    description: '代理费结束日期结束（年月格式：YYYY-MM）',
+    required: false,
+    example: '2024-12',
+  })
+  @IsOptional()
+  @IsString()
+  agencyEndDateEnd?: string;
+
   // 保留原有的分页参数
   @ApiProperty({ description: '页码', required: false, default: 1 })
   @IsOptional()
