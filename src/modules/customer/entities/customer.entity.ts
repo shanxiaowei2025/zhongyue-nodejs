@@ -173,13 +173,15 @@ export class Customer {
     nullable: true,
     type: 'json',
     comment:
-      '行政许可，数组对象[{行政许可类型, 行政许可开始日期, 行政许可到期日期, 图片}]',
+      '行政许可，数组对象[{行政许可类型, 行政许可开始日期, 行政许可到期日期, 图片, 上次收费金额, 备注}]',
   })
   administrativeLicense: Array<{
     licenseType?: string;
     startDate?: Date; // 可为空
     expiryDate?: Date; // 可为空
     images?: Record<string, any>;
+    lastChargeAmount?: string; // 上次收费金额（字符串类型，可能包含描述）
+    remarks?: string; // 备注
   }>;
 
   @Column({ nullable: true, comment: '对公开户行' })

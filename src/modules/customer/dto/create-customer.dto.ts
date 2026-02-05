@@ -56,6 +56,16 @@ export class AdministrativeLicenseItemDto {
   @IsObject()
   @IsOptional()
   images?: Record<string, any>;
+
+  @ApiProperty({ description: '上次收费金额' })
+  @IsString()
+  @IsOptional()
+  lastChargeAmount?: string;
+
+  @ApiProperty({ description: '备注' })
+  @IsString()
+  @IsOptional()
+  remarks?: string;
 }
 
 // 实际负责人数据结构
