@@ -305,7 +305,7 @@ export class Customer {
     nullable: true,
     type: 'varchar',
     length: 50,
-    comment: '企业当前的经营状态',
+    comment: '工商状态',
   })
   enterpriseStatus: string;
   // normal: '工商正常',
@@ -334,9 +334,14 @@ export class Customer {
     nullable: true,
     type: 'varchar',
     length: 50,
-    comment: '当前业务的状态',
+    comment: '税务状态',
   })
   businessStatus: string;
+  //normal：正常
+  //logged_out：已注销
+  //logging_out：注销中
+  //lost：已流失
+  //waiting_transfer：等待转出
 
   @Column({ nullable: true, comment: '客户群' })
   customerGroup: string;

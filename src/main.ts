@@ -217,8 +217,8 @@ async function bootstrap() {
       ], // 确保包含额外模型
     });
 
-    // 设置文档访问路径为 /api/docs
-    SwaggerModule.setup('api/docs', app, document, {
+    // 设置文档访问路径为 /docs
+    SwaggerModule.setup('docs', app, document, {
       useGlobalPrefix: false,
     });
   }
@@ -253,7 +253,7 @@ async function bootstrap() {
 
   // 在开发环境显示文档地址
   if (configService.get('app.env') !== 'production') {
-    logger.log(`API文档地址: http://localhost:${port}/api/docs`);
+    logger.log(`API文档地址: http://localhost:${port}/docs`);
   }
 
   // 处理程序退出时关闭日志流

@@ -245,6 +245,9 @@ export class ExpenseService {
       );
     }
 
+    // 注释掉旧的自动填充逻辑，因为前端已经通过 getMaxDatesNextDay 接口获取了正确的日期
+    // 用户在前端已经看到并确认了这些日期，后端不应该再次修改
+    /*
     // 自动填充开始日期字段
     let hasQueryIdentifier = false;
 
@@ -278,6 +281,7 @@ export class ExpenseService {
         '未提供有效的查询标识符（统一社会信用代码或企业名称），跳过自动填充',
       );
     }
+    */
 
     const expense = this.expenseRepository.create({
       ...createExpenseDto,
@@ -387,13 +391,13 @@ export class ExpenseService {
               const [calculatedYear, calculatedMonth] =
                 calculatedDate.split('-');
               try {
-                const userDate = new Date(createExpenseDto[dtoField]);
-                if (!isNaN(userDate.getTime())) {
-                  // 提取用户传入日期的日部分
-                  const userSelectedDay = String(userDate.getDate()).padStart(
-                    2,
-                    '0',
-                  );
+                // 直接从字符串中提取日期部分，避免时区问题
+                const userDateStr = String(createExpenseDto[dtoField]);
+                const userDateParts = userDateStr.split('-');
+                
+                if (userDateParts.length >= 3) {
+                  // 用户传入了完整的日期（YYYY-MM-DD）
+                  const userSelectedDay = userDateParts[2].padStart(2, '0');
                   console.log(
                     `从用户输入中提取到日期: ${dtoField} = ${userSelectedDay}日`,
                   );
@@ -417,9 +421,9 @@ export class ExpenseService {
                     `设置${dtoField}: ${createExpenseDto[dtoField]} (年月从${dbField}计算，日从用户输入获取)`,
                   );
                 } else {
-                  // 用户传入的日期无效，使用计算的日期
-                  console.warn(
-                    `无法解析用户输入的日期 ${createExpenseDto[dtoField]}，使用计算的日期 ${calculatedDate}`,
+                  // 用户只传入了年月，使用计算的日期
+                  console.log(
+                    `用户只传入了年月 ${userDateStr}，使用计算的日期 ${calculatedDate}`,
                   );
                   createExpenseDto[dtoField] = calculatedDate;
                 }
@@ -2204,23 +2208,6 @@ export class ExpenseService {
     }
   }
 
-  // 查找数组中指定属性的最大日期
-  private findMaxDate(expenses: Expense[], dateField: string): string | null {
-    let maxDate = null;
-
-    for (const expense of expenses) {
-      const dateValue = expense[dateField];
-      if (dateValue) {
-        const currentDate = new Date(dateValue);
-        if (!maxDate || currentDate > new Date(maxDate)) {
-          maxDate = dateValue;
-        }
-      }
-    }
-
-    return maxDate;
-  }
-
   // 计算指定日期的下一天
   private getNextDay(dateString: string): string {
     try {
@@ -2314,7 +2301,7 @@ export class ExpenseService {
     }
   }
 
-  // 获取企业最大日期的下个月
+  // 获取企业最大日期的下个月（基于ID方案，考虑退费）
   async getMaxDatesNextDay(params: {
     companyName?: string;
     unifiedSocialCreditCode?: string;
@@ -2326,67 +2313,202 @@ export class ExpenseService {
       throw new BadRequestException('必须提供企业名称或统一社会信用代码');
     }
 
-    // 构建查询条件
-    const where: FindOptionsWhere<Expense> = {
-      // 只获取已审核的记录(status = 1)
-      status: 1,
-    };
+    // 确定查询字段和值
+    const fieldName = params.unifiedSocialCreditCode
+      ? 'unifiedSocialCreditCode'
+      : 'companyName';
+    const fieldValue = params.unifiedSocialCreditCode || params.companyName;
 
-    if (params.companyName) {
-      where.companyName = params.companyName;
-    }
-
-    if (params.unifiedSocialCreditCode) {
-      where.unifiedSocialCreditCode = params.unifiedSocialCreditCode;
-    }
-
-    // 查询这个企业的所有已审核记录
-    const expenses = await this.expenseRepository.find({
-      where,
-      order: { id: 'DESC' },
-    });
-
-    if (expenses.length === 0) {
-      console.log('未找到企业已审核记录');
-      throw new NotFoundException('未找到相关企业的已审核费用记录');
-    }
-
-    console.log(`找到 ${expenses.length} 条已审核记录`);
-
-    // 需要计算的日期字段列表
-    const dateFields = [
-      'agencyEndDate',
-      'accountingSoftwareEndDate',
-      'invoiceSoftwareEndDate',
-      'socialInsuranceEndDate',
-      'housingFundEndDate',
-      'statisticalEndDate',
-      'organizationEndDate',
-      'addressEndDate',
-      'onlineBankingCustodyEndDate',
+    // 需要计算的费用字段和对应的日期字段
+    const feeFieldMappings = [
+      { feeField: 'agencyFee', endDateField: 'agencyEndDate' },
+      {
+        feeField: 'accountingSoftwareFee',
+        endDateField: 'accountingSoftwareEndDate',
+      },
+      {
+        feeField: 'invoiceSoftwareFee',
+        endDateField: 'invoiceSoftwareEndDate',
+      },
+      {
+        feeField: 'socialInsuranceAgencyFee',
+        endDateField: 'socialInsuranceEndDate',
+      },
+      { feeField: 'housingFundAgencyFee', endDateField: 'housingFundEndDate' },
+      { feeField: 'statisticalReportFee', endDateField: 'statisticalEndDate' },
+      { feeField: 'customerDataOrganizationFee', endDateField: 'organizationEndDate' },
+      { feeField: 'addressFee', endDateField: 'addressEndDate' },
+      {
+        feeField: 'onlineBankingCustodyFee',
+        endDateField: 'onlineBankingCustodyEndDate',
+      },
     ];
 
     // 结果对象
     const result = {
-      companyName: expenses[0].companyName,
-      unifiedSocialCreditCode: expenses[0].unifiedSocialCreditCode,
+      companyName: params.companyName,
+      unifiedSocialCreditCode: params.unifiedSocialCreditCode,
       dates: {},
     };
 
-    // 计算每个日期字段的最大值和下个月
-    for (const field of dateFields) {
-      const maxDate = this.findMaxDate(expenses, field);
-      const startFieldName = field.replace('EndDate', 'StartDate');
+    // 计算每个费用字段的有效结束日期
+    for (const { feeField, endDateField } of feeFieldMappings) {
+      const effectiveEndDate = await this.getEffectiveEndDate(
+        fieldName,
+        fieldValue,
+        feeField,
+        endDateField,
+      );
 
-      if (maxDate) {
-        const nextMonth = this.getNextMonth(maxDate);
+      const startFieldName = endDateField.replace('EndDate', 'StartDate');
+
+      if (effectiveEndDate) {
+        // 计算下个月的1号（因为日期字段都是月份的1号）
+        const nextMonth = this.getNextMonth(effectiveEndDate);
         result.dates[startFieldName] = nextMonth;
+        console.log(
+          `[${feeField}] 有效结束日期: ${effectiveEndDate}, 下一个开始日期: ${nextMonth}`,
+        );
       } else {
         result.dates[startFieldName] = null;
+        console.log(`[${feeField}] 未找到有效结束日期`);
       }
     }
 
     return result;
+  }
+
+  /**
+   * 获取有效结束日期（考虑退费）- 基于ID方案
+   * @param fieldName 查询字段名（companyName 或 unifiedSocialCreditCode）
+   * @param fieldValue 查询字段值
+   * @param feeField 费用字段名（如 agencyFee）
+   * @param endDateField 结束日期字段名（如 agencyEndDate）
+   * @returns 有效结束日期字符串（YYYY-MM-DD）或 null
+   */
+  private async getEffectiveEndDate(
+    fieldName: string,
+    fieldValue: string,
+    feeField: string,
+    endDateField: string,
+  ): Promise<string | null> {
+    const startDateField = endDateField.replace('EndDate', 'StartDate');
+
+    // 1. 查询最后一条正数记录（按结束日期和ID倒序）
+    const lastPositiveQuery = `
+      SELECT 
+        id,
+        ${endDateField} as endDate
+      FROM sys_expense
+      WHERE ${fieldName} = ? 
+        AND status = 1
+        AND ${feeField} > 0
+        AND ${endDateField} IS NOT NULL
+      ORDER BY ${endDateField} DESC, id DESC
+      LIMIT 1
+    `;
+
+    const lastPositiveResult = await this.expenseRepository.query(
+      lastPositiveQuery,
+      [fieldValue],
+    );
+
+    if (lastPositiveResult.length === 0) {
+      console.log(`[${feeField}] 未找到正数收费记录`);
+      return null;
+    }
+
+    const lastPositive = lastPositiveResult[0];
+    const maxEndDate = lastPositive.endDate;
+    const lastPositiveId = lastPositive.id;
+
+    console.log(
+      `[${feeField}] 最后一条正数记录: ID=${lastPositiveId}, 结束日期=${maxEndDate}`,
+    );
+
+    // 2. 查询该记录之后的所有退费记录（ID > lastPositiveId）
+    const refundQuery = `
+      SELECT 
+        id,
+        ${startDateField} as startDate,
+        ${endDateField} as endDate
+      FROM sys_expense
+      WHERE ${fieldName} = ? 
+        AND status = 1
+        AND ${feeField} < 0
+        AND id > ?
+        AND ${startDateField} IS NOT NULL
+        AND ${endDateField} IS NOT NULL
+    `;
+
+    const refundRecords = await this.expenseRepository.query(refundQuery, [
+      fieldValue,
+      lastPositiveId,
+    ]);
+
+    console.log(`[${feeField}] 找到 ${refundRecords.length} 条退费记录`);
+
+    // 3. 累加退费月数
+    let totalRefundMonths = 0;
+    for (const record of refundRecords) {
+      const months = this.calculateMonthsDiff(
+        record.startDate,
+        record.endDate,
+      );
+      totalRefundMonths += months;
+      console.log(
+        `[${feeField}] 退费记录 ID=${record.id}: ${record.startDate} 到 ${record.endDate}, ${months}个月`,
+      );
+    }
+
+    console.log(`[${feeField}] 退费总月数: ${totalRefundMonths}`);
+
+    // 4. 从最大结束日期减去退费月数
+    if (totalRefundMonths > 0) {
+      const effectiveDate = this.subtractMonths(maxEndDate, totalRefundMonths);
+      console.log(
+        `[${feeField}] 有效结束日期: ${maxEndDate} - ${totalRefundMonths}个月 = ${effectiveDate}`,
+      );
+      return effectiveDate;
+    }
+
+    return maxEndDate;
+  }
+
+  /**
+   * 计算两个日期之间的月数（包含起止月）
+   * @param startDate 开始日期（YYYY-MM-DD）
+   * @param endDate 结束日期（YYYY-MM-DD）
+   * @returns 月数
+   */
+  private calculateMonthsDiff(startDate: string, endDate: string): number {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    // 计算月份差异（包含起止月）
+    const months =
+      (end.getFullYear() - start.getFullYear()) * 12 +
+      (end.getMonth() - start.getMonth()) +
+      1;
+
+    return months;
+  }
+
+  /**
+   * 从日期减去N个月
+   * @param dateString 日期字符串（YYYY-MM-DD）
+   * @param months 要减去的月数
+   * @returns 新的日期字符串（YYYY-MM-DD）
+   */
+  private subtractMonths(dateString: string, months: number): string {
+    const date = new Date(dateString);
+    date.setMonth(date.getMonth() - months);
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
   }
 
   /**
