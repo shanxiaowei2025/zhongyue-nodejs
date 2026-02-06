@@ -1482,11 +1482,28 @@ export class CustomerService {
         enterpriseType: '企业类型',
         unifiedSocialCreditCode: '统一社会信用代码',
         taxBureau: '所属分局',
-        clanId: '宗族ID',
-        enterpriseStatus: '企业状态',
+        enterpriseStatus: '工商状态',
+        businessStatus: '税务状态',
         customerLevel: '客户分级',
         sealStorageNumber: '章存放编号',
         paperArchiveNumber: '纸质资料档案编号',
+      };
+
+      // 工商状态映射
+      const enterpriseStatusMap = {
+        normal: '工商正常',
+        abnormal: '工商异常',
+        cancelled: '已注销',
+        revoked: '已吊销',
+      };
+
+      // 税务状态映射
+      const businessStatusMap = {
+        normal: '正常',
+        logged_out: '已注销',
+        logging_out: '注销中',
+        lost: '已流失',
+        waiting_transfer: '等待转出',
       };
 
       // 处理导出数据，确保JSON字段正确转换
@@ -1495,7 +1512,15 @@ export class CustomerService {
 
         // 只导出需要的字段
         Object.keys(fieldMapping).forEach((field) => {
-          item[field] = customer[field] || '';
+          if (field === 'enterpriseStatus') {
+            // 转换工商状态为中文
+            item[field] = enterpriseStatusMap[customer[field]] || customer[field] || '';
+          } else if (field === 'businessStatus') {
+            // 转换税务状态为中文
+            item[field] = businessStatusMap[customer[field]] || customer[field] || '';
+          } else {
+            item[field] = customer[field] || '';
+          }
         });
 
         return item;
