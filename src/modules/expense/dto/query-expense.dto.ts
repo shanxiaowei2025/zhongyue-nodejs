@@ -142,6 +142,15 @@ export class QueryExpenseDto {
   @IsString()
   agencyEndDateEnd?: string;
 
+  @ApiProperty({
+    description: '跳过权限过滤（用于客户详情中的费用记录展示）',
+    required: false,
+    example: 'true',
+  })
+  @IsOptional()
+  @IsString()
+  skipPermission?: string;
+
   // 保留原有的分页参数
   @ApiProperty({ description: '页码', required: false, default: 1 })
   @IsOptional()

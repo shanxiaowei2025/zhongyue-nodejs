@@ -74,17 +74,19 @@ export class NotificationsService {
     const [items, total] = await qb.getManyAndCount();
 
     return {
-      items: items.map((r: any) => ({ 
-        id: r.id, // 接收者记录的ID
-        notificationId: r.notification.id, // 通知ID
-        title: r.notification.title,
-        content: r.notification.content,
-        type: r.notification.type,
-        createdBy: r.notification.createdBy,
-        createdAt: r.notification.createdAt,
-        readStatus: r.readStatus, 
-        readAt: r.readAt 
-      })),
+      items: items
+        .filter((r: any) => r.notification != null)
+        .map((r: any) => ({ 
+          id: r.id, // 接收者记录的ID
+          notificationId: r.notification.id, // 通知ID
+          title: r.notification.title,
+          content: r.notification.content,
+          type: r.notification.type,
+          createdBy: r.notification.createdBy,
+          createdAt: r.notification.createdAt,
+          readStatus: r.readStatus, 
+          readAt: r.readAt 
+        })),
       meta: { total, page, limit },
     };
   }

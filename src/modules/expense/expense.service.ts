@@ -532,80 +532,87 @@ export class ExpenseService {
     const { page = 1, pageSize = 10 } = pagination;
     const skip = (page - 1) * pageSize;
 
+    // 提取 skipPermission 参数，不传入后续查询条件
+    const skipPermission = query.skipPermission === 'true';
+    delete query.skipPermission;
+
     console.log(`费用查询 - 用户ID: ${userId}, 查询参数:`, query);
-    console.log(`费用查询 - 分页参数: page=${page}, pageSize=${pageSize}`);
-
-    // 获取权限过滤条件
-    const permissionFilter =
-      await this.expensePermissionService.buildExpenseQueryFilter(userId);
-
-    console.log(`费用查询 - 权限过滤条件:`, permissionFilter);
-
-    // 记录原始权限过滤条件，稍后用于构建复合查询
-    const originalPermissionFilter = permissionFilter;
+    console.log(`费用查询 - 分页参数: page=${page}, pageSize=${pageSize}, 跳过权限: ${skipPermission}`);
 
     // 创建查询构建器
     const queryBuilder = this.expenseRepository.createQueryBuilder('expense');
 
-    // 首先应用权限过滤条件
-    if (Array.isArray(permissionFilter)) {
-      if (permissionFilter.length === 0) {
-        // 如果没有任何权限，返回空结果
-        return {
-          list: [],
-          total: 0,
-          currentPage: page,
-          pageSize,
-        };
-      }
+    // 如果不跳过权限，则应用权限过滤条件
+    if (!skipPermission) {
+      // 获取权限过滤条件
+      const permissionFilter =
+        await this.expensePermissionService.buildExpenseQueryFilter(userId);
 
-      // 检查是否包含查看所有权限的空对象
-      const hasViewAllPermission = permissionFilter.some(filter => 
-        Object.keys(filter).length === 0
-      );
+      console.log(`费用查询 - 权限过滤条件:`, permissionFilter);
 
-      if (!hasViewAllPermission) {
-        // 处理多个OR条件的权限过滤
-        const permissionConditions = [];
-        const permissionParams = {};
+      // 记录原始权限过滤条件，稍后用于构建复合查询
+      const originalPermissionFilter = permissionFilter;
 
-        permissionFilter.forEach((filter, index) => {
-          const conditions = [];
-          Object.entries(filter).forEach(([key, value]) => {
-            const paramKey = `permission_${key}_${index}`;
-            conditions.push(`expense.${key} = :${paramKey}`);
-            permissionParams[paramKey] = value;
+      // 首先应用权限过滤条件
+      if (Array.isArray(permissionFilter)) {
+        if (permissionFilter.length === 0) {
+          // 如果没有任何权限，返回空结果
+          return {
+            list: [],
+            total: 0,
+            currentPage: page,
+            pageSize,
+          };
+        }
+
+        // 检查是否包含查看所有权限的空对象
+        const hasViewAllPermission = permissionFilter.some(filter => 
+          Object.keys(filter).length === 0
+        );
+
+        if (!hasViewAllPermission) {
+          // 处理多个OR条件的权限过滤
+          const permissionConditions = [];
+          const permissionParams = {};
+
+          permissionFilter.forEach((filter, index) => {
+            const conditions = [];
+            Object.entries(filter).forEach(([key, value]) => {
+              const paramKey = `permission_${key}_${index}`;
+              conditions.push(`expense.${key} = :${paramKey}`);
+              permissionParams[paramKey] = value;
+            });
+            
+            if (conditions.length > 0) {
+              permissionConditions.push(`(${conditions.join(' AND ')})`);
+            }
           });
-          
-          if (conditions.length > 0) {
-            permissionConditions.push(`(${conditions.join(' AND ')})`);
+
+          if (permissionConditions.length > 0) {
+            queryBuilder.where(`(${permissionConditions.join(' OR ')})`, permissionParams);
           }
-        });
-
-        if (permissionConditions.length > 0) {
-          queryBuilder.where(`(${permissionConditions.join(' OR ')})`, permissionParams);
         }
-      }
-      // 如果有查看所有权限，不添加任何权限过滤条件
-    } else {
-      // 处理单一权限过滤条件
-      // 检查是否为查看所有权限的空对象
-      if (Object.keys(permissionFilter).length > 0) {
-        const params = {};
-        let whereClause = '';
+        // 如果有查看所有权限，不添加任何权限过滤条件
+      } else {
+        // 处理单一权限过滤条件
+        // 检查是否为查看所有权限的空对象
+        if (Object.keys(permissionFilter).length > 0) {
+          const params = {};
+          let whereClause = '';
 
-        Object.entries(permissionFilter).forEach(([key, value]) => {
-          if (whereClause) whereClause += ' AND ';
-          const paramKey = `permission_${key}`;
-          whereClause += `expense.${key} = :${paramKey}`;
-          params[paramKey] = value;
-        });
+          Object.entries(permissionFilter).forEach(([key, value]) => {
+            if (whereClause) whereClause += ' AND ';
+            const paramKey = `permission_${key}`;
+            whereClause += `expense.${key} = :${paramKey}`;
+            params[paramKey] = value;
+          });
 
-        if (whereClause) {
-          queryBuilder.where(whereClause, params);
+          if (whereClause) {
+            queryBuilder.where(whereClause, params);
+          }
         }
+        // 如果是空对象，表示有查看所有权限，不添加任何权限过滤条件
       }
-      // 如果是空对象，表示有查看所有权限，不添加任何权限过滤条件
     }
 
     // 然后在权限过滤的基础上应用查询参数
