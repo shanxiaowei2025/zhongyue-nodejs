@@ -22,6 +22,7 @@ import { SearchCustomerArchiveDto } from './dto/search-customer-archive.dto';
 import { CustomerPermissionService } from './services/customer-permission.service';
 import { User } from '../users/entities/user.entity';
 import { Department } from '../department/entities/department.entity';
+import { Response } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
 import { exec } from 'child_process';
@@ -1548,6 +1549,238 @@ export class CustomerService {
   }
 
   /**
+   * 导出客户表全部字段数据为CSV（管理员专用）
+   */
+  async exportAllToCsv(res: Response, userId: number): Promise<void> {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+        select: ['id', 'roles'],
+      });
+
+      const isAdmin =
+        user &&
+        user.roles &&
+        (user.roles.includes('admin') || user.roles.includes('super_admin'));
+
+      if (!isAdmin) {
+        throw new ForbiddenException('只有管理员和超级管理员可以导出全部客户数据');
+      }
+
+      const columns = this.customerRepository.metadata.columns;
+      const batchSize = 300;
+
+      const fields: Array<{ label: string; value: string }> = columns.map(
+        (column) => ({
+          label: this.getCustomerExportColumnLabel(
+            column.propertyName,
+            column.comment,
+          ),
+          value: column.propertyName,
+        }),
+      );
+
+      // 先写BOM和表头
+      res.write('\uFEFF');
+      const headerLine = `${fields
+        .map((field) => this.escapeCsvCell(field.label))
+        .join(',')}\n`;
+      res.write(headerLine);
+
+      // 第二遍扫描：分批写出数据行
+      const Parser = require('json2csv').Parser;
+      const rowParser = new Parser({ fields, header: false });
+
+      let lastId = 0;
+      while (true) {
+        const batch = await this.customerRepository
+          .createQueryBuilder('customer')
+          .where('customer.id > :lastId', { lastId })
+          .orderBy('customer.id', 'ASC')
+          .take(batchSize)
+          .getMany();
+
+        if (batch.length === 0) {
+          break;
+        }
+
+        const batchRows = batch.map((customer) => {
+          const row: Record<string, string | number | boolean> = {};
+          columns.forEach((column) => {
+            const propertyName = column.propertyName;
+            const rawValue =
+              (customer as unknown as Record<string, unknown>)[propertyName];
+            row[propertyName] = this.formatCustomerExportValue(
+              rawValue,
+              propertyName,
+            );
+          });
+          return row;
+        });
+
+        if (batchRows.length > 0) {
+          const csvChunk = rowParser.parse(batchRows);
+          if (csvChunk) {
+            res.write(csvChunk);
+            if (!csvChunk.endsWith('\n')) {
+              res.write('\n');
+            }
+          }
+        }
+
+        lastId = batch[batch.length - 1].id || lastId;
+      }
+    } catch (error) {
+      if (error instanceof ForbiddenException) {
+        throw error;
+      }
+
+      this.logger.error(`导出全部客户CSV失败: ${error.message}`, error.stack);
+      throw new BadRequestException(`导出全部客户CSV失败: ${error.message}`);
+    }
+  }
+
+  private getCustomerExportColumnLabel(
+    propertyName: string,
+    comment?: string,
+  ): string {
+    const fieldLabelMap: Record<string, string> = {
+      id: 'ID',
+      paidInCapital: '已实缴金额',
+      legalPersonIdImages: '法人身份证照片',
+      otherIdImages: '其他人员身份证照片',
+      businessLicenseImages: '营业执照照片',
+      bankAccountLicenseImages: '开户许可证照片',
+      legalPersonIdImagesWithId: '法人手持身份证照片',
+      supplementaryImages: '补充资料照片',
+      administrativeLicense: '行政许可',
+      followUpRecords: '跟进记录',
+      accountingRequiredFiles: '做账所需资料',
+      createTime: '创建时间',
+      updateTime: '更新时间',
+      submitter: '提交人',
+      remarks: '备注',
+    };
+
+    if (fieldLabelMap[propertyName]) {
+      return fieldLabelMap[propertyName];
+    }
+
+    if (typeof comment === 'string' && comment.trim()) {
+      const shortComment = comment.split(/[，(（]/)[0].trim();
+      return shortComment || comment.trim();
+    }
+
+    return propertyName;
+  }
+
+  private escapeCsvCell(value: string): string {
+    const safeValue = value ?? '';
+    if (/[",\n\r]/.test(safeValue)) {
+      return `"${safeValue.replace(/"/g, '""')}"`;
+    }
+    return safeValue;
+  }
+
+  private formatCustomerExportValue(
+    value: unknown,
+    fieldName?: string,
+  ): string | number | boolean {
+    if (value === null || value === undefined) {
+      return '';
+    }
+
+    if (fieldName === 'enterpriseStatus') {
+      const enterpriseStatusMap: Record<string, string> = {
+        normal: '工商正常',
+        abnormal: '工商异常',
+        cancelled: '已注销',
+        revoked: '已吊销',
+      };
+      const statusValue = String(value);
+      return enterpriseStatusMap[statusValue] || statusValue;
+    }
+
+    if (fieldName === 'businessStatus') {
+      const businessStatusMap: Record<string, string> = {
+        normal: '正常',
+        logged_out: '已注销',
+        logging_out: '注销中',
+        lost: '已流失',
+        waiting_transfer: '等待转出',
+      };
+      const statusValue = String(value);
+      return businessStatusMap[statusValue] || statusValue;
+    }
+
+    if (value instanceof Date) {
+      return value.toISOString().replace('T', ' ').replace('Z', '');
+    }
+
+    if (typeof value === 'boolean') {
+      return value ? '是' : '否';
+    }
+
+    if (typeof value === 'object') {
+      try {
+        const translated = this.translateJsonKeysToChinese(value);
+        return JSON.stringify(translated);
+      } catch {
+        return String(value);
+      }
+    }
+
+    return value as string | number | boolean;
+  }
+
+  private translateJsonKeysToChinese(value: unknown): unknown {
+    const jsonKeyMap: Record<string, string> = {
+      name: '姓名',
+      phone: '电话',
+      contributionDate: '出资日期',
+      amount: '出资金额',
+      images: '图片',
+      front: '身份证正面',
+      back: '身份证反面',
+      main: '营业执照',
+      copy: '营业执照副本',
+      basic: '基本户开户许可证',
+      general: '一般户开户许可证',
+      holdingIdCard: '法人手持身份证',
+      fileName: '文件名',
+      url: '文件地址',
+      remarks: '备注',
+      licenseType: '行政许可类型',
+      startDate: '开始日期',
+      expiryDate: '到期日期',
+      lastChargeAmount: '上次收费金额',
+      datetime: '时间',
+      text: '内容',
+      uploadTime: '上传时间',
+      categoryId: '分类ID',
+      categoryPath: '分类路径',
+    };
+
+    if (Array.isArray(value)) {
+      return value.map((item) => this.translateJsonKeysToChinese(item));
+    }
+
+    if (!value || typeof value !== 'object') {
+      return value;
+    }
+
+    const source = value as Record<string, unknown>;
+    const translated: Record<string, unknown> = {};
+
+    Object.entries(source).forEach(([key, val]) => {
+      const mappedKey = jsonKeyMap[key] || key;
+      translated[mappedKey] = this.translateJsonKeysToChinese(val);
+    });
+
+    return translated;
+  }
+
+  /**
    * 删除文件
    */
   private async deleteFile(filePath: string): Promise<void> {
@@ -1822,7 +2055,7 @@ export class CustomerService {
 
   /**
    * 定时任务：每天凌晨00:00检查行政许可到期情况
-   * 自动发送通知给相关顾问会计
+   * 自动发送通知给相关顾问会计、管理员和超级管理员
    */
   @Cron('0 0 * * *', {
     name: 'checkAdministrativeLicenseExpiry',
@@ -1851,7 +2084,7 @@ export class CustomerService {
 
   /**
    * 检查行政许可到期情况并发送通知
-   * 检查所有客户的行政许可，如果在60天内到期，则给对应的顾问会计发送通知
+   * 检查所有客户的行政许可，如果在60天内到期，则给对应的顾问会计、管理员和超级管理员发送通知
    */
   async checkAdministrativeLicenseExpiry(userId: number): Promise<{
     success: boolean;
@@ -1860,10 +2093,6 @@ export class CustomerService {
   }> {
     try {
       this.logger.log(`用户 ${userId} 触发行政许可到期检查`);
-
-      // 计算60天后的日期
-      const sixtyDaysLater = new Date();
-      sixtyDaysLater.setDate(sixtyDaysLater.getDate() + 60);
       
       // 查询所有客户
       const customers = await this.customerRepository.find({
@@ -1932,6 +2161,14 @@ export class CustomerService {
 
       this.logger.log(`发现 ${expiringLicenses.length} 个即将到期的行政许可`);
 
+      if (expiringLicenses.length === 0) {
+        return {
+          success: true,
+          message: '检查完成，未发现60天内到期的行政许可',
+          expiringCount: 0,
+        };
+      }
+
       // 按顾问会计分组
       const notificationsByAccountant = new Map<string, Array<any>>();
 
@@ -1958,9 +2195,21 @@ export class CustomerService {
         this.logger.log(`顾问会计: ${accountant}, 负责 ${items.length} 个即将到期的行政许可`);
       }
 
+      // 动态导入通知实体并获取Repository
+      const { Notification } = await import(
+        '../notifications/entities/notification.entity'
+      );
+      const { NotificationRecipient } = await import(
+        '../notifications/entities/notification-recipient.entity'
+      );
+      const notificationRepo =
+        this.customerRepository.manager.getRepository(Notification);
+      const recipientRepo =
+        this.customerRepository.manager.getRepository(NotificationRecipient);
+
       // 发送通知
       let notificationCount = 0;
-      const notifiedUserIds: number[] = [];
+      const notifiedUserIdSet = new Set<number>();
 
       for (const [accountant, items] of notificationsByAccountant.entries()) {
         // 构建通知内容
@@ -2021,18 +2270,6 @@ export class CustomerService {
             this.logger.log(`找到顾问会计 ${accountant} 对应的用户ID: ${accountantUser.id}`);
           }
 
-          // 动态导入通知实体
-          const { Notification } = await import(
-            '../notifications/entities/notification.entity'
-          );
-          const { NotificationRecipient } = await import(
-            '../notifications/entities/notification-recipient.entity'
-          );
-
-          // 使用实体类获取Repository
-          const notificationRepo = this.customerRepository.manager.getRepository(Notification);
-          const recipientRepo = this.customerRepository.manager.getRepository(NotificationRecipient);
-
           // 创建通知记录（每次调用都创建新通知）
           const notification = notificationRepo.create({
             title: '行政许可到期提醒',
@@ -2056,7 +2293,7 @@ export class CustomerService {
           this.logger.log(`创建接收者记录成功，用户ID: ${accountantUser.id}`);
 
           notificationCount++;
-          notifiedUserIds.push(accountantUser.id);
+          notifiedUserIdSet.add(accountantUser.id);
           this.logger.log(`已向顾问会计 ${accountant} (用户ID: ${accountantUser.id}) 发送通知`);
         } catch (error) {
           this.logger.error(
@@ -2066,9 +2303,83 @@ export class CustomerService {
         }
       }
 
+      // 同时通知管理员和超级管理员（静默通知，不做实时弹窗推送）
+      try {
+        const adminUsers = await this.userRepository
+          .createQueryBuilder('user')
+          .select(['user.id', 'user.username'])
+          .where(
+            `JSON_CONTAINS(user.roles, :adminRole, '$') OR JSON_CONTAINS(user.roles, :superAdminRole, '$')`,
+            {
+              adminRole: JSON.stringify('admin'),
+              superAdminRole: JSON.stringify('super_admin'),
+            },
+          )
+          .getMany();
+
+        const adminUsersToNotify = adminUsers.filter(
+          (adminUser) => !notifiedUserIdSet.has(adminUser.id),
+        );
+
+        if (adminUsersToNotify.length > 0) {
+          const adminLicenseList = expiringLicenses
+            .map((item) => {
+              const expiryDateStr = new Date(
+                item.license.expiryDate,
+              ).toLocaleDateString('zh-CN');
+              const statusText =
+                item.daysUntilExpiry === 0
+                  ? '今天到期'
+                  : `还有${item.daysUntilExpiry}天`;
+              const consultantName =
+                item.customer.consultantAccountant || '未分配';
+              return `• ${item.customer.companyName}（${item.license.licenseType || '未知类型'}）- 到期日期：${expiryDateStr}（${statusText}），顾问会计：${consultantName}`;
+            })
+            .join('\n');
+
+          const adminContent = `以下客户的行政许可即将在60天内到期，请及时统筹安排：\n\n${adminLicenseList}`;
+
+          const adminNotification = notificationRepo.create({
+            title: '行政许可到期提醒',
+            content: adminContent,
+            type: '行政到期',
+            createdBy: userId,
+          });
+          const savedAdminNotification =
+            await notificationRepo.save(adminNotification);
+
+          const adminRecipients = adminUsersToNotify.map((adminUser) =>
+            recipientRepo.create({
+              notificationId: savedAdminNotification.id,
+              userId: adminUser.id,
+              readStatus: 0,
+              readAt: null,
+            }),
+          );
+
+          await recipientRepo.save(adminRecipients);
+          adminUsersToNotify.forEach((adminUser) =>
+            notifiedUserIdSet.add(adminUser.id),
+          );
+          notificationCount += adminRecipients.length;
+
+          this.logger.log(
+            `已向 ${adminUsersToNotify.length} 个管理员/超级管理员发送行政许可到期提醒`,
+          );
+        } else {
+          this.logger.log('未找到需要额外通知的管理员或超级管理员');
+        }
+      } catch (error) {
+        this.logger.error(
+          `向管理员和超级管理员发送通知失败: ${error.message}`,
+          error.stack,
+        );
+      }
+
       // 通过WebSocket推送通知（可选，如果失败不影响主流程）
+      const notifiedUserIds = Array.from(notifiedUserIdSet);
       if (notifiedUserIds.length > 0) {
-        this.logger.log(`准备通过WebSocket推送通知给 ${notifiedUserIds.length} 个用户`);
+        this.logger.log(`本次已写入通知接收者 ${notifiedUserIds.length} 个用户（仅通知中心，不触发弹窗）`);
         // WebSocket推送由前端轮询或刷新页面时自动获取新通知
         // 这里不强制推送，避免复杂的依赖注入问题
       }

@@ -330,6 +330,42 @@ export class CustomerController {
     res.end(csvData);
   }
 
+  @Get('export/csv-all')
+  @Roles('admin', 'super_admin')
+  @ApiOperation({
+    summary: '导出全部客户数据为CSV（管理员）',
+    description: '导出客户表全部字段数据，表头为中文。仅管理员和超级管理员可使用。',
+  })
+  @ApiResponse({ status: 200, description: '导出成功' })
+  @ApiResponse({ status: 403, description: '没有权限执行此操作' })
+  async exportAllToCsv(@Req() req, @Res() res: Response) {
+    if (!req.user || !req.user.id) {
+      throw new ForbiddenException('未能获取有效的用户身份');
+    }
+
+    const filename = `customers_all.csv`;
+
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=${encodeURIComponent(filename)}`,
+    );
+    res.setHeader('Content-Transfer-Encoding', 'binary');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    try {
+      await this.customerService.exportAllToCsv(res, req.user.id);
+      res.end();
+    } catch (error) {
+      if (!res.headersSent) {
+        throw error;
+      }
+      this.logger.error(`导出全部客户CSV响应中断: ${error.message}`);
+      res.end();
+    }
+  }
+
   @Post('import-excel')
   @UseInterceptors(
     FileInterceptor('file', {
