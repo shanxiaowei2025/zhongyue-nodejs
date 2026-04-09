@@ -1,7 +1,8 @@
 // 定义枚举类型
 // 例如：
 // - 企业状态：active/inactive/pending 正常、已注销、待处理
-// - 业务状态有正常、已注销、注销中、已流失、等待转出：normal、logged_out、logging_out、lost、waiting_transfer
+// - 业务状态有正常、已注销、注销中、已流失、等待转出、欠费不报、只年检、仅办照不代理、仅单项业务办理
+//   对应：normal、logged_out、logging_out、lost、waiting_transfer、arrears_no_report、annual_inspection_only、license_only_no_agency、single_service_only
 // export enum EnterpriseStatus {
 //   ACTIVE = 'active',
 //   INACTIVE = 'inactive',
@@ -14,11 +15,15 @@
 //   SPECIAL = 'special'
 // }
 
-// 正常、已注销、注销中、已流失、等待转出
+// 正常、已注销、注销中、已流失、等待转出、欠费不报、只年检、仅办照不代理、仅单项业务办理
 export enum BusinessStatus {
   NORMAL = 'normal',
   LOGGED_OUT = 'logged_out',
   LOGGING_OUT = 'logging_out',
   LOST = 'lost',
   WAITING_TRANSFER = 'waiting_transfer',
+  ARREARS_NO_REPORT = 'arrears_no_report',
+  ANNUAL_INSPECTION_ONLY = 'annual_inspection_only',
+  LICENSE_ONLY_NO_AGENCY = 'license_only_no_agency',
+  SINGLE_SERVICE_ONLY = 'single_service_only',
 }

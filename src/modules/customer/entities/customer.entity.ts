@@ -342,6 +342,10 @@ export class Customer {
   //logging_out：注销中
   //lost：已流失
   //waiting_transfer：等待转出
+  //arrears_no_report：欠费不报
+  //annual_inspection_only：只年检
+  //license_only_no_agency：仅办照不代理
+  //single_service_only：仅单项业务办理
 
   @Column({ nullable: true, comment: '客户群' })
   customerGroup: string;
