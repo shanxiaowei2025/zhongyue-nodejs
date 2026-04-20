@@ -22,6 +22,7 @@ import { QuerySalaryDto } from './dto/query-salary.dto';
 import { ConfirmSalaryDto } from './dto/confirm-salary.dto';
 import { ExportSalaryDto } from './dto/export-salary.dto';
 import { UpdateConfirmedDto } from './dto/update-confirmed.dto';
+import { ConfirmAutoGenerateSalaryDto } from './dto/confirm-auto-generate-salary.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -563,9 +564,9 @@ export class SalaryController {
   @Post('auto-generate')
   @Roles('salary_admin', 'super_admin')
   @ApiOperation({
-    summary: '自动生成薪资数据',
+    summary: '统计销售专员提成确认数据',
     description:
-      '自动生成指定月份的薪资数据。注意：不能生成2025年6月及其之前的薪资数据。',
+      '仅统计销售专员提成明细、提成总和和基础工资确认数据，不直接保存到薪资表。注意：不能生成2025年6月及其之前的薪资数据。',
   })
   @ApiQuery({
     name: 'month',
@@ -580,8 +581,8 @@ export class SalaryController {
     schema: {
       example: {
         success: true,
-        message: '薪资数据生成成功，共更新5条记录，新增10条记录',
-        details: { updated: 5, created: 10 },
+        message: '销售专员提成信息统计成功，共3人',
+        reviewData: [],
       },
     },
   })
@@ -598,7 +599,7 @@ export class SalaryController {
     try {
       await this.salaryPermissionService.checkPermission(req);
       const result =
-        await this.salaryAutoUpdateService.manualGenerateSalaries(month);
+        await this.salaryAutoUpdateService.previewSalesCommissionReview(month);
 
       // 检查是否是时间限制错误
       if (!result.success && result.error === 'TIME_RESTRICTION') {
@@ -608,7 +609,59 @@ export class SalaryController {
       return result;
     } catch (error) {
       throw new HttpException(
-        error.message || '手动生成薪资失败',
+        error.message || '统计销售专员提成信息失败',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('auto-generate/confirm')
+  @Roles('salary_admin', 'super_admin')
+  @ApiOperation({
+    summary: '确认并保存预生成薪资数据',
+    description:
+      '在销售专员基础工资确认后，重新计算并将指定月份的薪资数据保存到薪资表。',
+  })
+  @ApiBody({ type: ConfirmAutoGenerateSalaryDto, required: false })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: '确认生成结果',
+    schema: {
+      example: {
+        success: true,
+        message: '薪资数据生成成功，共更新5条记录，新增10条记录',
+        details: { updated: 5, created: 10 },
+      },
+    },
+  })
+  async confirmAutoGenerateSalaries(
+    @Body() body: ConfirmAutoGenerateSalaryDto,
+    @Req() req: RequestWithUser,
+  ) {
+    try {
+      await this.salaryPermissionService.checkPermission(req);
+
+      const overrides = Object.fromEntries(
+        (body?.salesBaseSalaryOverrides || []).map(item => [
+          item.name,
+          Number(item.baseSalary || 0),
+        ]),
+      );
+
+      const result =
+        await this.salaryAutoUpdateService.confirmGenerateMonthlySalaries(
+          body?.month,
+          overrides,
+        );
+
+      if (!result.success && result.error === 'TIME_RESTRICTION') {
+        throw new HttpException(result.message, HttpStatus.BAD_REQUEST);
+      }
+
+      return result;
+    } catch (error) {
+      throw new HttpException(
+        error.message || '确认生成薪资失败',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

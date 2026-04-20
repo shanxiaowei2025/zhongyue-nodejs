@@ -6,6 +6,89 @@ import { Salary } from '../entities/salary.entity';
 import moment from 'moment';
 import 'moment/locale/zh-cn';
 
+export interface GenerateMonthlySalariesOptions {
+  persist?: boolean;
+  salesBaseSalaryOverrides?: Record<string, number>;
+}
+
+export interface GeneratedSalaryPreviewRecord {
+  id?: number;
+  name: string;
+  department: string;
+  idCard: string;
+  type: string;
+  baseSalary: number;
+  temporaryIncrease: number;
+  temporaryIncreaseItem: string;
+  attendanceDeduction: number;
+  basicSalaryPayable: number;
+  fullAttendance: number;
+  departmentHeadSubsidy: number;
+  positionAllowance: number;
+  oilSubsidy: number;
+  mealSubsidy: number;
+  seniority: number;
+  agencyFeeCommission: number;
+  performanceCommission: number;
+  performanceDeductions?: number[];
+  businessCommission: number;
+  otherDeductions: number;
+  personalMedical: number;
+  personalPension: number;
+  personalUnemployment: number;
+  personalInsuranceTotal: number;
+  companyInsuranceTotal: number;
+  depositDeduction: number;
+  personalIncomeTax: number;
+  other: number;
+  totalPayable: number;
+  bankCardNumber: string;
+  bankCardOrWechat: number;
+  corporatePayment: number;
+  taxDeclaration: number;
+  yearMonth: string;
+  isPaid: boolean;
+  isConfirmed: boolean;
+  confirmedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GenerateMonthlySalariesResult {
+  created: number;
+  updated: number;
+  salaryData: GeneratedSalaryPreviewRecord[];
+}
+
+interface ExpenseBusinessCommissionBreakdown {
+  expenseId: number;
+  basicBusinessCommission: number;
+  outsourceBusinessCommission: number;
+  specialBusinessCommission: number;
+  totalBusinessCommission: number;
+  basicBusinessPerformance: number;
+  outsourcingBusinessPerformance: number;
+}
+
+interface BusinessCommissionCalculationResult {
+  businessCommission: number;
+  businessCommissionOwn: number;
+  businessCommissionOutsource: number;
+  specialBusinessCommission: number;
+  newBaseSalary: number | null;
+  expenseBreakdowns: ExpenseBusinessCommissionBreakdown[];
+}
+
+export interface SalesCommissionReviewRecord {
+  name: string;
+  businessCommissionOwn: number;
+  businessCommissionOutsource: number;
+  specialBusinessCommission: number;
+  agencyCommission: number;
+  commissionTotal: number;
+  baseSalary: number;
+}
+
 @Injectable()
 export class SalaryAutoUpdateService {
   private readonly logger = new Logger(SalaryAutoUpdateService.name);
@@ -365,25 +448,14 @@ export class SalaryAutoUpdateService {
     }
   }
 
-  /**
-   * 计算业务提成
-   * 1. 筛选sys_expense表中businessType是新增和值为空的，并且chargeDate在指定时间范围内的记录
-   * 2. 根据员工的sys_employees表中的commissionRatePosition区分每个人的提成比率
-   * 3. 根据不同提成比率职位计算提成
-   * @param employeeName 员工姓名
-   * @param startDate 开始日期（上个月1号）
-   * @param endDate 结束日期（上个月最后一天）
-   * @returns 业务提成金额和更新的baseSalary
-   */
-  async calculateBusinessCommission(
+  private async calculateBusinessCommissionDetails(
     employeeName: string,
     startDate: string,
     endDate: string,
-  ): Promise<{ businessCommission: number; newBaseSalary?: number }> {
+  ): Promise<BusinessCommissionCalculationResult> {
     try {
-      this.logger.log(`开始计算员工 ${employeeName} 的业务提成`);
+      this.logger.log(`开始统计员工 ${employeeName} 的业务提成明细`);
 
-      // 1. 获取员工信息
       const employeeQuery = `
         SELECT * FROM sys_employees WHERE name = ? LIMIT 1
       `;
@@ -393,13 +465,19 @@ export class SalaryAutoUpdateService {
 
       if (!employeeResults.length) {
         this.logger.debug(`未找到员工 ${employeeName} 的信息`);
-        return { businessCommission: 0 };
+        return {
+          businessCommission: 0,
+          businessCommissionOwn: 0,
+          businessCommissionOutsource: 0,
+          specialBusinessCommission: 0,
+          newBaseSalary: null,
+          expenseBreakdowns: [],
+        };
       }
 
       const employee = employeeResults[0];
       const commissionRatePosition = employee.commissionRatePosition || '';
 
-      // 2. 筛选费用记录：只筛选新增业务和空的业务类型，指定时间范围内已审核的
       const expenseQuery = `
         SELECT * FROM sys_expense 
         WHERE 
@@ -419,27 +497,30 @@ export class SalaryAutoUpdateService {
         this.logger.debug(
           `员工 ${employeeName} 在上个月没有符合条件的业务记录`,
         );
-        return { businessCommission: 0 };
+        return {
+          businessCommission: 0,
+          businessCommissionOwn: 0,
+          businessCommissionOutsource: 0,
+          specialBusinessCommission: 0,
+          newBaseSalary: null,
+          expenseBreakdowns: [],
+        };
       }
 
-      // 3. 统计所有记录的基础业务费用总和
       let totalBasicFee = 0;
-      let totalOutsourceFee = 0;
-      let totalExpenseBusinessCommission = 0;
 
-      // 先计算所有记录的基础业务费用总和
       for (const expense of expenseResults) {
-        // 基础业务费用总和
-        // socialInsuranceAgencyFee 在以下情况计入：socialInsuranceBusinessType = '新增' 或为空或为空字符串
-        const socialInsuranceAgencyFee = (
-          expense.socialInsuranceBusinessType === '新增' || 
-          !expense.socialInsuranceBusinessType || 
+        const socialInsuranceAgencyFee =
+          expense.socialInsuranceBusinessType === '新增' ||
+          !expense.socialInsuranceBusinessType ||
           expense.socialInsuranceBusinessType === ''
-        ) ? Number(expense.socialInsuranceAgencyFee || 0) 
-          : 0;
-        
+            ? Number(expense.socialInsuranceAgencyFee || 0)
+            : 0;
+
         const addressFee = Number(expense.addressFee || 0);
-        const onlineBankingCustodyFee = Number(expense.onlineBankingCustodyFee || 0);
+        const onlineBankingCustodyFee = Number(
+          expense.onlineBankingCustodyFee || 0,
+        );
         const basicFee =
           Number(expense.licenseFee || 0) +
           Number(expense.agencyFee || 0) +
@@ -453,21 +534,11 @@ export class SalaryAutoUpdateService {
           addressFee +
           onlineBankingCustodyFee;
 
-        // 外包业务费用总和
-        const outsourceFee =
-          Number(expense.brandFee || 0) +
-          Number(expense.generalSealFee || 0) +
-          Number(expense.accountingSoftwareFee || 0) +
-          Number(expense.invoiceSoftwareFee || 0) +
-          Number(expense.otherBusinessOutsourcingFee || 0);
-
-        // 累计总费用（用于后续计算提成比率）
         totalBasicFee += basicFee;
-        totalOutsourceFee += outsourceFee;
       }
 
-      // 4. 根据不同的提成比率职位获取提成比率
       let commissionRate = 0;
+      let hasMatchedCommissionRate = false;
 
       if (commissionRatePosition) {
         let commissionTable = '';
@@ -479,7 +550,6 @@ export class SalaryAutoUpdateService {
           commissionTable = 'sys_business_other_commission';
         }
 
-        // 查询提成比率 - 基于所有记录的基础业务费用总和
         const commissionRateQuery = `
           SELECT * FROM ${commissionTable} 
           WHERE ? BETWEEN CAST(SUBSTRING_INDEX(feeRange, '-', 1) AS DECIMAL(10,2)) 
@@ -498,27 +568,80 @@ export class SalaryAutoUpdateService {
 
         if (commissionRateResults.length) {
           commissionRate = Number(commissionRateResults[0].commissionRate || 0);
+          hasMatchedCommissionRate = true;
           this.logger.debug(
             `员工 ${employeeName} 的基础业务费用总和为 ${totalBasicFee}，适用的提成比率为 ${commissionRate}`,
           );
+        } else {
+          this.logger.debug(`未找到适用于总额 ${totalBasicFee} 的提成比率`);
+        }
+      }
 
-          // 使用获取到的提成比率计算每条记录的提成
-          for (const expense of expenseResults) {
-            // 基础业务费用
-            // socialInsuranceAgencyFee 在以下情况计入：socialInsuranceBusinessType = '新增' 或为空或为空字符串
-            const socialInsuranceAgencyFee = (
-              expense.socialInsuranceBusinessType === '新增' || 
-              !expense.socialInsuranceBusinessType || 
-              expense.socialInsuranceBusinessType === ''
-            ) ? Number(expense.socialInsuranceAgencyFee || 0) 
-              : 0;
-            
-            const addressFee = Number(expense.addressFee || 0);
-            const addressFeeCommission = addressFee * 0.1;
-            const onlineBankingCustodyFee = Number(expense.onlineBankingCustodyFee || 0);
-            const basicFee =
+      const expenseBreakdowns: ExpenseBusinessCommissionBreakdown[] = [];
+      let businessCommissionOwn = 0;
+      let businessCommissionOutsource = 0;
+      let specialBusinessCommission = 0;
+
+      for (const expense of expenseResults) {
+        const socialInsuranceAgencyFee =
+          expense.socialInsuranceBusinessType === '新增' ||
+          !expense.socialInsuranceBusinessType ||
+          expense.socialInsuranceBusinessType === ''
+            ? Number(expense.socialInsuranceAgencyFee || 0)
+            : 0;
+
+        const addressFee = Number(expense.addressFee || 0);
+        const addressFeeCommission = addressFee * 0.1;
+        const onlineBankingCustodyFee = Number(
+          expense.onlineBankingCustodyFee || 0,
+        );
+        const basicFeeWithCustody =
+          Number(expense.licenseFee || 0) +
+          Number(expense.agencyFee || 0) +
+          socialInsuranceAgencyFee +
+          Number(expense.housingFundAgencyFee || 0) +
+          Number(expense.statisticalReportFee || 0) +
+          Number(expense.changeFee || 0) +
+          Number(expense.administrativeLicenseFee || 0) +
+          Number(expense.otherBusinessFee || 0) +
+          Number(expense.customerDataOrganizationFee || 0) +
+          addressFee +
+          onlineBankingCustodyFee;
+        const basicFeeWithoutCustody =
+          Number(expense.licenseFee || 0) +
+          Number(expense.agencyFee || 0) +
+          socialInsuranceAgencyFee +
+          Number(expense.housingFundAgencyFee || 0) +
+          Number(expense.statisticalReportFee || 0) +
+          Number(expense.changeFee || 0) +
+          Number(expense.administrativeLicenseFee || 0) +
+          Number(expense.otherBusinessFee || 0) +
+          Number(expense.customerDataOrganizationFee || 0) +
+          addressFee;
+        const outsourceFee =
+          Number(expense.brandFee || 0) +
+          Number(expense.generalSealFee || 0) +
+          Number(expense.accountingSoftwareFee || 0) +
+          Number(expense.invoiceSoftwareFee || 0) +
+          Number(expense.otherBusinessOutsourcingFee || 0);
+        const outsourceBusinessCommission =
+          outsourceFee * 0.1 + addressFeeCommission;
+
+        let basicBusinessCommission = 0;
+        let basicBusinessPerformance = basicFeeWithoutCustody;
+
+        if (hasMatchedCommissionRate) {
+          basicBusinessPerformance = basicFeeWithCustody;
+
+          if (
+            expense.giftAgencyDuration === '两年赠一年' &&
+            Number(expense.agencyFee || 0) > 0
+          ) {
+            const agencyFee = Number(expense.agencyFee || 0);
+            const specialAgencyCommission =
+              (agencyFee / 2) * (commissionRate + 0.05);
+            const otherBasicFee =
               Number(expense.licenseFee || 0) +
-              Number(expense.agencyFee || 0) +
               socialInsuranceAgencyFee +
               Number(expense.housingFundAgencyFee || 0) +
               Number(expense.statisticalReportFee || 0) +
@@ -526,255 +649,59 @@ export class SalaryAutoUpdateService {
               Number(expense.administrativeLicenseFee || 0) +
               Number(expense.otherBusinessFee || 0) +
               Number(expense.customerDataOrganizationFee || 0) +
-              addressFee +
               onlineBankingCustodyFee;
-
-            // 外包业务费用
-            const outsourceFee =
-              Number(expense.brandFee || 0) +
-              Number(expense.generalSealFee || 0) +
-              Number(expense.accountingSoftwareFee || 0) +
-              Number(expense.invoiceSoftwareFee || 0) +
-              Number(expense.otherBusinessOutsourcingFee || 0);
-            const outsourceFeeCommission = outsourceFee * 0.1;
-
-            // 计算基础业务提成
-            let basicBusinessCommission = 0;
-            
-            // 检查是否有"两年赠一年"的特殊情况
-            if (expense.giftAgencyDuration === '两年赠一年' && Number(expense.agencyFee || 0) > 0) {
-              // 对代理费部分特殊处理：agencyFee除以2乘以(commissionRate+0.05)
-              const agencyFee = Number(expense.agencyFee || 0);
-              const specialAgencyCommission = (agencyFee / 2) * (commissionRate + 0.05);
-              
-              // 计算其他基础业务费用的提成(不包括agencyFee)
-              const socialInsuranceAgencyFee = (
-                expense.socialInsuranceBusinessType === '新增' || 
-                !expense.socialInsuranceBusinessType || 
-                expense.socialInsuranceBusinessType === ''
-              ) ? Number(expense.socialInsuranceAgencyFee || 0) 
-                : 0;
-              
-              const otherBasicFee =
-                Number(expense.licenseFee || 0) +
-                socialInsuranceAgencyFee +
-                Number(expense.housingFundAgencyFee || 0) +
-                Number(expense.statisticalReportFee || 0) +
-                Number(expense.changeFee || 0) +
-                Number(expense.administrativeLicenseFee || 0) +
-                Number(expense.otherBusinessFee || 0) +
-                Number(expense.customerDataOrganizationFee || 0) +
-                onlineBankingCustodyFee;
-              
-              const otherBasicCommission = otherBasicFee * commissionRate;
-              // 合并特殊处理的代理费提成与其他基础业务提成（地址费单独计算固定10%提成，网银托管费按提成比率计算）
-              basicBusinessCommission = specialAgencyCommission + otherBasicCommission;
-              
-              this.logger.debug(
-                `费用记录 ID:${expense.id} 特殊处理"两年赠一年": 代理费=${agencyFee}, 特殊提成率=${commissionRate + 0.05}, 特殊代理费提成=${specialAgencyCommission}`
-              );
-            } else {
-              // 常规计算基础业务提成：地址费固定10%，网银托管费按提成比率，其余费用使用统一的提成比率
-              const basicFeeExcludingAddress = basicFee - addressFee;
-              basicBusinessCommission = basicFeeExcludingAddress * commissionRate;
-            }
-
-            // 计算外包业务提成 (固定10%)
-            const outsourceBusinessCommission =
-              outsourceFeeCommission + addressFeeCommission;
-            
-            // 计算特殊业务提成（直接使用手工设置的金额）
-            const specialCommission = Number(expense.specialBusinessCommission || 0);
-
-            // 计算总业务提成
-            const totalBusinessCommission =
-              basicBusinessCommission + outsourceBusinessCommission + specialCommission;
-
-            // 更新费用表中的业务提成字段和业绩字段（保留原有字段，同时更新新字段）
-            await this.dataSource.query(
-              `
-              UPDATE sys_expense SET 
-                business_commission = ?, 
-                business_commission_own = ?, 
-                business_commission_outsource = ?,
-                basicBusinessPerformance = ?,
-                outsourcingBusinessPerformance = ?
-              WHERE id = ?
-            `,
-              [totalBusinessCommission, basicBusinessCommission, outsourceBusinessCommission, basicFee, outsourceFee, expense.id],
-            );
-
-            // 累计每个员工每条记录的业务提成
-            totalExpenseBusinessCommission += totalBusinessCommission;
+            const otherBasicCommission = otherBasicFee * commissionRate;
+            basicBusinessCommission =
+              specialAgencyCommission + otherBasicCommission;
 
             this.logger.debug(
-              `费用记录 ID:${expense.id} 计算业务提成: ${totalBusinessCommission}，基础业务: ${basicBusinessCommission}，外包业务: ${outsourceBusinessCommission}，特殊业务: ${specialCommission}`,
+              `费用记录 ID:${expense.id} 特殊处理"两年赠一年": 代理费=${agencyFee}, 特殊提成率=${commissionRate + 0.05}, 特殊代理费提成=${specialAgencyCommission}`,
             );
+          } else {
+            basicBusinessCommission =
+              (basicFeeWithCustody - addressFee) * commissionRate;
           }
-        } else {
-          this.logger.debug(`未找到适用于总额 ${totalBasicFee} 的提成比率`);
-
-          // 计算业务提成（可能包括特殊处理的代理费提成和外包业务提成）
-          for (const expense of expenseResults) {
-            const addressFee = Number(expense.addressFee || 0);
-            // 计算外包业务提成
-            const outsourceFee =
-              Number(expense.brandFee || 0) +
-              Number(expense.generalSealFee || 0) +
-              Number(expense.accountingSoftwareFee || 0) +
-              Number(expense.invoiceSoftwareFee || 0) +
-              Number(expense.otherBusinessOutsourcingFee || 0);
-            const addressFeeCommission = addressFee * 0.1;
-            // 外包业务按10%计算，并额外叠加地址费提成
-            const outsourceBusinessCommission =
-              outsourceFee * 0.1 + addressFeeCommission;
-            
-            // 初始化基础业务提成为0
-            let basicBusinessCommission = 0;
-            
-            // 检查是否有"两年赠一年"的特殊情况
-            if (expense.giftAgencyDuration === '两年赠一年' && Number(expense.agencyFee || 0) > 0) {
-              // 虽然没找到适合的提成比率，但对于"两年赠一年"的情况，我们用5%作为基础提成率
-              const agencyFee = Number(expense.agencyFee || 0);
-              basicBusinessCommission = (agencyFee / 2) * 0.05;
-              
-              this.logger.debug(
-                `费用记录 ID:${expense.id} 特殊处理"两年赠一年"(无匹配比率): 代理费=${agencyFee}, 特殊提成率=5%, 特殊代理费提成=${basicBusinessCommission}`
-              );
-            }
-            
-            // 计算特殊业务提成（直接使用手工设置的金额）
-            const specialCommission = Number(expense.specialBusinessCommission || 0);
-            
-            // 计算总业务提成
-            const totalBusinessCommission =
-              basicBusinessCommission + outsourceBusinessCommission + specialCommission;
-
-            // 计算基础业务费用总和（用于业绩字段）
-            const socialInsuranceAgencyFeeForPerformance = (
-              expense.socialInsuranceBusinessType === '新增' || 
-              !expense.socialInsuranceBusinessType || 
-              expense.socialInsuranceBusinessType === ''
-            ) ? Number(expense.socialInsuranceAgencyFee || 0) 
-              : 0;
-            
-            const basicFeeForPerformance =
-              Number(expense.licenseFee || 0) +
-              Number(expense.agencyFee || 0) +
-              socialInsuranceAgencyFeeForPerformance +
-              Number(expense.housingFundAgencyFee || 0) +
-              Number(expense.statisticalReportFee || 0) +
-              Number(expense.changeFee || 0) +
-              Number(expense.administrativeLicenseFee || 0) +
-              Number(expense.otherBusinessFee || 0) +
-              Number(expense.customerDataOrganizationFee || 0) +
-              addressFee;
-
-            // 更新费用表中的业务提成字段和业绩字段
-            await this.dataSource.query(
-              `
-              UPDATE sys_expense SET 
-                business_commission = ?, 
-                business_commission_own = ?, 
-                business_commission_outsource = ?,
-                basicBusinessPerformance = ?,
-                outsourcingBusinessPerformance = ?
-              WHERE id = ?
-            `,
-              [totalBusinessCommission, basicBusinessCommission, outsourceBusinessCommission, basicFeeForPerformance, outsourceFee, expense.id],
-            );
-
-            // 累计每个员工每条记录的业务提成
-            totalExpenseBusinessCommission += totalBusinessCommission;
-
-            this.logger.debug(
-              `费用记录 ID:${expense.id} 计算业务提成: 基础业务=${basicBusinessCommission}, 外包业务=${outsourceBusinessCommission}, 特殊业务=${specialCommission}, 总计=${totalBusinessCommission}`,
-            );
-          }
-        }
-      } else {
-        // 如果没有提成比率职位，主要计算外包业务提成，但特殊情况下也处理代理费
-        for (const expense of expenseResults) {
-          const addressFee = Number(expense.addressFee || 0);
-          const outsourceFee =
-            Number(expense.brandFee || 0) +
-            Number(expense.generalSealFee || 0) +
-            Number(expense.accountingSoftwareFee || 0) +
-            Number(expense.invoiceSoftwareFee || 0) +
-            Number(expense.otherBusinessOutsourcingFee || 0);
-          const addressFeeCommission = addressFee * 0.1;
-          // 外包业务按10%计算，并额外叠加地址费提成
-          const outsourceBusinessCommission =
-            outsourceFee * 0.1 + addressFeeCommission;
-          
-          // 初始化基础业务提成为0
-          let basicBusinessCommission = 0;
-          
-          // 检查是否有"两年赠一年"的特殊情况
-          if (expense.giftAgencyDuration === '两年赠一年' && Number(expense.agencyFee || 0) > 0) {
-            // 虽然没有提成比率职位，但对于"两年赠一年"的情况，我们用5%作为基础提成率
-            const agencyFee = Number(expense.agencyFee || 0);
-            basicBusinessCommission = (agencyFee / 2) * 0.05;
-            
-            this.logger.debug(
-              `费用记录 ID:${expense.id} 特殊处理"两年赠一年"(无提成比率职位): 代理费=${agencyFee}, 特殊提成率=5%, 特殊代理费提成=${basicBusinessCommission}`
-            );
-          }
-          
-          // 计算特殊业务提成（直接使用手工设置的金额）
-          const specialCommission = Number(expense.specialBusinessCommission || 0);
-          
-          // 计算总业务提成
-          const totalBusinessCommission =
-            basicBusinessCommission + outsourceBusinessCommission + specialCommission;
-
-          // 计算基础业务费用总和（用于业绩字段）
-          const socialInsuranceAgencyFeeForPerformance = (
-            expense.socialInsuranceBusinessType === '新增' || 
-            !expense.socialInsuranceBusinessType || 
-            expense.socialInsuranceBusinessType === ''
-          ) ? Number(expense.socialInsuranceAgencyFee || 0) 
-            : 0;
-          
-          const basicFeeForPerformance =
-            Number(expense.licenseFee || 0) +
-            Number(expense.agencyFee || 0) +
-            socialInsuranceAgencyFeeForPerformance +
-            Number(expense.housingFundAgencyFee || 0) +
-            Number(expense.statisticalReportFee || 0) +
-            Number(expense.changeFee || 0) +
-            Number(expense.administrativeLicenseFee || 0) +
-            Number(expense.otherBusinessFee || 0) +
-            Number(expense.customerDataOrganizationFee || 0) +
-            addressFee;
-
-          // 更新费用表中的业务提成字段和业绩字段
-          await this.dataSource.query(
-            `
-            UPDATE sys_expense SET 
-              business_commission = ?, 
-              business_commission_own = ?, 
-              business_commission_outsource = ?,
-              basicBusinessPerformance = ?,
-              outsourcingBusinessPerformance = ?
-            WHERE id = ?
-          `,
-            [totalBusinessCommission, basicBusinessCommission, outsourceBusinessCommission, basicFeeForPerformance, outsourceFee, expense.id],
-          );
-
-          // 累计每个员工每条记录的业务提成
-          totalExpenseBusinessCommission += totalBusinessCommission;
+        } else if (
+          expense.giftAgencyDuration === '两年赠一年' &&
+          Number(expense.agencyFee || 0) > 0
+        ) {
+          const agencyFee = Number(expense.agencyFee || 0);
+          basicBusinessCommission = (agencyFee / 2) * 0.05;
 
           this.logger.debug(
-            `费用记录 ID:${expense.id} 计算业务提成: 基础业务=${basicBusinessCommission}, 外包业务=${outsourceBusinessCommission}, 特殊业务=${specialCommission}, 总计=${totalBusinessCommission}`,
+            `费用记录 ID:${expense.id} 特殊处理"两年赠一年"(无匹配比率): 代理费=${agencyFee}, 特殊提成率=5%, 特殊代理费提成=${basicBusinessCommission}`,
           );
         }
+
+        const currentSpecialBusinessCommission = Number(
+          expense.specialBusinessCommission || 0,
+        );
+        const totalBusinessCommission =
+          basicBusinessCommission +
+          outsourceBusinessCommission +
+          currentSpecialBusinessCommission;
+
+        expenseBreakdowns.push({
+          expenseId: Number(expense.id),
+          basicBusinessCommission,
+          outsourceBusinessCommission,
+          specialBusinessCommission: currentSpecialBusinessCommission,
+          totalBusinessCommission,
+          basicBusinessPerformance,
+          outsourcingBusinessPerformance: outsourceFee,
+        });
+
+        businessCommissionOwn += basicBusinessCommission;
+        businessCommissionOutsource += outsourceBusinessCommission;
+        specialBusinessCommission += currentSpecialBusinessCommission;
+
+        this.logger.debug(
+          `费用记录 ID:${expense.id} 计算业务提成: 基础业务=${basicBusinessCommission}, 外包业务=${outsourceBusinessCommission}, 特殊业务=${currentSpecialBusinessCommission}, 总计=${totalBusinessCommission}`,
+        );
       }
 
-      // 5. 如果是销售人员，还需更新baseSalary
       let newBaseSalary = null;
       if (commissionRatePosition === '销售') {
-        // 查询销售的底薪 - 基于所有记录的基础业务费用总和
         const baseSalaryQuery = `
           SELECT baseSalary FROM sys_business_sales_commission 
           WHERE ? BETWEEN CAST(SUBSTRING_INDEX(feeRange, '-', 1) AS DECIMAL(10,2)) 
@@ -792,23 +719,84 @@ export class SalaryAutoUpdateService {
 
         if (baseSalaryResults.length) {
           newBaseSalary = Number(baseSalaryResults[0].baseSalary || 0);
-          this.logger.debug(
-            `员工 ${employeeName} 更新底薪为: ${newBaseSalary}`,
-          );
+          this.logger.debug(`员工 ${employeeName} 更新底薪为: ${newBaseSalary}`);
         }
       }
 
       return {
-        businessCommission: totalExpenseBusinessCommission,
+        businessCommission:
+          businessCommissionOwn +
+          businessCommissionOutsource +
+          specialBusinessCommission,
+        businessCommissionOwn,
+        businessCommissionOutsource,
+        specialBusinessCommission,
         newBaseSalary,
+        expenseBreakdowns,
       };
     } catch (error) {
       this.logger.error(
-        `计算员工 ${employeeName} 业务提成时出错: ${error.message}`,
+        `统计员工 ${employeeName} 业务提成明细时出错: ${error.message}`,
         error.stack,
       );
-      return { businessCommission: 0 };
+      return {
+        businessCommission: 0,
+        businessCommissionOwn: 0,
+        businessCommissionOutsource: 0,
+        specialBusinessCommission: 0,
+        newBaseSalary: null,
+        expenseBreakdowns: [],
+      };
     }
+  }
+
+  /**
+   * 计算业务提成
+   * 1. 筛选sys_expense表中businessType是新增和值为空的，并且chargeDate在指定时间范围内的记录
+   * 2. 根据员工的sys_employees表中的commissionRatePosition区分每个人的提成比率
+   * 3. 根据不同提成比率职位计算提成
+   * @param employeeName 员工姓名
+   * @param startDate 开始日期（上个月1号）
+   * @param endDate 结束日期（上个月最后一天）
+   * @returns 业务提成金额和更新的baseSalary
+   */
+  async calculateBusinessCommission(
+    employeeName: string,
+    startDate: string,
+    endDate: string,
+  ): Promise<{ businessCommission: number; newBaseSalary?: number }> {
+    const result = await this.calculateBusinessCommissionDetails(
+      employeeName,
+      startDate,
+      endDate,
+    );
+
+    for (const expense of result.expenseBreakdowns) {
+      await this.dataSource.query(
+        `
+          UPDATE sys_expense SET 
+            business_commission = ?, 
+            business_commission_own = ?, 
+            business_commission_outsource = ?,
+            basicBusinessPerformance = ?,
+            outsourcingBusinessPerformance = ?
+          WHERE id = ?
+        `,
+        [
+          expense.totalBusinessCommission,
+          expense.basicBusinessCommission,
+          expense.outsourceBusinessCommission,
+          expense.basicBusinessPerformance,
+          expense.outsourcingBusinessPerformance,
+          expense.expenseId,
+        ],
+      );
+    }
+
+    return {
+      businessCommission: result.businessCommission,
+      newBaseSalary: result.newBaseSalary ?? undefined,
+    };
   }
 
   /**
@@ -1198,7 +1186,11 @@ export class SalaryAutoUpdateService {
    * @param targetMonth 目标月份，格式：YYYY-MM-DD
    * @returns 更新结果
    */
-  async generateMonthlySalaries(targetMonth?: string) {
+  async generateMonthlySalaries(
+    targetMonth?: string,
+    options: GenerateMonthlySalariesOptions = {},
+  ): Promise<GenerateMonthlySalariesResult> {
+    const { persist = true, salesBaseSalaryOverrides = {} } = options;
     // 如果没有指定月份，默认为上个月
     const now = targetMonth ? moment(targetMonth) : moment();
     const lastMonth = now.clone().subtract(1, 'month');
@@ -1261,18 +1253,28 @@ export class SalaryAutoUpdateService {
 
     let created = 0;
     let updated = 0;
+    const generatedSalaryData: GeneratedSalaryPreviewRecord[] = [];
 
     for (const employee of employees) {
       try {
         // 查询是否已存在当月薪资记录
-        // 使用lastMonth的第一天作为yearMonth，而不是commissionStartDate
-        const salaryYearMonth = lastMonth.clone().startOf('month').toDate();
-        const existingSalary = await this.salaryRepository.findOne({
-          where: {
-            name: employee.name,
+        // 使用 YYYY-MM-DD 字符串与 DATE 字段匹配，避免 Date 对象在 UTC 时区下比较失效
+        const salaryYearMonth = lastMonth.clone().startOf('month').format('YYYY-MM-DD');
+        const existingSalaries = await this.salaryRepository
+          .createQueryBuilder('salary')
+          .where('salary.name = :name', { name: employee.name })
+          .andWhere('salary.yearMonth = :yearMonth', {
             yearMonth: salaryYearMonth,
-          },
-        });
+          })
+          .orderBy('salary.id', 'DESC')
+          .getMany();
+        const existingSalary = existingSalaries[0] || null;
+
+        if (existingSalaries.length > 1) {
+          this.logger.warn(
+            `检测到员工 ${employee.name} 在 ${salaryYearMonth} 存在 ${existingSalaries.length} 条薪资记录，将优先更新最新一条（ID: ${existingSalary?.id}）`,
+          );
+        }
 
         // 获取员工部门信息
         const departments = await this.dataSource.query(
@@ -1409,18 +1411,37 @@ export class SalaryAutoUpdateService {
         const performanceDeductionsFromCheck =
           accountantPerformanceMap?.[employee.name];
 
+        const hasOverride = Object.prototype.hasOwnProperty.call(
+          salesBaseSalaryOverrides,
+          employee.name,
+        );
+        const overrideBaseSalary = hasOverride
+          ? Number(salesBaseSalaryOverrides[employee.name])
+          : undefined;
+        const employeeBaseSalary = Number(employee.baseSalary || 0);
+        const hasPersistedEmployeeBaseSalary =
+          employee.baseSalary !== null &&
+          employee.baseSalary !== undefined &&
+          !Number.isNaN(employeeBaseSalary) &&
+          employeeBaseSalary > 0;
+        const resolvedBaseSalary =
+          overrideBaseSalary !== undefined && !Number.isNaN(overrideBaseSalary)
+            ? overrideBaseSalary
+            : hasPersistedEmployeeBaseSalary
+              ? employeeBaseSalary
+              : businessCommissionResult.newBaseSalary !== null &&
+                  businessCommissionResult.newBaseSalary !== undefined
+                ? businessCommissionResult.newBaseSalary
+                : employeeBaseSalary;
+
         // 准备薪资数据
         const salaryData: any = {
           name: employee.name,
           department: department ? department.name : '未分配',
           idCard: employee.idCardNumber || '',
           type: employee.employeeType || '未设置',
-          // 如果是销售且计算出新的基本工资，则使用新值，否则使用员工表中的值
-          baseSalary:
-            businessCommissionResult.newBaseSalary !== null &&
-            businessCommissionResult.newBaseSalary !== undefined
-              ? businessCommissionResult.newBaseSalary
-              : employee.baseSalary || 0,
+          // 预览/保存时均优先采用手工填写的销售专员基础工资，其次为自动匹配的底薪
+          baseSalary: resolvedBaseSalary,
           temporaryIncrease: existingSalary?.temporaryIncrease || 0,
           temporaryIncreaseItem: existingSalary?.temporaryIncreaseItem || '',
           attendanceDeduction: attendanceDeduction?.attendanceDeduction || existingSalary?.attendanceDeduction || 0,
@@ -1455,6 +1476,30 @@ export class SalaryAutoUpdateService {
         // 使用calculateDerivedFields方法计算所有衍生字段，包括绩效佣金
         const processedSalaryData = this.calculateDerivedFields(salaryData);
 
+        generatedSalaryData.push({
+          id: existingSalary?.id,
+          ...processedSalaryData,
+          yearMonth: salaryYearMonth,
+          isPaid: existingSalary?.isPaid || false,
+          isConfirmed: existingSalary?.isConfirmed || false,
+          confirmedAt: existingSalary?.confirmedAt
+            ? new Date(existingSalary.confirmedAt).toISOString()
+            : undefined,
+          createdAt: existingSalary?.createdAt
+            ? new Date(existingSalary.createdAt).toISOString()
+            : new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+
+        if (!persist) {
+          if (existingSalary) {
+            updated++;
+          } else {
+            created++;
+          }
+          continue;
+        }
+
         if (existingSalary) {
           // 检查是否已确认 - 已确认的薪资不允许自动更新
           if (existingSalary.isConfirmed) {
@@ -1479,19 +1524,19 @@ export class SalaryAutoUpdateService {
           this.logger.debug(`创建员工 ${employee.name} 的薪资记录`);
         }
 
-        // 如果是销售且有新的基本工资，更新员工表中的基本工资
+        // 仅在手工填写销售专员基础工资时同步员工档案，确保下次预生成继续显示人工确认后的值
         if (
-          businessCommissionResult.newBaseSalary !== null &&
-          businessCommissionResult.newBaseSalary !== undefined
+          overrideBaseSalary !== undefined &&
+          Number(employee.baseSalary || 0) !== Number(resolvedBaseSalary || 0)
         ) {
           await this.dataSource.query(
             `
             UPDATE sys_employees SET baseSalary = ? WHERE name = ?
           `,
-            [businessCommissionResult.newBaseSalary, employee.name],
+            [resolvedBaseSalary, employee.name],
           );
           this.logger.log(
-            `更新员工 ${employee.name} 的基本工资为 ${businessCommissionResult.newBaseSalary}`,
+            `更新员工 ${employee.name} 的基本工资为 ${resolvedBaseSalary}`,
           );
         }
       } catch (error) {
@@ -1502,7 +1547,7 @@ export class SalaryAutoUpdateService {
       }
     }
 
-    return { created, updated };
+    return { created, updated, salaryData: generatedSalaryData };
   }
 
   /**
@@ -1512,7 +1557,9 @@ export class SalaryAutoUpdateService {
    */
   async manualGenerateSalaries(month?: string) {
     try {
-      const result = await this.generateMonthlySalaries(month);
+      const result = await this.generateMonthlySalaries(month, {
+        persist: true,
+      });
       return {
         success: true,
         message: `薪资数据生成成功，共更新${result.updated}条记录，新增${result.created}条记录`,
@@ -1536,6 +1583,149 @@ export class SalaryAutoUpdateService {
       return {
         success: false,
         message: `薪资数据生成失败: ${error.message}`,
+      };
+    }
+  }
+
+  async previewSalesCommissionReview(month?: string) {
+    try {
+      const now = month ? moment(month) : moment();
+      const lastMonth = now.clone().subtract(1, 'month');
+      const restrictedDate = moment('2025-06-30');
+
+      if (lastMonth.isSameOrBefore(restrictedDate)) {
+        const errorMessage = `不能生成2025年6月及其之前的薪资数据。尝试生成的月份：${lastMonth.format('YYYY-MM')}`;
+        this.logger.error(errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      const commissionStartDate = lastMonth
+        .clone()
+        .date(1)
+        .format('YYYY-MM-DD');
+      const commissionEndDate = lastMonth
+        .clone()
+        .endOf('month')
+        .format('YYYY-MM-DD');
+
+      const salesEmployees = await this.dataSource.query(
+        `
+          SELECT * FROM sys_employees
+          WHERE position = '销售专员'
+          ORDER BY name ASC
+        `,
+      );
+
+      const reviewData: SalesCommissionReviewRecord[] = [];
+
+      for (const employee of salesEmployees) {
+        const businessCommissionResult =
+          await this.calculateBusinessCommissionDetails(
+            employee.name,
+            commissionStartDate,
+            commissionEndDate,
+          );
+        const agencyCommission = await this.calculateAgencyFeeCommission(
+          employee.name,
+          commissionStartDate,
+          commissionEndDate,
+        );
+        const employeeBaseSalary = Number(employee.baseSalary || 0);
+        const hasPersistedEmployeeBaseSalary =
+          employee.baseSalary !== null &&
+          employee.baseSalary !== undefined &&
+          !Number.isNaN(employeeBaseSalary) &&
+          employeeBaseSalary > 0;
+        const resolvedBaseSalary = hasPersistedEmployeeBaseSalary
+          ? employeeBaseSalary
+          : businessCommissionResult.newBaseSalary ?? employeeBaseSalary;
+
+        reviewData.push({
+          name: employee.name,
+          businessCommissionOwn: businessCommissionResult.businessCommissionOwn,
+          businessCommissionOutsource:
+            businessCommissionResult.businessCommissionOutsource,
+          specialBusinessCommission:
+            businessCommissionResult.specialBusinessCommission,
+          agencyCommission,
+          commissionTotal:
+            businessCommissionResult.businessCommissionOwn +
+            businessCommissionResult.businessCommissionOutsource +
+            businessCommissionResult.specialBusinessCommission +
+            agencyCommission,
+          baseSalary: resolvedBaseSalary,
+        });
+      }
+
+      reviewData.sort(
+        (a, b) =>
+          b.commissionTotal - a.commissionTotal ||
+          a.name.localeCompare(b.name, 'zh-CN'),
+      );
+
+      return {
+        success: true,
+        message:
+          reviewData.length > 0
+            ? `销售专员提成信息统计成功，共${reviewData.length}人`
+            : '当前月份没有销售专员需要确认基础工资，可直接生成薪资',
+        reviewData,
+      };
+    } catch (error) {
+      this.logger.error(`统计销售专员提成信息失败: ${error.message}`, error.stack);
+
+      if (
+        error.message &&
+        error.message.includes('不能生成2025年6月及其之前的薪资数据')
+      ) {
+        return {
+          success: false,
+          message: error.message,
+          error: 'TIME_RESTRICTION',
+        };
+      }
+
+      return {
+        success: false,
+        message: `统计销售专员提成信息失败: ${error.message}`,
+      };
+    }
+  }
+
+  async confirmGenerateMonthlySalaries(
+    month?: string,
+    salesBaseSalaryOverrides: Record<string, number> = {},
+  ) {
+    try {
+      const result = await this.generateMonthlySalaries(month, {
+        persist: true,
+        salesBaseSalaryOverrides,
+      });
+      return {
+        success: true,
+        message: `薪资数据生成成功，共更新${result.updated}条记录，新增${result.created}条记录`,
+        details: {
+          created: result.created,
+          updated: result.updated,
+        },
+      };
+    } catch (error) {
+      this.logger.error(`确认生成薪资数据失败: ${error.message}`, error.stack);
+
+      if (
+        error.message &&
+        error.message.includes('不能生成2025年6月及其之前的薪资数据')
+      ) {
+        return {
+          success: false,
+          message: error.message,
+          error: 'TIME_RESTRICTION',
+        };
+      }
+
+      return {
+        success: false,
+        message: `确认生成薪资数据失败: ${error.message}`,
       };
     }
   }
